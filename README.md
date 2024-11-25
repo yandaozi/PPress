@@ -37,8 +37,9 @@
   - Plotly.js - 图表库
 
 ## 项目截图
+<p style="text-align: center;">首页截图</p>
+
 ![首页截图](/viewimg/index.png)
-<center>首页截图</center>
 
 ![标签页](/viewimg/tagpage.png)
 <center>标签页</center>
