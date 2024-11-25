@@ -36,6 +36,58 @@
   - jQuery - JavaScript库
   - Plotly.js - 图表库
 
+## 项目截图
+![首页截图](/viewimg/index.png)
+<center>首页截图</center>
+
+![标签页](/viewimg/tagpage.png)
+<center>标签页</center>
+
+![搜索页](/viewimg/search.png)
+<center>搜索页</center>
+
+![文章内页](/viewimg/article.png)
+<center>文章内页</center>
+
+![个人中心](/viewimg/mepage.png)
+<center>个人中心</center>
+
+![创建文章](/viewimg/create_article.png)
+<center>创建文章</center>
+
+![我的文章](/viewimg/myarticle.png)
+<center>我的文章</center>
+
+![文章作者主页](/viewimg/userpage.png)
+<center>文章作者主页</center>
+
+![管理控制面板首页](/viewimg/admin_dashboard.png)
+<center>管理控制面板首页</center>
+
+![用户管理](/viewimg/admin_users.png)
+<center>用户管理</center>
+
+![文章管理](/viewimg/admin_articles.png)
+<center>文章管理</center>
+
+![评论管理](/viewimg/admin_comments.png)
+<center>评论管理</center>
+
+![分类管理](/viewimg/admin_categories.png)
+<center>分类管理</center>
+
+![标签管理](/viewimg/admin_tags.png)
+<center>标签管理</center>
+
+![网站信息配置](/viewimg/admin_siteconfig.png)
+<center>网站信息配置</center>
+
+
+
+
+
+
+
 ## 项目结构
 
 app/
