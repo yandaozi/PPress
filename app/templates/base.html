@@ -26,8 +26,13 @@
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
                         <a href="{{ url_for('blog.index') }}" class="flex-shrink-0">
-                            <span class="text-xl font-bold text-gray-800 dark:text-white">
-                                {{ site_config.get_config('site_name', '技术博客') }}
+                            <span class="text-xl font-bold text-gray-800 dark:text-white flex items-center space-x-2">
+                                <img src="{{ url_for('static', filename='images/logo.png') }}" 
+                                     alt="logo"
+                                     class="w-6 h-6 rounded">
+                                <span>
+                                    {{ site_config.get_config('site_name', '技术博客') }}
+                                </span>
                             </span>
                         </a>
                     </div>
