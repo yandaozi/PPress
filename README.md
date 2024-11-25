@@ -37,51 +37,66 @@
   - Plotly.js - 图表库
 
 ## 项目截图
-
-![首页截图](/viewimg/index.png)
 <p align="center">首页截图</p>
 
-![标签页](/viewimg/tagpage.png)
+![首页截图](/viewimg/index.png)
+
 <p align="center">标签页</p>
 
-![搜索页](/viewimg/search.png)
+![标签页](/viewimg/tagpage.png)
+
 <p align="center">搜索页</p>
 
-![文章内页](/viewimg/article.png)
+![搜索页](/viewimg/search.png)
+
 <p align="center">文章内页</p>
 
-![个人中心](/viewimg/mepage.png)
+![文章内页](/viewimg/article.png)
+
 <p align="center">个人中心</p>
 
-![创建文章](/viewimg/create_article.png)
+![个人中心](/viewimg/mepage.png)
+
 <p align="center">创建文章</p>
 
-![我的文章](/viewimg/myarticle.png)
+![创建文章](/viewimg/create_article.png)
+
 <p align="center">我的文章</p>
 
-![文章作者主页](/viewimg/userpage.png)
+![我的文章](/viewimg/myarticle.png)
+
 <p align="center">文章作者主页</p>
 
-![管理控制面板首页](/viewimg/admin_dashboard.png)
+![文章作者主页](/viewimg/userpage.png)
+
 <p align="center">管理控制面板首页</p>
 
-![用户管理](/viewimg/admin_users.png)
+![管理控制面板首页](/viewimg/admin_dashboard.png)
+
 <p align="center">用户管理</p>
 
-![文章管理](/viewimg/admin_articles.png)
+![用户管理](/viewimg/admin_users.png)
+
 <p align="center">文章管理</p>
 
-![评论管理](/viewimg/admin_comments.png)
+![文章管理](/viewimg/admin_articles.png)
+
 <p align="center">评论管理</p>
 
-![分类管理](/viewimg/admin_categories.png)
+![评论管理](/viewimg/admin_comments.png)
+
 <p align="center">分类管理</p>
 
-![标签管理](/viewimg/admin_tags.png)
+![分类管理](/viewimg/admin_categories.png)
+
 <p align="center">标签管理</p>
 
-![网站信息配置](/viewimg/admin_siteconfig.png)
+![标签管理](/viewimg/admin_tags.png)
+
 <p align="center">网站信息配置</p>
+
+![网站信息配置](/viewimg/admin_siteconfig.png)
+
 
 
 
