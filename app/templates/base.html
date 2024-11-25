@@ -1,23 +1,32 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %} - {{ site_config.get_config('site_name', '技术博客') }}</title>
     <meta name="keywords" content="{{ site_config.get_config('site_keywords', '技术,博客,Python,Web开发') }}">
     <meta name="description" content="{{ site_config.get_config('site_description', '分享技术知识和经验') }}">
-    <script src="{{ url_for('static', filename='vendor/tailwind.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/3.4.5') }}"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
     <script src="{{ url_for('static', filename='vendor/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/darkMode.js') }}"></script>
     {% block head %}{% endblock %}
 </head>
-<body class="bg-gray-50">
-    <nav class="bg-white shadow-sm sticky top-0 z-50">
+<body class="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+    <nav class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto">
-            <div class="px-4 border-b">
+            <div class="px-4 border-b dark:border-gray-700">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
                         <a href="{{ url_for('blog.index') }}" class="flex-shrink-0">
-                            <span class="text-xl font-bold text-gray-800">
+                            <span class="text-xl font-bold text-gray-800 dark:text-white">
                                 {{ site_config.get_config('site_name', '技术博客') }}
                             </span>
                         </a>
@@ -33,7 +42,7 @@
                                     </div>
                                     <input type="text" name="q"
                                            autocomplete="off"
-                                           class="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors duration-200"
+                                           class="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg leading-5 bg-gray-50 dark:bg-gray-700 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-white focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors duration-200"
                                            placeholder="搜索文章..."
                                            value="{{ request.args.get('q', '') }}">
                                 </div>
@@ -55,7 +64,7 @@
                                 发布文章
                             </a>
                             <div class="relative">
-                                <button class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-200" 
+                                <button class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200" 
                                         onclick="toggleDropdown(this)">
                                     <img src="{{ current_user.avatar }}" 
                                          alt="avatar" 
@@ -65,16 +74,16 @@
                                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                     </svg>
                                 </button>
-                                <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 hidden z-50">
+                                <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 hidden z-50">
                                     <a href="{{ url_for('user.profile') }}" 
-                                       class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                       class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                                         </svg>
                                         个人中心
                                     </a>
                                     <a href="{{ url_for('user.my_articles') }}" 
-                                       class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                       class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2m-4 0h4"></path>
                                         </svg>
@@ -82,7 +91,7 @@
                                     </a>
                                     {% if current_user.role == 'admin' %}
                                     <a href="{{ url_for('admin.dashboard') }}" 
-                                       class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                       class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -110,20 +119,36 @@
                                 注册
                             </a>
                         {% endif %}
+                        <button id="theme-toggle" 
+                                onclick="toggleTheme()"
+                                class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
+                            <svg id="theme-toggle-dark-icon" 
+                                 class="w-5 h-5" 
+                                 fill="currentColor" 
+                                 viewBox="0 0 20 20">
+                                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                            </svg>
+                            <svg id="theme-toggle-light-icon" 
+                                 class="hidden w-5 h-5" 
+                                 fill="currentColor" 
+                                 viewBox="0 0 20 20">
+                                <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </div>
             <div class="px-4">
                 <div class="flex space-x-8 overflow-x-auto">
                     <a href="{{ url_for('blog.index') }}" 
-                       class="py-4 px-1 border-b-2 {% if request.endpoint == 'blog.index' and not request.args.get('category') %}border-blue-500 text-blue-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap transition-colors duration-200">
+                       class="py-4 px-1 border-b-2 {% if request.endpoint == 'blog.index' and not request.args.get('category') %}border-blue-500 text-blue-600{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300{% endif %} whitespace-nowrap transition-colors duration-200">
                         全部
                     </a>
                     {% for category in categories %}
                     <a href="{{ url_for('blog.index', category=category.id) }}" 
-                       class="py-4 px-1 border-b-2 {% if request.args.get('category')|int == category.id %}border-blue-500 text-blue-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap transition-colors duration-200">
+                       class="py-4 px-1 border-b-2 {% if request.args.get('category')|int == category.id %}border-blue-500 text-blue-600{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300{% endif %} whitespace-nowrap transition-colors duration-200">
                         {{ category.name }}
-                        <span class="text-xs text-gray-400">({{ category.articles|length }})</span>
+                        <span class="text-xs text-gray-400 dark:text-gray-500">({{ category.articles|length }})</span>
                     </a>
                     {% endfor %}
                 </div>
@@ -131,11 +156,11 @@
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto py-6 px-4">
+    <main class="max-w-7xl mx-auto py-6 px-4 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 {% for message in messages %}
-                    <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4">
+                    <div class="bg-blue-100 dark:bg-blue-900 border-l-4 border-blue-500 text-blue-700 dark:text-blue-300 p-4 mb-4">
                         {{ message }}
                     </div>
                 {% endfor %}
@@ -187,14 +212,18 @@
         }, 3000);
     }
     </script>
-    <footer class="bg-white mt-8 border-t">
+    <footer class="bg-white dark:bg-gray-800 mt-8 border-t dark:border-gray-700">
         <div class="max-w-7xl mx-auto px-4 py-8">
             <div class="flex flex-col items-center">
-                <div class="text-gray-500 mb-2">{{ site_config.get_config('footer_text', '© 2023 技术博客 版权所有') }}</div>
+                <div class="text-gray-500 dark:text-gray-400 mb-2">
+                    {{ site_config.get_config('footer_text', '© 2023 技术博客 版权所有') }}
+                </div>
                 {% if site_config.get_config('icp_number') %}
-                <div class="text-gray-400 text-sm">{{ site_config.get_config('icp_number') }}</div>
+                <div class="text-gray-400 dark:text-gray-500 text-sm">
+                    {{ site_config.get_config('icp_number') }}
+                </div>
                 {% endif %}
-                <div class="text-gray-400 text-sm mt-2">
+                <div class="text-gray-400 dark:text-gray-500 text-sm mt-2">
                     联系我们：{{ site_config.get_config('contact_email', 'admin@example.com') }}
                 </div>
             </div>

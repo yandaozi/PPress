@@ -8,45 +8,49 @@
     {% endfor %}
 {% endif %}
 
-<div class="flex justify-center items-center space-x-2">
-    {% if pages.has_prev %}
-    <a href="{{ url_for(endpoint, page=pages.prev_num, **current_kwargs) }}" 
-       class="px-4 py-2 bg-white border rounded-lg text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200">
-        上一页
-    </a>
-    {% endif %}
-    
-    {% if pages.page > 2 %}
-    <a href="{{ url_for(endpoint, page=1, **current_kwargs) }}" 
-       class="px-4 py-2 bg-white border rounded-lg text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200">
-        1
-    </a>
-    {% if pages.page > 3 %}
-    <span class="px-3 py-2 text-gray-500">...</span>
-    {% endif %}
-    {% endif %}
-    
-    {% for num in range(max(1, pages.page - 1), min(pages.pages + 1, pages.page + 2)) %}
-    <a href="{{ url_for(endpoint, page=num, **current_kwargs) }}" 
-       class="px-4 py-2 {% if num == pages.page %}bg-blue-600 text-white border-blue-600{% else %}bg-white text-gray-700 hover:bg-gray-50 hover:text-blue-600{% endif %} border rounded-lg transition-colors duration-200">
-        {{ num }}
-    </a>
-    {% endfor %}
-    
-    {% if pages.page < pages.pages - 1 %}
-    {% if pages.page < pages.pages - 2 %}
-    <span class="px-3 py-2 text-gray-500">...</span>
-    {% endif %}
-    <a href="{{ url_for(endpoint, page=pages.pages, **current_kwargs) }}" 
-       class="px-4 py-2 bg-white border rounded-lg text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200">
-        {{ pages.pages }}
-    </a>
-    {% endif %}
-    
-    {% if pages.has_next %}
-    <a href="{{ url_for(endpoint, page=pages.next_num, **current_kwargs) }}" 
-       class="px-4 py-2 bg-white border rounded-lg text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200">
-        下一页
-    </a>
-    {% endif %}
+<div class="flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+        {% if pages.has_prev %}
+        <a href="{{ url_for(endpoint, page=pages.prev_num, **current_kwargs) }}" 
+           class="px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+            上一页
+        </a>
+        {% else %}
+        <span class="px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800 cursor-not-allowed">
+            上一页
+        </span>
+        {% endif %}
+
+        {% for page in pages.iter_pages() %}
+            {% if page %}
+                {% if page != pages.page %}
+                <a href="{{ url_for(endpoint, page=page, **current_kwargs) }}" 
+                   class="px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+                    {{ page }}
+                </a>
+                {% else %}
+                <span class="px-3 py-1 bg-blue-600 text-white rounded-lg">
+                    {{ page }}
+                </span>
+                {% endif %}
+            {% else %}
+            <span class="px-2 text-gray-500 dark:text-gray-400">...</span>
+            {% endif %}
+        {% endfor %}
+
+        {% if pages.has_next %}
+        <a href="{{ url_for(endpoint, page=pages.next_num, **current_kwargs) }}" 
+           class="px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+            下一页
+        </a>
+        {% else %}
+        <span class="px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800 cursor-not-allowed">
+            下一页
+        </span>
+        {% endif %}
+    </div>
+
+    <div class="text-sm text-gray-500 dark:text-gray-400">
+        第 {{ pages.page }} 页 / 共 {{ pages.pages }} 页
+    </div>
 </div> 

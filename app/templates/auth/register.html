@@ -3,70 +3,76 @@
 {% block title %}注册{% endblock %}
 
 {% block content %}
-<div class="min-h-[calc(100vh-16rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+<div class="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">
     <div class="max-w-md w-full">
-        <div class="bg-white rounded-xl shadow-sm p-8">
-            <div class="text-center mb-8">
-                <h2 class="text-2xl font-bold text-gray-900">创建新账号</h2>
-                <p class="mt-2 text-sm text-gray-600">
-                    已有账号？
-                    <a href="{{ url_for('auth.login') }}" class="text-blue-600 hover:text-blue-700">
-                        立即登录
-                    </a>
-                </p>
-            </div>
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 dark:text-white">注册账号</h2>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">创建一个新账号</p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8">
             <form method="post" class="space-y-6">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         用户名
                     </label>
                     <input type="text" name="username" required
-                           class="block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                           class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         邮箱
                     </label>
                     <input type="email" name="email" required
-                           class="block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        密码
-                    </label>
-                    <input type="password" name="password" required
-                           class="block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        确认密码
-                    </label>
-                    <input type="password" name="password2" required
-                           class="block w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                           class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        密码
+                    </label>
+                    <input type="password" name="password" required
+                           class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        确认密码
+                    </label>
+                    <input type="password" name="confirm_password" required
+                           class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         验证码
                     </label>
                     <div class="flex space-x-4">
                         <input type="text" name="captcha" required
-                               class="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <img src="{{ url_for('auth.captcha') }}" alt="captcha" 
-                             class="h-12 rounded cursor-pointer" 
-                             onclick="this.src='{{ url_for('auth.captcha') }}?'+Math.random()">
+                               class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
+                        <img src="{{ url_for('auth.captcha') }}" 
+                             alt="captcha"
+                             onclick="this.src='{{ url_for('auth.captcha') }}?'+ Math.random()"
+                             class="h-10 rounded cursor-pointer">
                     </div>
                 </div>
                 
                 <button type="submit"
-                        class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200">
+                        class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
                     注册
                 </button>
             </form>
+            
+            <div class="mt-6 text-center text-sm">
+                <span class="text-gray-600 dark:text-gray-400">已有账号？</span>
+                <a href="{{ url_for('auth.login') }}" 
+                   class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
+                    立即登录
+                </a>
+            </div>
         </div>
     </div>
 </div>

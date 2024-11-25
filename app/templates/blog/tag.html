@@ -4,47 +4,82 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
-    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h1 class="text-2xl font-bold mb-2">标签：{{ tag.name }}</h1>
-        <p class="text-gray-500">共 {{ articles.total }} 篇文章</p>
+    <!-- 标签信息 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    标签：{{ tag.name }}
+                </h1>
+                <p class="text-gray-500 dark:text-gray-400">
+                    共 {{ articles.total }} 篇文章
+                </p>
+            </div>
+            <span class="px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
+                {{ tag.name }}
+            </span>
+        </div>
     </div>
 
     <!-- 文章列表 -->
-    {% for article in articles.items %}
-    <article class="bg-white rounded-lg shadow-sm mb-6 p-6">
-        <h2 class="text-2xl font-bold mb-2">
-            <a href="{{ url_for('blog.article', id=article.id) }}" class="text-gray-900 hover:text-blue-600">
-                {{ article.title }}
-            </a>
-        </h2>
-        <div class="flex items-center text-sm text-gray-500 mb-4">
-            <span>{{ article.author.username }}</span>
-            <span class="mx-2">•</span>
-            <span>{{ article.category.name }}</span>
-            <span class="mx-2">•</span>
-            <span>{{ article.created_at.strftime('%Y-%m-%d') }}</span>
-            <span class="mx-2">•</span>
-            <span>阅读 {{ article.view_count }}</span>
+    <div class="space-y-6">
+        {% for article in articles.items %}
+        <article class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden transition-colors duration-200">
+            <div class="p-6">
+                <h2 class="text-xl font-bold mb-2">
+                    <a href="{{ url_for('blog.article', id=article.id) }}" 
+                       class="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+                        {{ article.title }}
+                    </a>
+                </h2>
+                <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    <a href="{{ url_for('user.author', id=article.author.id) }}" 
+                       class="flex items-center hover:text-blue-600 dark:hover:text-blue-400">
+                        <img src="{{ article.author.avatar }}" 
+                             alt="avatar" 
+                             class="w-6 h-6 rounded-full mr-2">
+                        {{ article.author.username }}
+                    </a>
+                    <span class="mx-2">•</span>
+                    <span>{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    <span class="mx-2">•</span>
+                    <span>{{ article.view_count }} 阅读</span>
+                </div>
+                <div class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+                    {{ article.content|striptags|truncate(200) }}
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('blog.article', id=article.id) }}" 
+                       class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
+                        阅读全文
+                    </a>
+                    {% if article.tags %}
+                    <div class="flex items-center space-x-2">
+                        {% for tag in article.tags %}
+                        <a href="{{ url_for('blog.tag', id=tag.id) }}" 
+                           class="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                            #{{ tag.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+        {% else %}
+        <div class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+            <p class="text-gray-500 dark:text-gray-400">暂无文章</p>
         </div>
-        <div class="prose max-w-none mb-4">
-            {{ article.content[:200] }}...
-        </div>
-        <div class="flex items-center">
-            {% for tag in article.tags %}
-            <a href="{{ url_for('blog.tag', id=tag.id) }}" 
-               class="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full mr-2 hover:bg-gray-200">
-                {{ tag.name }}
-            </a>
-            {% endfor %}
-        </div>
-    </article>
-    {% endfor %}
-    
+        {% endfor %}
+    </div>
+
     <!-- 分页 -->
     {% if articles.pages > 1 %}
-    {% with endpoint='blog.tag', kwargs={'id': tag.id} %}
-    {% include 'components/pagination.html' %}
-    {% endwith %}
+    <div class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+        {% with endpoint='blog.tag', kwargs={'id': tag.id} %}
+        {% include 'components/pagination.html' %}
+        {% endwith %}
+    </div>
     {% endif %}
 </div>
 {% endblock %} 
