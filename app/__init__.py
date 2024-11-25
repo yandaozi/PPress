@@ -7,9 +7,18 @@ def create_app():
     
     # 配置
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev')
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://flaskiosblog:flaskiosblog@localhost/flaskiosblog'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://flaskiosblog:flaskiosblog@localhost/flaskiosblog?charset=utf8mb4'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
+    
+    # 添加数据库连接选项
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+        'connect_args': {
+            'charset': 'utf8mb4'
+        }
+    }
     
     # 初始化插件
     db.init_app(app)

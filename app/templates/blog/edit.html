@@ -3,38 +3,12 @@
 {% block title %}{{ '编辑文章' if article else '创建文章' }}{% endblock %}
 
 {% block head %}
-<script src="{{ url_for('static', filename='vendor/ckeditor.js') }}"></script>
-<style>
-    .ck-editor__editable {
-        min-height: 300px;
-        max-height: 500px;
-    }
-    .ck-editor__editable_inline {
-        padding: 0 10px;
-    }
-    /* 暗色模式下的编辑器样式 */
-    html.dark .ck.ck-editor__main>.ck-editor__editable {
-        background: #374151;
-        color: #e5e7eb;
-    }
-    html.dark .ck.ck-editor__main>.ck-editor__editable.ck-focused {
-        border-color: #3b82f6;
-    }
-    html.dark .ck.ck-toolbar {
-        background: #1f2937;
-        border-color: #374151;
-    }
-    html.dark .ck.ck-toolbar .ck-toolbar__items .ck-button {
-        color: #e5e7eb;
-    }
-    html.dark .ck.ck-toolbar .ck-toolbar__items .ck-button:hover {
-        background: #374151;
-    }
-    html.dark .ck.ck-toolbar .ck-toolbar__items .ck-button.ck-on {
-        background: #374151;
-        color: #3b82f6;
-    }
-</style>
+<!-- 修改为本地 TinyMCE 引用 -->
+<script src="{{ url_for('static', filename='vendor/tinymce/tinymce.min.js') }}"></script>
+<!-- 如果需要中文语言包 -->
+<script src="{{ url_for('static', filename='vendor/tinymce/langs/zh_CN.js') }}"></script>
+
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/edit.css') }}" />
 {% endblock %}
 
 {% block content %}
@@ -43,8 +17,9 @@
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             {{ '编辑文章' if article else '创建文章' }}
         </h2>
-        <form method="post" class="space-y-6">
+        <form method="post" class="space-y-6" id="articleForm">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <!-- 标题输入 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     标题
@@ -55,17 +30,18 @@
                               focus:outline-none focus:ring-2 focus:ring-blue-500 
                               bg-white dark:bg-gray-700 
                               text-gray-900 dark:text-white 
-                              placeholder-gray-400 dark:placeholder-gray-500"
-                       placeholder="请输入文章标题">
+                              placeholder-gray-400 dark:placeholder-gray-500">
             </div>
             
+            <!-- 内容编辑器 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     内容
                 </label>
-                <textarea name="content" id="editor" required>{{ article.content if article else '' }}</textarea>
+                <textarea id="editor" name="content">{{ article.content if article else '' }}</textarea>
             </div>
             
+            <!-- 分类选择 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     分类
@@ -84,6 +60,7 @@
                 </select>
             </div>
             
+            <!-- 标签输入 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     标签
@@ -109,6 +86,7 @@
                        placeholder="输入标签，用空格分隔">
             </div>
             
+            <!-- 操作按钮 -->
             <div class="flex justify-end space-x-4">
                 <a href="{{ url_for('blog.article', id=article.id) if article else url_for('blog.index') }}"
                    class="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
@@ -139,20 +117,206 @@ function addTag(tagName) {
     }
 }
 
-// 初始化编辑器
-ClassicEditor
-    .create(document.querySelector('#editor'), {
-        toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', '|', 'undo', 'redo'],
-        heading: {
-            options: [
-                { model: 'paragraph', title: '正文', class: 'ck-heading_paragraph' },
-                { model: 'heading2', view: 'h2', title: '标题2', class: 'ck-heading_heading2' },
-                { model: 'heading3', view: 'h3', title: '标题3', class: 'ck-heading_heading3' }
-            ]
+// 初始化 TinyMCE
+tinymce.init({
+    selector: '#editor',
+    language: 'zh_CN',
+    base_url: '{{ url_for("static", filename="vendor/tinymce") }}',
+    plugins: [
+        'advlist',
+        'anchor',
+        'autolink',
+        'autoresize',
+        'autosave',
+        'charmap',
+        'code',
+        'codesample',
+        'directionality',
+        'emoticons',
+        'fullscreen',
+        'help',
+        'image',
+        'importcss',
+        'insertdatetime',
+        'link',
+        'lists',
+        'media',
+        'nonbreaking',
+        'pagebreak',
+        'preview',
+        'quickbars',
+        'save',
+        'searchreplace',
+        'visualblocks',
+        'visualchars',
+        'wordcount'
+    ],
+    toolbar: [
+        {
+            name: 'history', items: ['undo', 'redo']
+        },
+        {
+            name: 'styles', items: ['formatselect', 'fontselect', 'fontsizeselect']
+        },
+        {
+            name: 'formatting', 
+            items: ['bold', 'italic', 'underline', 'strikethrough', 'forecolor', 'backcolor']
+        },
+        {
+            name: 'alignment', 
+            items: ['alignleft', 'aligncenter', 'alignright', 'alignjustify']
+        },
+        {
+            name: 'indentation', 
+            items: ['outdent', 'indent']
+        },
+        {
+            name: 'lists', 
+            items: ['bullist', 'numlist']
+        },
+        {
+            name: 'insert',
+            items: ['link', 'image', 'media', 'codesample', 'charmap', 'emoticons']
+        },
+        {
+            name: 'tools',
+            items: ['searchreplace', 'preview', 'code', 'fullscreen']
         }
-    })
-    .catch(error => {
-        console.error(error);
-    });
+    ],
+    menubar: 'file edit view insert format tools',
+    menu: {
+        file: { 
+            title: '文件', 
+            items: 'newdocument restoredraft | preview | print' 
+        },
+        edit: { 
+            title: '编辑', 
+            items: 'undo redo | cut copy paste pastetext | selectall searchreplace' 
+        },
+        view: { 
+            title: '视图', 
+            items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' 
+        },
+        insert: { 
+            title: '插入', 
+            items: 'image link media codesample | charmap emoticons hr | pagebreak nonbreaking anchor | insertdatetime' 
+        },
+        format: { 
+            title: '格式', 
+            items: 'bold italic underline strikethrough superscript subscript | blocks fontfamily fontsize | forecolor backcolor | removeformat' 
+        },
+        tools: { 
+            title: '工具', 
+            items: 'spellchecker wordcount code' 
+        }
+    },
+    autosave_ask_before_unload: true,
+    autosave_interval: '30s',
+    autosave_prefix: 'tinymce-autosave-{path}-' + ({{ article.id if article else 0 }}),
+    autosave_restore_when_empty: false,
+    autosave_retention: '2m',
+    height: 600,
+    resize: true,
+    branding: false,
+    image_advtab: true,
+    image_caption: true,
+    codesample_languages: [
+        { text: 'HTML/XML', value: 'markup' },
+        { text: 'JavaScript', value: 'javascript' },
+        { text: 'CSS', value: 'css' },
+        { text: 'PHP', value: 'php' },
+        { text: 'Python', value: 'python' },
+        { text: 'Java', value: 'java' },
+        { text: 'C', value: 'c' },
+        { text: 'C++', value: 'cpp' }
+    ],
+    images_upload_handler: function (blobInfo, progress) {
+        return new Promise((resolve, reject) => {
+            const formData = new FormData();
+            formData.append('upload', blobInfo.blob(), blobInfo.filename());
+            formData.append('csrf_token', '{{ csrf_token() }}');
+
+            fetch('{{ url_for("blog.upload_image") }}', {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.location) {
+                    resolve(result.location);
+                } else {
+                    reject('上传失败：' + (result.error || '未知错误'));
+                }
+            })
+            .catch(error => {
+                reject('上传失败：' + error);
+            });
+        });
+    },
+    image_dimensions: false,
+    image_class_list: [
+        { title: '响应式', value: 'img-fluid' }
+    ],
+    skin: document.documentElement.classList.contains('dark') ? 'oxide-dark' : 'oxide',
+    content_css: document.documentElement.classList.contains('dark') ? 'dark' : 'default',
+    content_style: `
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            padding: 1rem;
+            background-color: ${document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff'};
+            color: ${document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#000000'};
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.375rem;
+        }
+        pre {
+            background: ${document.documentElement.classList.contains('dark') ? '#374151' : '#f4f4f4'};
+            padding: 1rem;
+            border-radius: 0.375rem;
+            color: ${document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#1f2937'};
+        }
+        blockquote {
+            border-left: 4px solid ${document.documentElement.classList.contains('dark') ? '#4b5563' : '#e5e7eb'};
+            padding-left: 1rem;
+            margin-left: 0;
+            color: ${document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'};
+        }
+        .dark-theme {
+            background-color: #1f2937;
+            color: #e5e7eb;
+        }
+    `,
+    setup: function(editor) {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'class') {
+                    const isDark = document.documentElement.classList.contains('dark');
+                    const content = editor.getContent();
+                    editor.setContent(''); // 临时清空内容
+                    if (isDark) {
+                        editor.dom.addClass(editor.getBody(), 'dark-theme');
+                        editor.getBody().style.backgroundColor = '#1f2937';
+                        editor.getBody().style.color = '#e5e7eb';
+                    } else {
+                        editor.dom.removeClass(editor.getBody(), 'dark-theme');
+                        editor.getBody().style.backgroundColor = '#ffffff';
+                        editor.getBody().style.color = '#000000';
+                    }
+                    editor.setContent(content); // 恢复内容
+                }
+            });
+        });
+
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+    }
+});
 </script>
 {% endblock %} 

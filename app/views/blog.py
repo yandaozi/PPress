@@ -274,7 +274,7 @@ def search_suggestions():
 @bp.route('/upload/image', methods=['POST'])
 @login_required
 def upload_image():
-    if 'upload' not in request.files:  # CKEditor 使用 'upload' 作为文件字段名
+    if 'upload' not in request.files:
         return jsonify({'error': '没有文件'}), 400
         
     file = request.files['upload']
@@ -282,24 +282,26 @@ def upload_image():
         return jsonify({'error': '没有选择文件'}), 400
         
     if file and allowed_file(file.filename):
+        # 生成安全的文件名
         filename = secure_filename(file.filename)
+        # 添加时间戳避免重名
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        filename = f"{timestamp}_{filename}"
+        
         # 确保上传目录存在
         upload_folder = os.path.join(current_app.static_folder, 'uploads', 'images')
         os.makedirs(upload_folder, exist_ok=True)
         
-        # 生成唯一文件名
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        unique_filename = f"{timestamp}_{filename}"
-        
         # 保存文件
-        file_path = os.path.join(upload_folder, unique_filename)
+        file_path = os.path.join(upload_folder, filename)
         file.save(file_path)
         
-        # 返回文件URL（CKEditor 式）
-        url = url_for('static', filename=f'uploads/images/{unique_filename}')
+        # 返回文件URL
+        url = url_for('static', filename=f'uploads/images/{filename}', _external=True)
         return jsonify({
-            'url': url,
-            'uploaded': 1
+            'location': url,  # TinyMCE 需要 location 字段
+            'url': url,       # 兼容其他情况
+            'uploaded': True
         })
     
     return jsonify({'error': '不支持的文件类型'}), 400

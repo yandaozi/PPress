@@ -1,0 +1,158 @@
+/* 编辑器基础样式 */
+.tox-tinymce {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+/* 暗色模式基础样式 */
+html.dark .tox-tinymce {
+    border-color: #374151 !important;
+    background-color: #1f2937 !important;
+}
+
+/* 工具栏和菜单栏 */
+html.dark .tox .tox-menubar,
+html.dark .tox .tox-toolbar,
+html.dark .tox .tox-toolbar__overflow,
+html.dark .tox .tox-toolbar__primary {
+    background-color: #111827 !important;  /* 更深的背景色 */
+    border-color: #374151 !important;
+}
+
+/* 按钮样式 */
+html.dark .tox .tox-mbtn,
+html.dark .tox .tox-tbtn {
+    color: #9ca3af !important;  /* 更柔和的文字颜色 */
+    background: transparent;
+}
+
+/* 按钮图标 */
+html.dark .tox .tox-tbtn svg,
+html.dark .tox .tox-mbtn svg {
+    fill: #9ca3af !important;  /* 图标颜色与文字一致 */
+}
+
+.tox:not(.tox-tinymce-inline) .tox-editor-header {
+    background: transparent !important;
+}
+.tox .tox-promotion{
+    background: transparent!important;
+}
+
+/* 按钮悬停和激活状态 */
+html.dark .tox .tox-tbtn:hover,
+html.dark .tox .tox-mbtn:hover {
+    background-color: #2d3748 !important;  /* 更柔和的悬停背景 */
+    color: #e5e7eb !important;
+}
+
+html.dark .tox .tox-tbtn.tox-tbtn--enabled,
+html.dark .tox .tox-mbtn.tox-mbtn--active {
+    background-color: #2563eb !important;  /* 激活状态使用蓝色 */
+    color: #ffffff !important;
+}
+
+html.dark .tox .tox-tbtn.tox-tbtn--enabled svg,
+html.dark .tox .tox-mbtn.tox-mbtn--active svg {
+    fill: #ffffff !important;
+}
+
+/* 分隔线 */
+html.dark .tox .tox-toolbar__group:not(:last-of-type) {
+    border-right-color: #374151 !important;
+}
+
+html.dark .tox .tox-toolbar-overlord {
+    background-color: #111827 !important;  /* 与工具栏背景一致 */
+    border-bottom-color: #374151 !important;
+}
+
+/* 下拉菜单 */
+html.dark .tox .tox-menu,
+html.dark .tox .tox-dialog,
+html.dark .tox .tox-dropdown,
+html.dark .tox .tox-collection--list {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 下拉菜单项 */
+html.dark .tox .tox-collection__item {
+    color: #9ca3af !important;
+}
+
+html.dark .tox .tox-collection__item:hover {
+    background-color: #2d3748 !important;
+    color: #e5e7eb !important;
+}
+
+html.dark .tox .tox-collection__item--active {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+}
+
+/* 状态栏 */
+html.dark .tox .tox-statusbar {
+    background-color: #111827 !important;
+    border-color: #374151 !important;
+    color: #9ca3af !important;
+}
+
+/* 弹出窗口 */
+html.dark .tox .tox-dialog {
+    background-color: #1f2937 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .tox .tox-dialog__header,
+html.dark .tox .tox-dialog__footer {
+    background-color: #111827 !important;
+    border-color: #374151 !important;
+}
+
+html.dark .tox .tox-dialog__title {
+    color: #e5e7eb !important;
+}
+
+html.dark .tox .tox-dialog__body-content {
+    color: #9ca3af !important;
+}
+
+/* 输入框 */
+html.dark .tox .tox-textfield,
+html.dark .tox .tox-selectfield select,
+html.dark .tox .tox-textarea {
+    background-color: #111827 !important;
+    border-color: #374151 !important;
+    color: #e5e7eb !important;
+}
+
+html.dark .tox .tox-textfield:focus,
+html.dark .tox .tox-selectfield select:focus,
+html.dark .tox .tox-textarea:focus {
+    border-color: #2563eb !important;
+}
+
+/* 按钮 */
+html.dark .tox .tox-button {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #ffffff !important;
+}
+
+html.dark .tox .tox-button:hover {
+    background-color: #1d4ed8 !important;
+    border-color: #1d4ed8 !important;
+}
+
+html.dark .tox .tox-button--secondary {
+    background-color: #4b5563 !important;
+    border-color: #4b5563 !important;
+    color: #e5e7eb !important;
+}
+
+html.dark .tox .tox-button--secondary:hover {
+    background-color: #374151 !important;
+    border-color: #374151 !important;
+}
