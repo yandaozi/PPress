@@ -7,7 +7,7 @@ def create_app():
     
     # 配置
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev')
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://flask_han_blog:flask_han_blog@localhost/flask_han_blog'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://flaskiosblog:flaskiosblog@localhost/flaskiosblog'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
     

@@ -142,7 +142,7 @@ Flask的主要优点包括：
         # 最终提交
         db.session.commit()
         
-        print("数据库初始化完成！")
+        print("数据库初始化完成！作者QQ：575732022")
         print("\n测试账号：")
         print("管理员 - 用户名：admin，密码：admin123")
         print("普通用户 - 用户名：user0-4，密码：user0-4123")
