@@ -67,8 +67,7 @@ def profile():
         
         # 调整图表布局
         fig.update_layout(
-            height=290,  # 增加高度
-            width=280,   # 保持宽度
+            height=250,  # 增加高度
             margin=dict(t=20, b=60, l=20, r=20),  # 增加底部边距
             showlegend=True,
             legend=dict(
@@ -82,7 +81,9 @@ def profile():
             hoverlabel=dict(
                 bgcolor="white",
                 font_size=13
-            )
+            ),
+            plot_bgcolor='rgba(0,0,0,0)',  # 设置绘图区背景透明
+            paper_bgcolor='rgba(0,0,0,0)'  # 设置整个图表纸张背景透明
         )
         
         # 修改悬浮框文本

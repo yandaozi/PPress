@@ -8,84 +8,84 @@
         <!-- 左侧作者信息 -->
         <div class="col-span-3 space-y-6">
             <!-- 基本信息卡片 -->
-            <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                 <div class="flex flex-col items-center">
                     <img src="{{ author.avatar }}" alt="avatar" 
                          class="w-24 h-24 rounded-full mb-4">
-                    <h1 class="text-2xl font-bold text-gray-900">{{ author.username }}</h1>
-                    <p class="text-gray-500 mt-2">加入时间：{{ author.created_at.strftime('%Y-%m-%d') }}</p>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ author.username }}</h1>
+                    <p class="text-gray-500 dark:text-gray-400 mt-2">加入时间：{{ author.created_at.strftime('%Y-%m-%d') }}</p>
                     {% if author.role == 'admin' %}
-                    <span class="mt-2 px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">管理员</span>
+                    <span class="mt-2 px-3 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-sm">管理员</span>
                     {% endif %}
                 </div>
                 
                 <!-- 统计信息 -->
                 <div class="grid grid-cols-3 gap-4 mt-6 text-center">
-                    <div class="bg-blue-50 rounded-lg p-3">
-                        <div class="text-xl font-bold text-blue-600">{{ stats.article_count }}</div>
-                        <div class="text-sm text-gray-500">文章</div>
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        <div class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ stats.article_count }}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">文章</div>
                     </div>
-                    <div class="bg-green-50 rounded-lg p-3">
-                        <div class="text-xl font-bold text-green-600">{{ stats.comment_count }}</div>
-                        <div class="text-sm text-gray-500">评论</div>
+                    <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                        <div class="text-xl font-bold text-green-600 dark:text-green-400">{{ stats.comment_count }}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">评论</div>
                     </div>
-                    <div class="bg-purple-50 rounded-lg p-3">
-                        <div class="text-xl font-bold text-purple-600">{{ stats.total_views }}</div>
-                        <div class="text-sm text-gray-500">阅读</div>
+                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                        <div class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ stats.total_views }}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">阅读</div>
                     </div>
                 </div>
             </div>
 
             <!-- 活跃度卡片 -->
-            <div class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="text-lg font-bold mb-4">活跃度</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">活跃度</h3>
                 <div class="space-y-4">
                     <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-500">最近发文</span>
-                        <span class="text-sm text-gray-900">{{ stats.last_post_date or '暂无' }}</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">最近发文</span>
+                        <span class="text-sm text-gray-900 dark:text-gray-100">{{ stats.last_post_date or '暂无' }}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-500">最近评论</span>
-                        <span class="text-sm text-gray-900">{{ stats.last_comment_date or '暂无' }}</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">最近评论</span>
+                        <span class="text-sm text-gray-900 dark:text-gray-100">{{ stats.last_comment_date or '暂无' }}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-500">平均点击</span>
-                        <span class="text-sm text-gray-900">{{ (stats.total_views / stats.article_count)|round|int if stats.article_count else 0 }}</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">平均点击</span>
+                        <span class="text-sm text-gray-900 dark:text-gray-100">{{ (stats.total_views / stats.article_count)|round|int if stats.article_count else 0 }}</span>
                     </div>
                 </div>
             </div>
 
             <!-- 擅长领域 -->
-            <div class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="text-lg font-bold mb-4">擅长领域</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">擅长领域</h3>
                 <div class="space-y-3">
                     {% for category, count in stats.top_categories %}
                     <div class="flex items-center">
-                        <span class="text-sm text-gray-600 w-24">{{ category }}</span>
-                        <div class="flex-1 h-2 bg-gray-100 rounded-full">
-                            <div class="h-2 bg-blue-500 rounded-full" 
+                        <span class="text-sm text-gray-600 dark:text-gray-300 w-24">{{ category }}</span>
+                        <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full">
+                            <div class="h-2 bg-blue-500 dark:bg-blue-400 rounded-full" 
                                  style="width: {{ (count / stats.article_count * 100)|round|int }}%">
                             </div>
                         </div>
-                        <span class="ml-3 text-sm text-gray-500">{{ count }}篇</span>
+                        <span class="ml-3 text-sm text-gray-500 dark:text-gray-400">{{ count }}篇</span>
                     </div>
                     {% else %}
-                    <p class="text-gray-500 text-center">暂无数据</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-center">暂无数据</p>
                     {% endfor %}
                 </div>
             </div>
 
             <!-- 常用标签 -->
-            <div class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="text-lg font-bold mb-4">常用标签</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">常用标签</h3>
                 <div class="flex flex-wrap gap-2">
                     {% for tag, count in stats.top_tags %}
-                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                    <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
                         {{ tag }}
-                        <span class="text-blue-600 ml-1">{{ count }}</span>
+                        <span class="text-blue-600 dark:text-blue-400 ml-1">{{ count }}</span>
                     </span>
                     {% else %}
-                    <p class="text-gray-500 text-center w-full">暂无数据</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-center w-full">暂无数据</p>
                     {% endfor %}
                 </div>
             </div>
@@ -93,18 +93,18 @@
 
         <!-- 右侧文章列表 -->
         <div class="col-span-9">
-            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                <h2 class="text-xl font-bold mb-4">发布的文章</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">发布的文章</h2>
                 <div class="space-y-6">
                     {% for article in articles.items %}
-                    <div class="border-b border-gray-100 pb-6 last:border-0 last:pb-0">
+                    <div class="border-b border-gray-100 dark:border-gray-700 pb-6 last:border-0 last:pb-0">
                         <h3 class="text-xl font-bold mb-2">
                             <a href="{{ url_for('blog.article', id=article.id) }}" 
-                               class="text-gray-900 hover:text-blue-600">
+                               class="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
                                 {{ article.title }}
                             </a>
                         </h3>
-                        <div class="flex items-center text-sm text-gray-500 mb-3">
+                        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
                             <span>{{ article.category.name }}</span>
                             <span class="mx-2">•</span>
                             <span>{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
@@ -113,26 +113,26 @@
                             <span class="mx-2">•</span>
                             <span>评论 {{ article.comments|length }}</span>
                         </div>
-                        <div class="text-gray-600 mb-3 line-clamp-2">
-                            {{ article.content[:200] }}...
+                        <div class="text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
+                            {{ article.content|striptags|truncate(200) }}
                         </div>
                         <div class="flex items-center">
                             {% for tag in article.tags %}
                             <a href="{{ url_for('blog.tag', id=tag.id) }}" 
-                               class="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full mr-2 hover:bg-gray-200">
+                               class="text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full mr-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200">
                                 {{ tag.name }}
                             </a>
                             {% endfor %}
                         </div>
                     </div>
                     {% else %}
-                    <p class="text-gray-500 text-center py-8">暂无文章</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-center py-8">暂无文章</p>
                     {% endfor %}
                 </div>
                 
                 <!-- 分页 -->
                 {% if articles.pages > 1 %}
-                <div class="mt-6 pt-4 border-t">
+                <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
                     {% with endpoint='user.author', kwargs={'id': author.id} %}
                     {% include 'components/pagination.html' %}
                     {% endwith %}

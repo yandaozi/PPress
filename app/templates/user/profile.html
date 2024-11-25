@@ -7,12 +7,12 @@
     <div class="grid grid-cols-12 gap-6">
         <!-- 个人信息卡片 -->
         <div class="col-span-4">
-            <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                 <div class="flex flex-col items-center">
                     <img src="{{ current_user.avatar }}" alt="avatar" 
                          class="w-24 h-24 rounded-full mb-4">
-                    <h2 class="text-xl font-bold mb-2">{{ current_user.username }}</h2>
-                    <p class="text-gray-500 mb-4">{{ current_user.email }}</p>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ current_user.username }}</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mb-4">{{ current_user.email }}</p>
                     <div class="flex space-x-3">
                         <a href="{{ url_for('user.edit_profile') }}"
                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
@@ -27,31 +27,39 @@
             </div>
             
             <!-- 兴趣分析 -->
-            <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
-                <h3 class="text-lg font-bold mb-4">阅读兴趣 Top 5</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">阅读兴趣 Top 5</h3>
                 {% if interests_chart %}
                 <div id="interestsChart"></div>
                 <script src="{{ url_for('static', filename='vendor/plotly.min.js') }}"></script>
                 <script>
                     var chartData = {{ interests_chart | safe }};
+                    // 设置暗色主题
+                    if (document.documentElement.classList.contains('dark')) {
+                        chartData.layout.paper_bgcolor = '#1f2937';
+                        chartData.layout.plot_bgcolor = '#1f2937';
+                        chartData.layout.font = {
+                            color: '#e5e7eb'
+                        };
+                    }
                     Plotly.newPlot('interestsChart', chartData.data, chartData.layout);
                 </script>
                 {% else %}
-                <p class="text-gray-500 text-center py-8">暂无数据</p>
+                <p class="text-gray-500 dark:text-gray-400 text-center py-8">暂无数据</p>
                 {% endif %}
                 
                 <div class="mt-4">
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">阅读情感倾向</h4>
+                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">阅读情感倾向</h4>
                     <div class="flex items-center">
-                        <div class="flex-1 h-2 bg-gray-200 rounded-full">
+                        <div class="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
                             <div class="h-2 rounded-full
-                                        {% if avg_sentiment > 0.3 %}bg-green-500
-                                        {% elif avg_sentiment < -0.3 %}bg-red-500
-                                        {% else %}bg-yellow-500{% endif %}"
+                                        {% if avg_sentiment > 0.3 %}bg-green-500 dark:bg-green-400
+                                        {% elif avg_sentiment < -0.3 %}bg-red-500 dark:bg-red-400
+                                        {% else %}bg-yellow-500 dark:bg-yellow-400{% endif %}"
                                  style="width: {{ (avg_sentiment + 1) * 50 }}%">
                             </div>
                         </div>
-                        <span class="ml-2 text-sm text-gray-500">
+                        <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">
                             {% if avg_sentiment > 0.3 %}偏积极
                             {% elif avg_sentiment < -0.3 %}偏消极
                             {% else %}中性{% endif %}
@@ -63,33 +71,34 @@
         
         <!-- 浏览历史 -->
         <div class="col-span-8">
-            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                <h2 class="text-xl font-bold mb-4">浏览历史</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">浏览历史</h2>
                 <div class="space-y-4">
                     {% for history in view_history.items %}
-                    <div class="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                    <div class="border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0 last:pb-0">
                         <a href="{{ url_for('blog.article', id=history.article.id) }}" 
-                           class="text-lg font-medium text-gray-900 hover:text-blue-600">
+                           class="text-lg font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
                             {{ history.article.title }}
                         </a>
-                        <div class="flex items-center mt-2 text-sm text-gray-500">
+                        <div class="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
                             <span>浏览时间：{{ history.viewed_at.strftime('%Y-%m-%d %H:%M') }}</span>
                             <span class="mx-2">·</span>
                             <span>作者：{{ history.article.author.username }}</span>
                         </div>
                     </div>
+                    {% else %}
+                    <p class="text-gray-500 dark:text-gray-400 text-center py-8">暂无浏览历史</p>
                     {% endfor %}
                 </div>
                 
                 {% if view_history.pages > 1 %}
-                <div class="mt-6 pt-4 border-t">
+                <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
                     {% with endpoint='user.profile', kwargs={} %}
                     {% include 'components/pagination.html' %}
                     {% endwith %}
                 </div>
                 {% endif %}
             </div>
-
         </div>
     </div>
 </div>

@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
+from flask_sqlalchemy.pagination import Pagination
+
 from app.models.article import Article
 from app.models.tag import Tag
 from app.models.view_history import ViewHistory
@@ -85,9 +87,19 @@ def article(id):
     
     return render_template('blog/article.html', article=article)
 
-@bp.route('/article/create', methods=['GET', 'POST'])
+@bp.route('/article/edit', methods=['GET', 'POST'])
+@bp.route('/article/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
-def create():
+def edit(id=None):
+    # 如果有id参数，则是编辑文章
+    article = None
+    if id:
+        article = Article.query.get_or_404(id)
+        # 检查权限
+        if article.author_id != current_user.id and current_user.role != 'admin':
+            flash('没有权限编辑此文章')
+            return redirect(url_for('blog.article', id=id))
+    
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
@@ -98,13 +110,26 @@ def create():
         blob = TextBlob(content)
         sentiment_score = blob.sentiment.polarity
         
-        article = Article(
-            title=title,
-            content=content,
-            author_id=current_user.id,
-            category_id=category_id,
-            sentiment_score=sentiment_score
-        )
+        if article:
+            # 更新文章
+            article.title = title
+            article.content = content
+            article.category_id = category_id
+            article.sentiment_score = sentiment_score
+            article.updated_at = datetime.now()
+            
+            # 更新标签
+            article.tags.clear()
+        else:
+            # 创建新文章
+            article = Article(
+                title=title,
+                content=content,
+                author_id=current_user.id,
+                category_id=category_id,
+                sentiment_score=sentiment_score
+            )
+            db.session.add(article)
         
         # 处理标签
         for tag_name in tag_names:
@@ -114,18 +139,18 @@ def create():
                 db.session.add(tag)
             article.tags.append(tag)
         
-        db.session.add(article)
         db.session.commit()
-        flash('文章发布成功！')
+        flash('文章保存成功！')
         return redirect(url_for('blog.article', id=article.id))
     
     # 获取随机标签和分类
     all_tags = Tag.query.all()
-    random_tags = random.sample(all_tags, min(10, len(all_tags)))  # 随机选择10个标签
+    random_tags = random.sample(all_tags, min(10, len(all_tags)))
     categories = Category.query.all()
     
-    return render_template('blog/create.html', 
-                         random_tags=random_tags,  # 改为 random_tags
+    return render_template('blog/edit.html', 
+                         article=article,
+                         random_tags=random_tags,
                          categories=categories)
 
 @bp.route('/article/<int:article_id>/comment', methods=['POST'])
@@ -159,54 +184,6 @@ def delete_comment(comment_id):
     db.session.commit()
     
     return '', 204
-
-@bp.route('/article/<int:id>/edit', methods=['GET', 'POST'])
-@login_required
-def edit(id):
-    article = Article.query.get_or_404(id)
-    
-    # 检查权限
-    if article.author_id != current_user.id and current_user.role != 'admin':
-        flash('没有权限编辑此文章')
-        return redirect(url_for('blog.article', id=id))
-    
-    if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        category_id = request.form.get('category')
-        tag_names = request.form.get('tag_names', '').split()
-        
-        # 更新文章
-        article.title = title
-        article.content = content
-        article.category_id = category_id
-        
-        # 更新情感分析分数
-        blob = TextBlob(content)
-        article.sentiment_score = blob.sentiment.polarity
-        
-        # 更新标签
-        article.tags.clear()
-        for tag_name in tag_names:
-            tag = Tag.query.filter_by(name=tag_name).first()
-            if not tag:
-                tag = Tag(name=tag_name)
-                db.session.add(tag)
-            article.tags.append(tag)
-        
-        db.session.commit()
-        flash('文章更新成功！')
-        return redirect(url_for('blog.article', id=id))
-    
-    # 获取随机标签和分类
-    all_tags = Tag.query.all()
-    random_tags = random.sample(all_tags, min(10, len(all_tags)))  # 随机选择10个标签
-    categories = Category.query.all()
-    
-    return render_template('blog/edit.html', 
-                         article=article,
-                         random_tags=random_tags,  # 改为 random_tags
-                         categories=categories)
 
 @bp.route('/search')
 def search():
@@ -251,11 +228,20 @@ def search():
     if sort == 'views':
         base_query = base_query.order_by(Article.view_count.desc())
     elif sort == 'comments':
-        base_query = base_query.order_by(db.func.count(Comment.id).desc())
+        # 修改评论数排序的查询
+        subquery = db.session.query(
+            Article.id,
+            db.func.count(Comment.id).label('comment_count')
+        ).outerjoin(Comment).group_by(Article.id).subquery()
+        
+        base_query = Article.query.join(
+            subquery,
+            Article.id == subquery.c.id
+        ).order_by(db.desc(subquery.c.comment_count))
     else:  # recent
         base_query = base_query.order_by(Article.created_at.desc())
     
-    # 分页
+    # 分页 - 使用统一的方式
     articles = base_query.paginate(page=page, per_page=10, error_out=False)
     
     # 获取所有标签供高级搜索使用

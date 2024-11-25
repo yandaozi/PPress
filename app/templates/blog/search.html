@@ -4,50 +4,228 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
-    <h2 class="text-2xl font-bold mb-6">搜索结果: {{ query }}</h2>
-    
-    {% if articles %}
-        <div class="space-y-6">
-            {% for article in articles.items %}
-            <article class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="text-xl font-bold mb-2">
+    <!-- 搜索结果统计 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+        <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            搜索结果：{{ query }}
+        </h1>
+        <p class="text-gray-500 dark:text-gray-400">
+            共找到 {{ articles.total }} 篇相关文章
+        </p>
+    </div>
+
+    <!-- 高级搜索过滤器 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+        <form method="get" class="space-y-4">
+            <input type="hidden" name="q" value="{{ query }}">
+            
+            <!-- 标签过滤 -->
+            <div>
+                <!-- 标签过滤头部 -->
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        标签过滤
+                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 selected-count">
+                            {% if selected_tags %}已选择 {{ selected_tags|length }} 个{% endif %}
+                        </span>
+                    </label>
+                    <button type="button" 
+                            onclick="toggleTagsPanel()"
+                            class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 
+                                   flex items-center space-x-1">
+                        <span id="toggleText">展开</span>
+                        <svg id="toggleIcon" class="w-4 h-4 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- 标签选择面板 -->
+                <div id="tagsPanel" class="hidden">
+                    <!-- 标签选择区域 -->
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        {% for tag in tags %}
+                        <label class="group relative inline-flex items-center">
+                            <input type="checkbox" 
+                                   name="tags" 
+                                   value="{{ tag.name }}"
+                                   {% if tag.name in selected_tags %}checked{% endif %}
+                                   class="absolute opacity-0 w-0 h-0 peer">
+                            <span class="px-3 py-1 rounded-full text-sm cursor-pointer
+                                       peer-checked:bg-blue-100 peer-checked:text-blue-800 peer-checked:border-blue-200
+                                       dark:peer-checked:bg-blue-900 dark:peer-checked:text-blue-200 dark:peer-checked:border-blue-800
+                                       bg-gray-100 text-gray-700 border border-gray-200
+                                       dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600
+                                       hover:bg-gray-200 dark:hover:bg-gray-600
+                                       transition-all duration-200
+                                       {% if tag.name in selected_tags %}
+                                       ring-2 ring-blue-500 dark:ring-blue-400
+                                       {% endif %}">
+                                {{ tag.name }}
+                                <span class="ml-1 text-xs text-gray-500 dark:text-gray-400">
+                                    {{ tag.articles|length }}
+                                </span>
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- 操作按钮 -->
+                    <div class="flex justify-end space-x-4">
+                        {% if selected_tags %}
+                        <button type="button"
+                                onclick="clearTags()"
+                                class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                                清空选择
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 排序方式 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    排序方式
+                </label>
+                <select name="sort"
+                        class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 
+                               bg-white dark:bg-gray-700 
+                               text-gray-900 dark:text-white">
+                    <option value="recent" {% if sort == 'recent' %}selected{% endif %}>最新发布</option>
+                    <option value="views" {% if sort == 'views' %}selected{% endif %}>最多浏览</option>
+                    <option value="comments" {% if sort == 'comments' %}selected{% endif %}>最多评论</option>
+                </select>
+            </div>
+            
+            <div class="flex justify-end">
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg 
+                               hover:bg-blue-700 
+                               transition-colors duration-200">
+                    应用筛选
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 搜索结果列表 -->
+    <div class="space-y-6">
+        {% for article in articles.items %}
+        <article class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden transition-colors duration-200">
+            <div class="p-6">
+                <h2 class="text-xl font-bold mb-2">
                     <a href="{{ url_for('blog.article', id=article.id) }}" 
-                       class="text-gray-900 hover:text-blue-600">
+                       class="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
                         {{ article.title }}
                     </a>
-                </h3>
-                <div class="flex items-center text-sm text-gray-500 mb-4">
-                    <span>{{ article.author.username }}</span>
-                    <span class="mx-2">•</span>
-                    <span>{{ article.created_at.strftime('%Y-%m-%d') }}</span>
-                    <span class="mx-2">•</span>
-                    <span>阅读 {{ article.view_count }}</span>
-                </div>
-                <div class="prose max-w-none mb-4">
-                    {{ article.content[:200] }}...
-                </div>
-                <div class="flex items-center">
-                    {% for tag in article.tags %}
-                    <a href="{{ url_for('blog.index', tag=tag.name) }}" 
-                       class="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full mr-2 hover:bg-gray-200">
-                        {{ tag.name }}
+                </h2>
+                <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    <a href="{{ url_for('user.author', id=article.author.id) }}" 
+                       class="flex items-center hover:text-blue-600 dark:hover:text-blue-400">
+                        <img src="{{ article.author.avatar }}" 
+                             alt="avatar" 
+                             class="w-6 h-6 rounded-full mr-2">
+                        {{ article.author.username }}
                     </a>
-                    {% endfor %}
+                    <span class="mx-2">•</span>
+                    <span>{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    <span class="mx-2">•</span>
+                    <span>{{ article.view_count }} 阅读</span>
                 </div>
-            </article>
-            {% endfor %}
+                <div class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+                    {{ article.content|striptags|truncate(200) }}
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('blog.article', id=article.id) }}" 
+                       class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
+                        阅读全文
+                    </a>
+                    {% if article.tags %}
+                    <div class="flex items-center space-x-2">
+                        {% for tag in article.tags %}
+                        <a href="{{ url_for('blog.tag', id=tag.id) }}" 
+                           class="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                            #{{ tag.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+        {% else %}
+        <div class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+            <p class="text-gray-500 dark:text-gray-400">没有找到相关文章</p>
         </div>
-        
-        <!-- 分页 -->
-        <div class="mt-8">
-            {% with endpoint='blog.search', kwargs={'q': query, 'tags': selected_tags|default([]), 'sort': sort|default('recent')} %}
-            {% include 'components/pagination.html' %}
-            {% endwith %}
-        </div>
-    {% else %}
-        <div class="bg-white rounded-lg shadow-sm p-6 text-center">
-            <p class="text-gray-500">没有找到相关文章</p>
-        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 分页 -->
+    {% if articles.pages > 1 %}
+    <div class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+        {% with endpoint='blog.search', kwargs={'q': query, 'tags': selected_tags, 'sort': sort} %}
+        {% include 'components/pagination.html' %}
+        {% endwith %}
+    </div>
     {% endif %}
 </div>
+
+<!-- 在页面底部添加JavaScript -->
+<script>
+function toggleTagsPanel() {
+    const panel = document.getElementById('tagsPanel');
+    const icon = document.getElementById('toggleIcon');
+    const text = document.getElementById('toggleText');
+    
+    panel.classList.toggle('hidden');
+    
+    if (panel.classList.contains('hidden')) {
+        icon.style.transform = 'rotate(0deg)';
+        text.textContent = '展开';
+    } else {
+        icon.style.transform = 'rotate(180deg)';
+        text.textContent = '收起';
+    }
+}
+
+function clearTags() {
+    // 取消选中所有标签
+    document.querySelectorAll('input[name="tags"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    // 提交表单
+    document.querySelector('form').submit();
+}
+
+// 移除自动提交，改为更新选中标签数量显示
+document.querySelectorAll('input[name="tags"]').forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+        const selectedCount = document.querySelectorAll('input[name="tags"]:checked').length;
+        const countSpan = document.querySelector('.selected-count');
+        if (countSpan) {
+            countSpan.textContent = `已选择 ${selectedCount} 个`;
+        }
+    });
+});
+</script>
+
+<style>
+/* 添加一些动画效果 */
+@keyframes checkPop {
+    0% { transform: scale(0.95); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+input[type="checkbox"]:checked + span {
+    animation: checkPop 0.2s ease-in-out;
+}
+
+/* 添加展开/收起的过渡动画 */
+#tagsPanel {
+    transition: all 0.3s ease-in-out;
+}
+</style>
 {% endblock %} 
