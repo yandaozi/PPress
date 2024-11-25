@@ -1,4 +1,4 @@
-# 技术博客系统
+# FlaskIosBlog技术博客系统
 
 ## 项目简介
 这是一个基于 Flask 框架开发的技术博客系统,具有以下主要功能:
@@ -38,32 +38,51 @@
 
 ## 项目结构
 
-app/ 
+app/
+
 ├── init.py # Flask应用工厂
+
 ├── extensions.py # Flask扩展初始化
+
 ├── models/ # 数据模型
+
 ├── static/ # 静态文件
+
 │ ├── css/
+
 │ ├── js/
+
 │ └── uploads/ # 上传文件目录
+
 ├── templates/ # 模板文件
+
 │ ├── admin/ # 后台模板
+
 │ ├── auth/ # 认证相关模板
+
 │ ├── blog/ # 博客相关模板
+
 │ └── user/ # 用户相关模板
+
 ├── utils/ # 工具函数
+
 └── views/ # 视图函数
+
 ├── admin.py # 后台管理
+
 ├── auth.py # 用户认证
+
 ├── blog.py # 博客功能
+
 └── user.py # 用户功能
 
 ## 安装部署
 
 1. git clone 克隆代码
-2. 安装依赖
+2. 安装依赖 pip install -r requirements.txt
 3. 配置数据库 数据库，用户，密码都是flaskiosblog
-
+4. 运行 init_db.py 文件 初始化数据库，代码中有初始测试数据需要自行删除更改
+5. 运行 run.py
 
 ## 使用说明
 
