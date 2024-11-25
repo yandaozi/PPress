@@ -1,0 +1,109 @@
+<!-- 全局弹窗组件 -->
+<div id="globalAlert" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 transform transition-all">
+        <div class="p-6">
+            <div class="text-center">
+                <div id="alertIcon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4">
+                    <!-- 图标将通过 JavaScript 动态添加 -->
+                </div>
+                <h3 class="text-lg font-medium mb-2" id="alertTitle">提示</h3>
+                <div class="text-sm text-gray-500" id="alertMessage"></div>
+            </div>
+        </div>
+        <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end space-x-3">
+            <!-- 当需要确认时显示取消按钮 -->
+            <button type="button" id="alertCancelBtn" onclick="hideGlobalAlert()"
+                    class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200 hidden">
+                取消
+            </button>
+            <button type="button" id="alertConfirmBtn"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                确定
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// 定义不同类型的图标
+const ALERT_ICONS = {
+    success: `<div class="bg-green-100 rounded-full p-3">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>`,
+    error: `<div class="bg-red-100 rounded-full p-3">
+              <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </div>`,
+    warning: `<div class="bg-yellow-100 rounded-full p-3">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+              </div>`,
+    info: `<div class="bg-blue-100 rounded-full p-3">
+             <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+             </svg>
+           </div>`
+};
+
+// 全局弹窗函数
+window.showAlert = function(message, type = 'info', title = '提示', callback = null) {
+    const alertModal = document.getElementById('globalAlert');
+    const alertIcon = document.getElementById('alertIcon');
+    const alertTitle = document.getElementById('alertTitle');
+    const alertMessage = document.getElementById('alertMessage');
+    const confirmButton = document.getElementById('alertConfirmBtn');
+    const cancelButton = document.getElementById('alertCancelBtn');
+
+    // 设置图标
+    alertIcon.innerHTML = ALERT_ICONS[type];
+    
+    // 设置标题和消息
+    alertTitle.textContent = title;
+    alertMessage.textContent = message;
+
+    // 如果有回调函数，显示取消按钮并设置确认行为
+    if (callback) {
+        cancelButton.classList.remove('hidden');
+        confirmButton.onclick = () => {
+            hideGlobalAlert();
+            callback();
+        };
+    } else {
+        cancelButton.classList.add('hidden');
+        confirmButton.onclick = hideGlobalAlert;
+    }
+
+    // 显示弹窗
+    alertModal.classList.remove('hidden');
+    alertModal.classList.add('flex');
+
+    // 添加动画效果
+    const modalContent = alertModal.querySelector('.transform');
+    modalContent.style.transform = 'scale(0.9)';
+    setTimeout(() => {
+        modalContent.style.transform = 'scale(1)';
+    }, 10);
+}
+
+window.hideGlobalAlert = function() {
+    const alertModal = document.getElementById('globalAlert');
+    const modalContent = alertModal.querySelector('.transform');
+    
+    // 添加关闭动画
+    modalContent.style.transform = 'scale(0.9)';
+    setTimeout(() => {
+        alertModal.classList.add('hidden');
+        alertModal.classList.remove('flex');
+        modalContent.style.transform = 'scale(1)';
+    }, 100);
+}
+
+// 替换原生的 alert
+window.alert = function(message) {
+    showAlert(message);
+}
+</script> 

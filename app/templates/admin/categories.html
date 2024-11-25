@@ -1,0 +1,244 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}分类管理{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold">分类管理</h2>
+                <div class="flex items-center space-x-4">
+                    <form method="get" class="flex items-center space-x-4">
+                        <select name="search_type" 
+                                class="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="name" {% if search_type != 'id' %}selected{% endif %}>名称</option>
+                            <option value="id" {% if search_type == 'id' %}selected{% endif %}>ID</option>
+                        </select>
+                        <div class="relative">
+                            <input type="text" name="q" 
+                                   value="{{ search_query }}"
+                                   placeholder="搜索分类..." 
+                                   class="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                            搜索
+                        </button>
+                    </form>
+                    <button onclick="showAddCategoryModal()" 
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                        新增分类
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">描述</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">文章数</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for category in pagination.items %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ category.id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ category.name }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ category.description or '无' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ category.articles|length }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex items-center space-x-4">
+                                <button onclick="showEditCategoryModal({{ category.id }}, '{{ category.name }}', '{{ category.description|default('', true) }}')"
+                                        class="text-blue-600 hover:text-blue-900">
+                                    编辑
+                                </button>
+                                <button onclick="deleteCategory({{ category.id }})"
+                                        class="text-red-600 hover:text-red-900">
+                                    删除
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if pagination.pages > 1 %}
+        <div class="px-6 py-4 mt-4 border-t">
+            {% with endpoint='admin.categories', kwargs={'q': search_query, 'search_type': search_type} %}
+            {% include 'components/pagination.html' %}
+            {% endwith %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 添加分类模态框 -->
+<div id="addCategoryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div class="px-6 py-4 border-b">
+            <h3 class="text-lg font-medium">添加分类</h3>
+        </div>
+        <form id="addCategoryForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">名称</label>
+                <input type="text" name="name" required
+                       class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">描述</label>
+                <textarea name="description" rows="3"
+                          class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+        </form>
+        <div class="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
+            <button onclick="hideAddCategoryModal()"
+                    class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+                取消
+            </button>
+            <button onclick="addCategory()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                添加
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑分类模态框 -->
+<div id="editCategoryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div class="px-6 py-4 border-b">
+            <h3 class="text-lg font-medium">编辑分类</h3>
+        </div>
+        <form id="editCategoryForm" class="p-6 space-y-4">
+            <input type="hidden" name="category_id">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">名称</label>
+                <input type="text" name="name" required
+                       class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">描述</label>
+                <textarea name="description" rows="3"
+                          class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+        </form>
+        <div class="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
+            <button onclick="hideEditCategoryModal()"
+                    class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+                取消
+            </button>
+            <button onclick="updateCategory()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                保存
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function showAddCategoryModal() {
+    document.getElementById('addCategoryModal').classList.remove('hidden');
+    document.getElementById('addCategoryModal').classList.add('flex');
+}
+
+function hideAddCategoryModal() {
+    document.getElementById('addCategoryModal').classList.add('hidden');
+    document.getElementById('addCategoryModal').classList.remove('flex');
+    document.getElementById('addCategoryForm').reset();
+}
+
+function addCategory() {
+    const form = document.getElementById('addCategoryForm');
+    const formData = new FormData(form);
+    
+    fetch('/admin/categories/add', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert(data.error, 'error', '错误');
+        } else {
+            showAlert('分类添加成功', 'success', '成功');
+            setTimeout(() => location.reload(), 1500);
+        }
+    });
+}
+
+function showEditCategoryModal(categoryId, name, description) {
+    const form = document.getElementById('editCategoryForm');
+    form.category_id.value = categoryId;
+    form.name.value = name;
+    form.description.value = description;
+    
+    document.getElementById('editCategoryModal').classList.remove('hidden');
+    document.getElementById('editCategoryModal').classList.add('flex');
+}
+
+function hideEditCategoryModal() {
+    document.getElementById('editCategoryModal').classList.add('hidden');
+    document.getElementById('editCategoryModal').classList.remove('flex');
+    document.getElementById('editCategoryForm').reset();
+}
+
+function updateCategory() {
+    const form = document.getElementById('editCategoryForm');
+    const categoryId = form.category_id.value;
+    const formData = new FormData(form);
+    
+    fetch(`/admin/categories/${categoryId}/edit`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert(data.error, 'error', '错误');
+        } else {
+            showAlert('分类更新成功', 'success', '成功');
+            setTimeout(() => location.reload(), 1500);
+        }
+    });
+}
+
+function deleteCategory(categoryId) {
+    showAlert('确定要删除此分类吗？如果分类下有文章将无法删除！', 'warning', '确认删除', function() {
+        fetch(`/admin/categories/${categoryId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        }).then(response => {
+            if (response.ok) {
+                showAlert('分类删除成功', 'success', '成功');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                response.json().then(data => {
+                    showAlert(data.error, 'error', '错误');
+                });
+            }
+        });
+    });
+}
+</script>
+{% endblock %} 

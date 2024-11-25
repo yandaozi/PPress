@@ -1,0 +1,150 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}仪表盘{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- 统计卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <!-- 用户总数 -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">用户总数</p>
+                    <h3 class="text-2xl font-semibold text-gray-900 mt-2">{{ total_users }}</h3>
+                </div>
+                <div class="p-3 bg-blue-50 rounded-xl">
+                    <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文章总数 -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">文章总数</p>
+                    <h3 class="text-2xl font-semibold text-gray-900 mt-2">{{ total_articles }}</h3>
+                </div>
+                <div class="p-3 bg-green-50 rounded-xl">
+                    <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2m-4 0h4"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- 评论总数 -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">评论总数</p>
+                    <h3 class="text-2xl font-semibold text-gray-900 mt-2">{{ total_comments }}</h3>
+                </div>
+                <div class="p-3 bg-yellow-50 rounded-xl">
+                    <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- 总浏览量 -->
+        <div class="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">总浏览量</p>
+                    <h3 class="text-2xl font-semibold text-gray-900 mt-2">{{ total_views }}</h3>
+                </div>
+                <div class="p-3 bg-purple-50 rounded-xl">
+                    <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图表区域 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 访问量统计图表 -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-medium mb-4">访问量统计</h3>
+            {% if views_chart %}
+            <div id="viewsChart"></div>
+            <script src="{{ url_for('static', filename='vendor/plotly.min.js') }}"></script>
+            <script>
+                var chartData = {{ views_chart | safe }};
+                Plotly.newPlot('viewsChart', chartData.data, chartData.layout);
+            </script>
+            {% else %}
+            <p class="text-gray-500 text-center py-8">暂无数据</p>
+            {% endif %}
+        </div>
+
+        <!-- 最近活动 -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-medium mb-4">最近活动</h3>
+            <div class="space-y-4">
+                {% for activity in recent_activities %}
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <img src="{{ activity.user.avatar }}" alt="avatar" class="w-8 h-8 rounded-full">
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm">
+                            <span class="font-medium">{{ activity.user.username }}</span>
+                            {{ activity.action }}
+                            {% if activity.type == 'comment' %}
+                            评论了文章
+                            <a href="{{ url_for('blog.article', id=activity.article.id) }}" class="text-blue-600 hover:text-blue-700">
+                                {{ activity.article.title }}
+                            </a>
+                            {% elif activity.type == 'article' %}
+                            发布了文章
+                            <a href="{{ url_for('blog.article', id=activity.article.id) }}" class="text-blue-600 hover:text-blue-700">
+                                {{ activity.article.title }}
+                            </a>
+                            {% endif %}
+                        </p>
+                        <p class="text-xs text-gray-500">{{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 分类统计 -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-medium mb-4">分类统计</h3>
+            <div class="space-y-3">
+                {% for category in categories %}
+                <div class="flex items-center">
+                    <span class="text-sm text-gray-600 w-24">{{ category.name }}</span>
+                    <div class="flex-1 h-2 bg-gray-200 rounded-full">
+                        <div class="h-2 bg-blue-500 rounded-full" style="width: {{ (category.articles|length / total_articles * 100)|round|int }}%"></div>
+                    </div>
+                    <span class="ml-3 text-sm text-gray-500">{{ category.articles|length }}篇</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 标签云 -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-medium mb-4">标签统计</h3>
+            <div class="flex flex-wrap gap-2">
+                {% for tag in tags %}
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                    {{ tag.name }}
+                    <span class="text-blue-600 ml-1">{{ tag.articles|length }}</span>
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

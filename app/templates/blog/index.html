@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}首页{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-12 gap-6">
+    <!-- 文章列表 -->
+    <div class="col-span-9">
+        {% for article in articles.items %}
+        <article class="bg-white rounded-lg shadow-sm mb-6 p-6">
+            <h2 class="text-2xl font-bold mb-2">
+                <a href="{{ url_for('blog.article', id=article.id) }}" class="text-gray-900 hover:text-blue-600">
+                    {{ article.title }}
+                </a>
+            </h2>
+            <div class="flex items-center text-sm text-gray-500 mb-4">
+                <span>{{ article.author.username }}</span>
+                <span class="mx-2">•</span>
+                <span>{{ article.category.name }}</span>
+                <span class="mx-2">•</span>
+                <span>{{ article.created_at.strftime('%Y-%m-%d') }}</span>
+                <span class="mx-2">•</span>
+                <span>阅读 {{ article.view_count }}</span>
+            </div>
+            <div class="prose max-w-none mb-4">
+                {{ article.content[:200] }}...
+            </div>
+            <div class="flex items-center">
+                {% for tag in article.tags %}
+                <a href="{{ url_for('blog.tag', id=tag.id) }}" 
+                   class="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full mr-2 hover:bg-gray-200">
+                    {{ tag.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </article>
+        {% endfor %}
+        
+        <!-- 分页 -->
+        {% with endpoint='blog.index', kwargs=request.args|default({}) %}
+        {% include 'components/pagination.html' %}
+        {% endwith %}
+    </div>
+    
+    <!-- 侧边栏 -->
+    <div class="col-span-3">
+        <!-- 今日热门 -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-bold mb-4">今日热门</h2>
+            <div class="space-y-4">
+                {% for article, views in hot_articles %}
+                <div class="flex items-start space-x-2">
+                    <span class="flex-shrink-0 w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm">
+                        {{ loop.index }}
+                    </span>
+                    <a href="{{ url_for('blog.article', id=article.id) }}" 
+                       class="text-gray-700 hover:text-blue-600 line-clamp-2">
+                        {{ article.title }}
+                    </a>
+                </div>
+                {% else %}
+                <p class="text-gray-500 text-center">暂无数据</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 随机推荐 -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-bold mb-4">随机推荐</h2>
+            <div class="space-y-4">
+                {% for article in random_articles %}
+                <a href="{{ url_for('blog.article', id=article.id) }}" 
+                   class="block text-gray-700 hover:text-blue-600 line-clamp-2">
+                    {{ article.title }}
+                </a>
+                {% else %}
+                <p class="text-gray-500 text-center">暂无文章</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 标签云 -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-bold mb-4">标签云</h2>
+            <div class="flex flex-wrap gap-2">
+                {% for tag in random_tags %}
+                <a href="{{ url_for('blog.tag', id=tag.id) }}" 
+                   class="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm hover:bg-blue-200 transition-colors duration-200">
+                    {{ tag.name }}
+                    <span class="text-blue-500">({{ tag.articles|length }})</span>
+                </a>
+                {% else %}
+                <p class="text-gray-500 text-center w-full">暂无标签</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 最新评论 -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-lg font-bold mb-4">最新评论</h2>
+            <div class="space-y-4">
+                {% for comment in latest_comments %}
+                <div class="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                    <div class="flex items-center mb-2">
+                        <img src="{{ comment.user.avatar }}" alt="avatar" class="w-6 h-6 rounded-full">
+                        <a href="{{ url_for('user.author', id=comment.user.id) }}" 
+                           class="ml-2 text-sm font-medium text-gray-900 hover:text-blue-600">
+                            {{ comment.user.username }}
+                        </a>
+                        <span class="mx-2 text-gray-300">•</span>
+                        <span class="text-sm text-gray-500">{{ comment.created_at.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                    <div class="text-sm text-gray-600 line-clamp-2">{{ comment.content }}</div>
+                    <a href="{{ url_for('blog.article', id=comment.article.id) }}" 
+                       class="mt-1 text-sm text-gray-500 hover:text-blue-600 block">
+                        评论于：{{ comment.article.title }}
+                    </a>
+                </div>
+                {% else %}
+                <p class="text-gray-500 text-center">暂无评论</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}标签：{{ tag.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <h1 class="text-2xl font-bold mb-2">标签：{{ tag.name }}</h1>
+        <p class="text-gray-500">共 {{ articles.total }} 篇文章</p>
+    </div>
+
+    <!-- 文章列表 -->
+    {% for article in articles.items %}
+    <article class="bg-white rounded-lg shadow-sm mb-6 p-6">
+        <h2 class="text-2xl font-bold mb-2">
+            <a href="{{ url_for('blog.article', id=article.id) }}" class="text-gray-900 hover:text-blue-600">
+                {{ article.title }}
+            </a>
+        </h2>
+        <div class="flex items-center text-sm text-gray-500 mb-4">
+            <span>{{ article.author.username }}</span>
+            <span class="mx-2">•</span>
+            <span>{{ article.category.name }}</span>
+            <span class="mx-2">•</span>
+            <span>{{ article.created_at.strftime('%Y-%m-%d') }}</span>
+            <span class="mx-2">•</span>
+            <span>阅读 {{ article.view_count }}</span>
+        </div>
+        <div class="prose max-w-none mb-4">
+            {{ article.content[:200] }}...
+        </div>
+        <div class="flex items-center">
+            {% for tag in article.tags %}
+            <a href="{{ url_for('blog.tag', id=tag.id) }}" 
+               class="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-full mr-2 hover:bg-gray-200">
+                {{ tag.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </article>
+    {% endfor %}
+    
+    <!-- 分页 -->
+    {% if articles.pages > 1 %}
+    {% with endpoint='blog.tag', kwargs={'id': tag.id} %}
+    {% include 'components/pagination.html' %}
+    {% endwith %}
+    {% endif %}
+</div>
+{% endblock %} 

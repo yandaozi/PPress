@@ -1,0 +1,25 @@
+.search-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.search-results .article-item {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.article-tags {
+    padding: 10px 0;
+}
+
+.article-tags .badge {
+    padding: 5px 10px;
+    margin-right: 5px;
+    background-color: #6c757d;
+    color: white;
+    text-decoration: none;
+}
+
+.article-tags .badge:hover {
+    background-color: #5a6268;
+} 

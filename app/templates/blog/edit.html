@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+
+{% block title %}编辑文章{% endblock %}
+
+{% block head %}
+<script src="{{ url_for('static', filename='vendor/ckeditor.js') }}"></script>
+<style>
+    .ck-editor__editable {
+        min-height: 300px;
+        max-height: 500px;
+    }
+    .ck-editor__editable_inline {
+        padding: 0 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-2xl font-bold mb-6">编辑文章</h2>
+        <form method="post" class="space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    标题
+                </label>
+                <input type="text" name="title" value="{{ article.title }}"
+                       class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    内容
+                </label>
+                <textarea id="editor" name="content">{{ article.content }}</textarea>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    标签（用空格分隔）
+                </label>
+                <input type="text" name="tag_names" 
+                       value="{{ article.tags|map(attribute='name')|join(' ') }}"
+                       class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="例如: Python Flask 后端">
+                {% if random_tags %}
+                <div class="mt-2">
+                    <p class="text-sm text-gray-500 mb-2">推荐标签：</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% for tag in random_tags %}
+                        <span onclick="addTag('{{ tag.name }}')"
+                              class="inline-flex items-center px-3 py-1 rounded-full text-sm 
+                                     bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200 
+                                     transition-colors duration-200">
+                            {{ tag.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    分类
+                </label>
+                <select name="category" 
+                        class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if article.category_id == category.id %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="flex justify-end space-x-4">
+                <a href="{{ url_for('blog.article', id=article.id) }}"
+                   class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
+                    取消
+                </a>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    保存修改
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 添加自定义上传适配器
+    class MyUploadAdapter {
+        constructor(loader) {
+            this.loader = loader;
+        }
+
+        // 压缩图片
+        async compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 1200;  // 最大宽度
+                        const MAX_HEIGHT = 1200; // 最大高度
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        canvas.toBlob((blob) => {
+                            resolve(new File([blob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            }));
+                        }, 'image/jpeg', 0.8);  // 压缩质量0.8
+                    };
+                };
+            });
+        }
+
+        upload() {
+            return this.loader.file
+                .then(async file => {
+                    // 压缩图片
+                    const compressedFile = await this.compressImage(file);
+                    
+                    return new Promise((resolve, reject) => {
+                        const data = new FormData();
+                        data.append('upload', compressedFile);
+
+                        fetch('{{ url_for("blog.upload_image") }}', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': '{{ csrf_token() }}'
+                            },
+                            body: data
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.url) {
+                                resolve({
+                                    default: result.url
+                                });
+                            } else {
+                                reject(result.error || '上传失败');
+                            }
+                        })
+                        .catch(error => {
+                            reject('上传失败：' + error);
+                        });
+                    });
+                });
+        }
+
+        abort() {
+            // 取消上传
+        }
+    }
+
+    // 创建上传适配器插件
+    function MyCustomUploadAdapterPlugin(editor) {
+        editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+            return new MyUploadAdapter(loader);
+        };
+    }
+
+    // 初始化编辑器
+    ClassicEditor
+        .create(document.querySelector('#editor'), {
+            extraPlugins: [MyCustomUploadAdapterPlugin],
+            toolbar: [
+                'heading',
+                '|',
+                'bold',
+                'italic',
+                'link',
+                'bulletedList',
+                'numberedList',
+                '|',
+                'outdent',
+                'indent',
+                '|',
+                'uploadImage',
+                'blockQuote',
+                'insertTable',
+                'undo',
+                'redo'
+            ],
+            language: 'zh-cn',
+            image: {
+                resizeUnit: '%',
+                resizeOptions: [
+                    {
+                        name: 'imageResize:25',
+                        value: 25,
+                        label: '25%'
+                    },
+                    {
+                        name: 'imageResize:50',
+                        value: 50,
+                        label: '50%'
+                    },
+                    {
+                        name: 'imageResize:75',
+                        value: 75,
+                        label: '75%'
+                    },
+                    {
+                        name: 'imageResize:original',
+                        value: null,
+                        label: '原始大小'
+                    }
+                ],
+                toolbar: [
+                    'imageResize',
+                    '|',
+                    'imageStyle:alignLeft',
+                    'imageStyle:alignCenter',
+                    'imageStyle:alignRight',
+                    '|',
+                    'imageTextAlternative'
+                ],
+                styles: {
+                    options: [
+                        {
+                            name: 'alignLeft',
+                            title: '左对齐',
+                            icon: 'left',
+                            className: 'image-style-align-left'
+                        },
+                        {
+                            name: 'alignCenter',
+                            title: '居中',
+                            icon: 'center',
+                            className: 'image-style-align-center'
+                        },
+                        {
+                            name: 'alignRight',
+                            title: '右对齐',
+                            icon: 'right',
+                            className: 'image-style-align-right'
+                        }
+                    ]
+                }
+            }
+        })
+        .then(editor => {
+            console.log('Editor initialized');
+            window.editor = editor;
+        })
+        .catch(error => {
+            console.error('Editor initialization error:', error);
+        });
+
+    function addTag(tagName) {
+        const tagInput = document.querySelector('input[name="tag_names"]');
+        const currentTags = tagInput.value.split(' ').filter(t => t);
+        if (!currentTags.includes(tagName)) {
+            currentTags.push(tagName);
+            tagInput.value = currentTags.join(' ');
+        }
+    }
+</script>
+{% endblock %} 

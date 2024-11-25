@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ current_user.username }}的个人中心{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="grid grid-cols-12 gap-6">
+        <!-- 个人信息卡片 -->
+        <div class="col-span-4">
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex flex-col items-center">
+                    <img src="{{ current_user.avatar }}" alt="avatar" 
+                         class="w-24 h-24 rounded-full mb-4">
+                    <h2 class="text-xl font-bold mb-2">{{ current_user.username }}</h2>
+                    <p class="text-gray-500 mb-4">{{ current_user.email }}</p>
+                    <div class="flex space-x-3">
+                        <a href="{{ url_for('user.edit_profile') }}"
+                           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                            编辑资料
+                        </a>
+                        <a href="{{ url_for('user.my_articles') }}"
+                           class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                            我的文章
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 兴趣分析 -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+                <h3 class="text-lg font-bold mb-4">阅读兴趣 Top 5</h3>
+                {% if interests_chart %}
+                <div id="interestsChart"></div>
+                <script src="{{ url_for('static', filename='vendor/plotly.min.js') }}"></script>
+                <script>
+                    var chartData = {{ interests_chart | safe }};
+                    Plotly.newPlot('interestsChart', chartData.data, chartData.layout);
+                </script>
+                {% else %}
+                <p class="text-gray-500 text-center py-8">暂无数据</p>
+                {% endif %}
+                
+                <div class="mt-4">
+                    <h4 class="text-sm font-medium text-gray-700 mb-2">阅读情感倾向</h4>
+                    <div class="flex items-center">
+                        <div class="flex-1 h-2 bg-gray-200 rounded-full">
+                            <div class="h-2 rounded-full
+                                        {% if avg_sentiment > 0.3 %}bg-green-500
+                                        {% elif avg_sentiment < -0.3 %}bg-red-500
+                                        {% else %}bg-yellow-500{% endif %}"
+                                 style="width: {{ (avg_sentiment + 1) * 50 }}%">
+                            </div>
+                        </div>
+                        <span class="ml-2 text-sm text-gray-500">
+                            {% if avg_sentiment > 0.3 %}偏积极
+                            {% elif avg_sentiment < -0.3 %}偏消极
+                            {% else %}中性{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 浏览历史 -->
+        <div class="col-span-8">
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h2 class="text-xl font-bold mb-4">浏览历史</h2>
+                <div class="space-y-4">
+                    {% for history in view_history.items %}
+                    <div class="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                        <a href="{{ url_for('blog.article', id=history.article.id) }}" 
+                           class="text-lg font-medium text-gray-900 hover:text-blue-600">
+                            {{ history.article.title }}
+                        </a>
+                        <div class="flex items-center mt-2 text-sm text-gray-500">
+                            <span>浏览时间：{{ history.viewed_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            <span class="mx-2">·</span>
+                            <span>作者：{{ history.article.author.username }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if view_history.pages > 1 %}
+                <div class="mt-6 pt-4 border-t">
+                    {% with endpoint='user.profile', kwargs={} %}
+                    {% include 'components/pagination.html' %}
+                    {% endwith %}
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %} 

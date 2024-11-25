@@ -1,0 +1,152 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}文章管理{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold">文章管理</h2>
+                <div class="flex items-center space-x-4">
+                    <form method="get" class="flex items-center space-x-4">
+                        <select name="search_type" 
+                                class="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="title" {% if search_type != 'id' and search_type != 'author' and search_type != 'category' and search_type != 'tag' %}selected{% endif %}>标题</option>
+                            <option value="id" {% if search_type == 'id' %}selected{% endif %}>ID</option>
+                            <option value="author" {% if search_type == 'author' %}selected{% endif %}>作者</option>
+                            <option value="category" {% if search_type == 'category' %}selected{% endif %}>分类</option>
+                            <option value="tag" {% if search_type == 'tag' %}selected{% endif %}>标签</option>
+                        </select>
+                        <div class="relative">
+                            <input type="text" name="q" 
+                                   value="{{ search_query }}"
+                                   placeholder="搜索文章..." 
+                                   class="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                            搜索
+                        </button>
+                    </form>
+                    <a href="{{ url_for('blog.create') }}" 
+                       class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                        新增文章
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">标题</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">作者</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">分类</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">浏览量</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">发布时间</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for article in pagination.items %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ article.id }}</td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">
+                                <a href="{{ url_for('blog.article', id=article.id) }}" 
+                                   class="hover:text-blue-600" target="_blank">
+                                    {{ article.title }}
+                                </a>
+                            </div>
+                            <div class="flex items-center mt-1 space-x-1">
+                                {% for tag in article.tags %}
+                                <a href="{{ url_for('admin.articles', search_type='tag', q=tag.name) }}" 
+                                   class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors duration-200">
+                                    {{ tag.name }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img src="{{ article.author.avatar }}" alt="avatar" class="w-6 h-6 rounded-full">
+                                <a href="{{ url_for('user.author', id=article.author.id) }}" 
+                                   class="ml-2 text-sm text-gray-900 hover:text-blue-600">
+                                    {{ article.author.username }}
+                                </a>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if article.category %}
+                            <a href="{{ url_for('admin.articles', search_type='category', q=article.category.name) }}" 
+                               class="text-gray-900 hover:text-blue-600">
+                                {{ article.category.name }}
+                            </a>
+                            {% else %}
+                            <span class="text-gray-400">无分类</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ article.view_count }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ article.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex items-center space-x-4">
+                                <a href="{{ url_for('blog.edit', id=article.id) }}" 
+                                   class="text-blue-600 hover:text-blue-900">
+                                    编辑
+                                </a>
+                                <button onclick="deleteArticle({{ article.id }})"
+                                        class="text-red-600 hover:text-red-900">
+                                    删除
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if pagination.pages > 1 %}
+        <div class="px-6 py-4 mt-4 border-t">
+            {% with endpoint='admin.articles', kwargs={'q': search_query, 'search_type': search_type} %}
+            {% include 'components/pagination.html' %}
+            {% endwith %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function deleteArticle(articleId) {
+    showAlert('确定要删除此文章吗？此操作不可恢复！', 'warning', '确认删除', function() {
+        fetch(`/admin/articles/${articleId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        }).then(response => {
+            if (response.ok) {
+                showAlert('文章删除成功', 'success', '成功');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                response.json().then(data => {
+                    showAlert(data.error, 'error', '错误');
+                });
+            }
+        });
+    });
+}
+</script>
+{% endblock %} 

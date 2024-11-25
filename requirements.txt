@@ -1,0 +1,9 @@
+flask
+flask-sqlalchemy
+flask-login
+pillow
+textblob
+pandas
+plotly
+mysqlclient
+werkzeug 
