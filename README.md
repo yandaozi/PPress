@@ -32,7 +32,7 @@
 
 - 前端
   - Tailwind CSS - CSS框架
-  - CKEditor 5 - 富文本编辑器
+  - TinyMce - 富文本编辑器
   - jQuery - JavaScript库
   - Plotly.js - 图表库
 
