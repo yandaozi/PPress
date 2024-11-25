@@ -187,8 +187,13 @@ def articles():
             # 按分类搜索
             query = query.join(Category).filter(Category.name == search_query)
         elif search_type == 'tag':
-            # 按标签搜索
-            query = query.join(Article.tags).filter(Tag.name == search_query)
+            # 按标签搜索 - 修改为支持模糊匹配
+            query = query.join(Article.tags).filter(
+                db.or_(
+                    Tag.name == search_query,  # 精确匹配
+                    Tag.name.like(f'%{search_query}%')  # 模糊匹配
+                )
+            ).distinct()  # 添加distinct避免重复结果
         else:
             # 标题搜索
             exact_matches = query.filter(Article.title == search_query)

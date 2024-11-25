@@ -24,9 +24,22 @@ def allowed_file(filename):
 @bp.route('/')
 def index():
     page = request.args.get('page', 1, type=int)
-    articles = Article.query.order_by(Article.id.desc(),Article.created_at.desc()).paginate(
+    category_id = request.args.get('category', type=int)
+    
+    # 构建基础查询
+    query = Article.query
+    
+    # 如果有分类参数,添加分类过滤
+    if category_id:
+        query = query.join(Category).filter(Category.id == category_id)
+    
+    # 分页查询
+    articles = query.order_by(Article.id.desc(),Article.created_at.desc()).paginate(
         page=page, per_page=10, error_out=False
     )
+    
+    # 获取所有分类供导航使用
+    categories = Category.query.all()
     
     # 获取今日最热门文章（根据浏览量）
     today = datetime.now().date()
@@ -49,8 +62,9 @@ def index():
     # 获取最新10条评论
     latest_comments = Comment.query.order_by(Comment.created_at.desc()).limit(10).all()
     
-    return render_template('blog/index.html', 
+    return render_template('blog/index.html',
                          articles=articles,
+                         categories=categories,
                          hot_articles=hot_articles,
                          random_articles=random_articles,
                          random_tags=random_tags,
@@ -295,7 +309,7 @@ def upload_image():
         file_path = os.path.join(upload_folder, unique_filename)
         file.save(file_path)
         
-        # 返回文件URL（CKEditor 格式）
+        # 返回文件URL（CKEditor 式）
         url = url_for('static', filename=f'uploads/images/{unique_filename}')
         return jsonify({
             'url': url,

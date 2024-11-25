@@ -15,8 +15,8 @@ def init_db():
         # 创建管理员用户
         admin = User(
             username='admin',
-            email='admin@example.com',
-            password_hash=generate_password_hash('admin123'),
+            email='575732022@qq.com',
+            password_hash=generate_password_hash('123456'),
             role='admin'
         )
         db.session.add(admin)
@@ -60,7 +60,7 @@ def init_db():
 
         # 文章内容模板
         article_contents = [
-            '''Flask是一个轻量级的Python Web框架，它提供了基础的核心功能，同时具有很强的可扩展性。本文将介绍Flask的主要特点和基本使用方法。
+            '''FlaksIOS风Blog系统，作者QQ：575732022.Flask是一个轻量级的Python Web框架，它提供了基础的核心功能，同时具有很强的可扩展性。本文将介绍Flask的主要特点和基本使用方法。
 
 Flask的设计理念是"微框架"，这意味着它的核心很简单，但可以通过各种扩展来增加功能。它不会强制你使用特定的项目布局或依赖特定的数据库。
 
