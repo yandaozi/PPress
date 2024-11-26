@@ -1,3 +1,5 @@
+import hashlib
+
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from flask_sqlalchemy.pagination import Pagination
@@ -325,34 +327,38 @@ def search_suggestions():
 def upload_image():
     if 'upload' not in request.files:
         return jsonify({'error': '没有文件'}), 400
-        
+
     file = request.files['upload']
     if file.filename == '':
         return jsonify({'error': '没有选择文件'}), 400
-        
+
     if file and allowed_file(file.filename):
-        # 生成安全的文件名
-        filename = secure_filename(file.filename)
-        # 添加时间戳避免重名
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        filename = f"{timestamp}_{filename}"
-        
-        # 确保上传目录存在
-        upload_folder = os.path.join(current_app.static_folder, 'uploads', 'images')
+        # 获取文件扩展名
+        file_ext = file.filename.rsplit('.', 1)[1].lower()
+
+        # 生成文件内容的 MD5 哈希值作为文件名
+        file_content = file.read()
+        file_hash = hashlib.md5(file_content).hexdigest()
+        filename = f"{file_hash}.{file_ext}"
+        file.stream.seek(0)  # 重置文件指针以保存文件
+
+        # 生成日期路径
+        date_path = datetime.now().strftime('%Y%m%d')
+        upload_folder = os.path.join(current_app.static_folder, 'uploads', 'images', date_path)
         os.makedirs(upload_folder, exist_ok=True)
-        
+
         # 保存文件
         file_path = os.path.join(upload_folder, filename)
         file.save(file_path)
-        
-        # 返回文件URL
-        url = url_for('static', filename=f'uploads/images/{filename}', _external=True)
+
+        # 返回文件 URL
+        url = url_for('static', filename=f'uploads/images/{date_path}/{filename}', _external=True)
         return jsonify({
             'location': url,  # TinyMCE 需要 location 字段
             'url': url,       # 兼容其他情况
             'uploaded': True
         })
-    
+
     return jsonify({'error': '不支持的文件类型'}), 400
 
 @bp.route('/article/<int:id>', methods=['DELETE'])

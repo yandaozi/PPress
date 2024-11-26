@@ -1,3 +1,5 @@
+import hashlib
+
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app.models.view_history import ViewHistory
@@ -152,25 +154,24 @@ def edit_profile():
             if file_extension not in allowed_extensions:
                 flash('不支持的文件格式，请上传 PNG、JPG、GIF 或 WebP 格式的图片')
                 return redirect(url_for('user.edit_profile'))
+            # 生成日期路径
+            date_path = datetime.now().strftime('%Y%m%d')
+            avatar_dir = os.path.join(current_app.static_folder, 'uploads', 'avatars', date_path)
+            os.makedirs(avatar_dir, exist_ok=True)
 
-            # 创建上传目录
-            avatar_dir = os.path.join(current_app.static_folder, 'uploads', 'avatars')
-            if not os.path.exists(avatar_dir):
-                os.makedirs(avatar_dir)
-            
-            # 生成唯一文件名
-            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-            filename = secure_filename(avatar.filename)
-            unique_filename = f"{timestamp}_{filename}"
-            
+            # 生成文件的 MD5 哈希值作为文件名
+            file_content = avatar.read()
+            file_hash = hashlib.md5(file_content).hexdigest()
+            filename = f"{file_hash}.{file_extension}"
+            avatar.seek(0)  # 重置文件指针以保存文件
+
             # 保存文件
-            avatar_path = os.path.join('uploads', 'avatars', unique_filename)
-            full_path = os.path.join(current_app.static_folder, avatar_path)
+            full_path = os.path.join(avatar_dir, filename)
             avatar.save(full_path)
-            
+
             # 更新用户头像路径（使用正斜杠）
-            avatar_url = avatar_path.replace('\\', '/')
-            current_user.avatar = f"/static/{avatar_url}"
+            avatar_url = f"/static/uploads/avatars/{date_path}/{filename}"
+            current_user.avatar = avatar_url
             
         db.session.commit()
         flash('个人信息更新成功！')
