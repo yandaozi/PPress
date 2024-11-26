@@ -2,8 +2,8 @@
 
 {% block title %}{{ article.title }}{% endblock %}
 
-{% block head %}
-<!-- 添加文章页面的元数据 -->
+{% block meta %}
+<!-- 文章页面特定的 meta 标签 -->
 <meta name="author" content="{{ article.author.username }}">
 <meta name="keywords" content="{% for tag in article.tags %}{{ tag.name }}{% if not loop.last %},{% endif %}{% endfor %}">
 <meta name="description" content="{{ article.content[:200]|striptags }}">

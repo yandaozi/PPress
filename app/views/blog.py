@@ -32,7 +32,9 @@ def index():
     query = Article.query
     
     # 如果有分类参数,添加分类过滤
+    current_category = None
     if category_id:
+        current_category = Category.query.get_or_404(category_id)
         query = query.join(Category).filter(Category.id == category_id)
     
     # 分页查询
@@ -81,6 +83,7 @@ def index():
     return render_template('blog/index.html',
                          articles=articles,
                          categories=categories,
+                         current_category=current_category,
                          hot_articles=hot_articles,
                          random_articles=random_articles,
                          random_tags=random_tags,
