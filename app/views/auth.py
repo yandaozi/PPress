@@ -41,7 +41,7 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        password2 = request.form['password2']
+        password2 = request.form['confirm_password']
         email = request.form['email']
         captcha = request.form['captcha']
         
