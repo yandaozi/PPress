@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{% endblock %} - {{ site_config.get_config('site_name', '技术博客') }}</title>
-    <meta name="keywords" content="{{ site_config.get_config('site_keywords', '技术,博客,Python,Web开发') }}">
+    <title>{% block title %}{% endblock %} - {{ site_config.get_config('site_name', 'Pios-blog') }}</title>
+    <meta name="keywords" content="{{ site_config.get_config('site_keywords', 'Pios-blog,技术,博客,Python,Web开发') }}">
     <meta name="description" content="{{ site_config.get_config('site_description', '分享技术知识和经验') }}">
     <script src="{{ url_for('static', filename='vendor/3.4.5') }}"></script>
     <script>
@@ -32,7 +32,7 @@
                                      alt="logo"
                                      class="w-6 h-6 rounded">
                                 <span>
-                                    {{ site_config.get_config('site_name', 'IosBlog') }}
+                                    {{ site_config.get_config('site_name', 'Pios-blog') }}
                                 </span>
                             </span>
                         </a>
@@ -222,7 +222,7 @@
         <div class="max-w-7xl mx-auto px-4 py-8">
             <div class="flex flex-col items-center">
                 <div class="text-gray-500 dark:text-gray-400 mb-2">
-                    {{ site_config.get_config('footer_text', '© 2023 技术博客 版权所有') }}
+                    {{ site_config.get_config('footer_text', '© 2024 Pios-blog 版权所有') }}
                 </div>
                 {% if site_config.get_config('icp_number') %}
                 <div class="text-gray-400 dark:text-gray-500 text-sm">
@@ -230,10 +230,10 @@
                 </div>
                 {% endif %}
                 <div class="text-gray-400 dark:text-gray-500 text-sm mt-2">
-                    联系我们：{{ site_config.get_config('contact_email', 'admin@example.com') }}
+                    联系我们：{{ site_config.get_config('contact_email', '575732022@qq.com') }}
                 </div>
                 <div class="text-gray-400 dark:text-gray-500 text-sm mt-2">
-                    <a href="https://gitee.com/fojie/flask-iosblog">https://gitee.com/fojie/flask-iosblog</a>
+                    <a href="https://gitee.com/fojie/Pios-blog">https://gitee.com/fojie/Pios-blog</a>
                 </div>
             </div>
         </div>

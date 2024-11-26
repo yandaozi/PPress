@@ -331,12 +331,12 @@ def site_config():
     if not configs:
         # 初始化默认配置
         default_configs = [
-            {'key': 'site_name', 'value': 'Blog', 'description': '网站名称'},
-            {'key': 'site_keywords', 'value': '技术,博客,Python,Web开发', 'description': '网站关键词'},
+            {'key': 'site_name', 'value': 'Pios-blog', 'description': '网站名称'},
+            {'key': 'site_keywords', 'value': 'Pios-blog,技术,博客,Python,Web开发', 'description': '网站关键词'},
             {'key': 'site_description', 'value': '分享技术知识和经验', 'description': '网站描'},
             {'key': 'contact_email', 'value': '575732022@qq.com', 'description': '联系邮箱'},
             {'key': 'icp_number', 'value': '', 'description': 'ICP备案号'},
-            {'key': 'footer_text', 'value': '© 2024 Blog 版权所有', 'description': '页脚文本'},
+            {'key': 'footer_text', 'value': '© 2024 Pios-blog 版权所有', 'description': '页脚文本'},
         ]
         for config in default_configs:
             db.session.add(SiteConfig(**config))

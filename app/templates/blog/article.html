@@ -11,6 +11,27 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
+    <!-- 面包屑导航 -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
+        <a href="{{ url_for('blog.index') }}" 
+           class="hover:text-blue-600 dark:hover:text-blue-400">
+            首页
+        </a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+        {% if article.category %}
+        <a href="{{ url_for('blog.index', category=article.category.id) }}" 
+           class="hover:text-blue-600 dark:hover:text-blue-400">
+            {{ article.category.name }}
+        </a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+        {% endif %}
+        <span class="text-gray-700 dark:text-gray-300 truncate max-w-xs">{{ article.title }}</span>
+    </nav>
+
     <!-- 文章内容 -->
     <article class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 mb-8">
         <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{{ article.title }}</h1>

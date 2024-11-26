@@ -41,7 +41,7 @@ def init_db():
         
         # 创建一篇测试文章
         article = Article(
-            title='FlaskIosBlog测试文章',
+            title='Pios-blog测试文章',
             content='这是一篇测试文章的内容。\n\n包含一些测试段落。',
             author_id=admin.id,
             sentiment_score=random.uniform(-1, 1),
