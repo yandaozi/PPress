@@ -31,7 +31,7 @@
                                      alt="logo"
                                      class="w-6 h-6 rounded">
                                 <span>
-                                    {{ site_config.get_config('site_name', '技术博客') }}
+                                    {{ site_config.get_config('site_name', 'IosBlog') }}
                                 </span>
                             </span>
                         </a>
@@ -230,6 +230,9 @@
                 {% endif %}
                 <div class="text-gray-400 dark:text-gray-500 text-sm mt-2">
                     联系我们：{{ site_config.get_config('contact_email', 'admin@example.com') }}
+                </div>
+                <div class="text-gray-400 dark:text-gray-500 text-sm mt-2">
+                    <a href="https://gitee.com/fojie/flask-iosblog">https://gitee.com/fojie/flask-iosblog</a>
                 </div>
             </div>
         </div>

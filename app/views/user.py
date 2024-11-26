@@ -48,8 +48,9 @@ def profile():
     # 获取用户兴趣标签统计（只取前5个最常看的标签）
     tag_counts = Counter()
     for history in ViewHistory.query.filter_by(user_id=current_user.id).all():
-        for tag in history.article.tags:
-            tag_counts[tag.name] += 1
+        if history.article:
+            for tag in history.article.tags:
+                tag_counts[tag.name] += 1
     
     # 获取前5个最常看的标签
     top_tags = tag_counts.most_common(5)
