@@ -12,7 +12,7 @@ class Article(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
-    content = db.Column(db.Text, nullable=False)
+    content = db.Column(db.Text(collation='utf8mb4_unicode_ci'), nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     sentiment_score = db.Column(db.Float)
     view_count = db.Column(db.Integer, default=0)
