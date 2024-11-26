@@ -40,6 +40,10 @@ def profile():
         .order_by(ViewHistory.viewed_at.desc())\
         .paginate(page=page, per_page=10, error_out=False)
     
+    # 过滤掉已删除的文章的历史记录
+    valid_history_items = [h for h in view_history.items if h.article is not None]
+    view_history.items = valid_history_items
+    
     # 获取用户的文章
     user_articles = Article.query.filter_by(author_id=current_user.id)\
         .order_by(Article.created_at.desc())\
@@ -48,7 +52,7 @@ def profile():
     # 获取用户兴趣标签统计（只取前5个最常看的标签）
     tag_counts = Counter()
     for history in ViewHistory.query.filter_by(user_id=current_user.id).all():
-        if history.article:
+        if history.article and history.article.tags:
             for tag in history.article.tags:
                 tag_counts[tag.name] += 1
     
