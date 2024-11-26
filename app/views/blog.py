@@ -45,11 +45,21 @@ def index():
     # 获取所有分类供导航使用
     categories = Category.query.all()
     
-    # 获取今日最热门文章（根据浏览量）
+    # 获取今日最热门文章
     today = datetime.now().date()
-    hot_articles = db.session.query(Article, db.func.count(ViewHistory.id).label('views'))\
+    hot_articles_today = db.session.query(Article, db.func.count(ViewHistory.id).label('views'))\
         .join(ViewHistory)\
         .filter(db.func.date(ViewHistory.viewed_at) == today)\
+        .group_by(Article.id)\
+        .order_by(db.text('views DESC'))\
+        .limit(5)\
+        .all()
+    
+    # 获取本周最热门文章
+    week_start = today - timedelta(days=today.weekday())
+    hot_articles_week = db.session.query(Article, db.func.count(ViewHistory.id).label('views'))\
+        .join(ViewHistory)\
+        .filter(db.func.date(ViewHistory.viewed_at) >= week_start)\
         .group_by(Article.id)\
         .order_by(db.text('views DESC'))\
         .limit(5)\
@@ -84,7 +94,8 @@ def index():
                          articles=articles,
                          categories=categories,
                          current_category=current_category,
-                         hot_articles=hot_articles,
+                         hot_articles_today=hot_articles_today,
+                         hot_articles_week=hot_articles_week,
                          random_articles=random_articles,
                          random_tags=random_tags,
                          latest_comments=latest_comments,
