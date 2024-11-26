@@ -24,7 +24,7 @@
                 <!-- 标签过滤头部 -->
                 <div class="flex items-center justify-between mb-2">
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        标签过滤
+                        标签过滤（{{ tags|length }}）
                         <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 selected-count">
                             {% if selected_tags %}已选择 {{ selected_tags|length }} 个{% endif %}
                         </span>

@@ -213,17 +213,23 @@ def search():
                 Article.content.like(search_query)
             )
         )
-    
-    # 标签过滤
-    if selected_tags:
-        base_query = base_query.filter(Article.tags.any(Tag.name.in_(selected_tags)))
-    
+
     # 日期过滤
     if start_date:
         base_query = base_query.filter(Article.created_at >= start_date)
     if end_date:
         base_query = base_query.filter(Article.created_at <= end_date)
+
+    # 在应用标签过滤之前获取所有可用的标签
+    tags = Tag.query.join(Article.tags) \
+        .filter(Article.id.in_([article.id for article in base_query.all()])) \
+        .distinct() \
+        .all()
     
+    # 标签过滤
+    if selected_tags:
+        base_query = base_query.filter(Article.tags.any(Tag.name.in_(selected_tags)))
+
     # 排序
     if sort == 'views':
         base_query = base_query.order_by(Article.view_count.desc())
@@ -243,9 +249,6 @@ def search():
     
     # 分页 - 使用统一的方式
     articles = base_query.paginate(page=page, per_page=10, error_out=False)
-    
-    # 获取所有标签供高级搜索使用
-    tags = Tag.query.all()
     
     return render_template('blog/search.html',
                          articles=articles,
