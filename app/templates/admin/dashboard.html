@@ -96,19 +96,24 @@
                     </div>
                     <div class="ml-3">
                         <p class="text-sm">
-                            <span class="font-medium">{{ activity.user.username }}</span>
+                            {% if activity.user.id %}
+                                <a href="{{ url_for('user.author', id=activity.user.id) }}" 
+                                   class="font-medium text-gray-900 hover:text-blue-600">
+                                    {{ activity.user.username }}
+                                </a>
+                            {% else %}
+                                <span class="text-gray-500">{{ activity.user.username }}</span>
+                            {% endif %}
                             {{ activity.action }}
                             {% if activity.type == 'comment' %}
                             评论了文章
-                            <a href="{{ url_for('blog.article', id=activity.article.id) }}" class="text-blue-600 hover:text-blue-700">
-                                {{ activity.article.title }}
-                            </a>
                             {% elif activity.type == 'article' %}
                             发布了文章
-                            <a href="{{ url_for('blog.article', id=activity.article.id) }}" class="text-blue-600 hover:text-blue-700">
+                            {% endif %}
+                            <a href="{{ url_for('blog.article', id=activity.article.id) }}" 
+                               class="text-blue-600 hover:text-blue-700">
                                 {{ activity.article.title }}
                             </a>
-                            {% endif %}
                         </p>
                         <p class="text-xs text-gray-500">{{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
                     </div>

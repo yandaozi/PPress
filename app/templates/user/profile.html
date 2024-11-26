@@ -2,6 +2,13 @@
 
 {% block title %}{{ current_user.username }}的个人中心{% endblock %}
 
+{% block head %}
+{{ super() }}
+<!-- 确保在页面头部加载必要的脚本 -->
+<script src="{{ url_for('static', filename='vendor/plotly.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-8">
     <div class="grid grid-cols-12 gap-6">
@@ -31,18 +38,8 @@
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">阅读兴趣 Top 5</h3>
                 {% if interests_chart %}
                 <div id="interestsChart"></div>
-                <script src="{{ url_for('static', filename='vendor/plotly.min.js') }}"></script>
                 <script>
-                    var chartData = {{ interests_chart | safe }};
-                    // 设置暗色主题
-                    if (document.documentElement.classList.contains('dark')) {
-                        chartData.layout.paper_bgcolor = '#1f2937';
-                        chartData.layout.plot_bgcolor = '#1f2937';
-                        chartData.layout.font = {
-                            color: '#e5e7eb'
-                        };
-                    }
-                    Plotly.newPlot('interestsChart', chartData.data, chartData.layout);
+                    window.chartData = {{ interests_chart | safe }};
                 </script>
                 {% else %}
                 <p class="text-gray-500 dark:text-gray-400 text-center py-8">暂无数据</p>
@@ -72,19 +69,47 @@
         <!-- 浏览历史 -->
         <div class="col-span-8">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">浏览历史</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">浏览历史</h2>
+                    {% if view_history.items %}
+                    <button onclick="confirmDeleteAllHistory()" 
+                            class="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                        清空历史
+                    </button>
+                    {% endif %}
+                </div>
                 <div class="space-y-4">
                     {% for history in view_history.items %}
                         {% if history.article %}
                         <div class="border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0 last:pb-0">
-                            <a href="{{ url_for('blog.article', id=history.article.id) }}" 
-                               class="text-lg font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
-                                {{ history.article.title }}
-                            </a>
-                            <div class="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                <span>浏览时间：{{ history.viewed_at.strftime('%Y-%m-%d %H:%M') }}</span>
-                                <span class="mx-2">·</span>
-                                <span>作者：{{ history.article.author.username }}</span>
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <a href="{{ url_for('blog.article', id=history.article.id) }}" 
+                                       class="text-lg font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+                                        {{ history.article.title }}
+                                    </a>
+                                    <div class="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                        <span>浏览时间：{{ history.viewed_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                                        <span class="mx-2">•</span>
+                                        {% set author = get_user_info(history.article.author) %}
+                                        <span>作者：
+                                            {% if author.id %}
+                                                <a href="{{ url_for('user.author', id=author.id) }}" 
+                                                   class="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+                                                    {{ author.username }}
+                                                </a>
+                                            {% else %}
+                                                <span class="text-gray-500">{{ author.username }}</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button onclick="confirmDeleteHistory({{ history.id }})" 
+                                        class="text-sm text-gray-400 hover:text-red-600 dark:hover:text-red-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                         {% endif %}

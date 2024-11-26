@@ -54,7 +54,7 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for user in pagination.items %}
-                        <tr>
+                        <tr data-user-id="{{ user.id }}">
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ user.id }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
@@ -211,10 +211,13 @@ function toggleUserRole(userId) {
         }).then(response => {
             if (response.ok) {
                 showAlert('角色更改成功', 'success', '成功');
-                setTimeout(() => location.reload(), 1500);
+                setTimeout(() => location.reload(), 10);  // 10ms后刷新页面
             } else {
                 showAlert('操作失败', 'error', '错误');
             }
+        }).catch(error => {
+            showAlert('操作失败，请稍后重试', 'error', '错误');
+            console.error('Error:', error);
         });
     });
 }
@@ -228,13 +231,21 @@ function deleteUser(userId) {
             }
         }).then(response => {
             if (response.ok) {
-                showAlert('用户删除成功', 'success', '成功');
-                setTimeout(() => location.reload(), 1500);
+                const userRow = document.querySelector(`tr[data-user-id="${userId}"]`);
+                if (userRow) {
+                    userRow.remove();
+                    showAlert('用户删除成功', 'success', '成功');
+                } else {
+                    location.reload();
+                }
             } else {
                 response.json().then(data => {
                     showAlert(data.error, 'error', '错误');
                 });
             }
+        }).catch(error => {
+            showAlert('删除失败，请稍后重试', 'error', '错误');
+            console.error('Error:', error);
         });
     });
 }
@@ -279,7 +290,7 @@ function updateUser() {
             showAlert(data.error, 'error', '错误');
         } else {
             showAlert('用户信息更新成功', 'success', '成功');
-            setTimeout(() => location.reload(), 1500);
+            setTimeout(() => location.reload(), 650);
         }
     });
 }

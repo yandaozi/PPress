@@ -176,8 +176,10 @@ function addCategory() {
         if (data.error) {
             showAlert(data.error, 'error', '错误');
         } else {
-            showAlert('分类添加成功', 'success', '成功');
-            setTimeout(() => location.reload(), 1500);
+            showAlert('分类添加成功', 'success', '成功',function () {
+                setTimeout(() => location.reload(), 100);
+            });
+
         }
     });
 }
@@ -216,7 +218,7 @@ function updateCategory() {
             showAlert(data.error, 'error', '错误');
         } else {
             showAlert('分类更新成功', 'success', '成功');
-            setTimeout(() => location.reload(), 1500);
+            setTimeout(() => location.reload(), 200);
         }
     });
 }
@@ -231,7 +233,7 @@ function deleteCategory(categoryId) {
         }).then(response => {
             if (response.ok) {
                 showAlert('分类删除成功', 'success', '成功');
-                setTimeout(() => location.reload(), 1500);
+                setTimeout(() => location.reload(), 100);
             } else {
                 response.json().then(data => {
                     showAlert(data.error, 'error', '错误');

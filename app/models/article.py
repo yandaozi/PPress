@@ -13,11 +13,11 @@ class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text(collation='utf8mb4_unicode_ci'), nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     sentiment_score = db.Column(db.Float)
     view_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     
-    tags = db.relationship('Tag', secondary=article_tags, backref=db.backref('articles', lazy=True)) 
+    tags = db.relationship('Tag', secondary=article_tags, backref=db.backref('articles', lazy=True))

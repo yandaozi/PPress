@@ -64,17 +64,47 @@ def index():
     # 获取最新10条评论
     latest_comments = Comment.query.order_by(Comment.created_at.desc()).limit(10).all()
     
+    # 创建一个辅助函数来处理作者信息
+    def get_author_info(article):
+        if article.author:
+            return {
+                'id': article.author.id,
+                'username': article.author.username,
+                'avatar': article.author.avatar
+            }
+        return {
+            'id': None,
+            'username': '已注销用户',
+            'avatar': url_for('static', filename='default_avatar.png')
+        }
+    
     return render_template('blog/index.html',
                          articles=articles,
                          categories=categories,
                          hot_articles=hot_articles,
                          random_articles=random_articles,
                          random_tags=random_tags,
-                         latest_comments=latest_comments)
+                         latest_comments=latest_comments,
+                         get_author_info=get_author_info)  # 传递辅助函数到模板
 
 @bp.route('/article/<int:id>')
 def article(id):
     article = Article.query.get_or_404(id)
+    
+    # 创建一个默认作者信息
+    author_info = {
+        'id': None,  # 不提供链接
+        'username': '已注销用户',
+        'avatar': url_for('static', filename='default_avatar.png')  # 默认头像
+    }
+    
+    # 如果作者存在，使用作者信息
+    if article.author:
+        author_info = {
+            'id': article.author.id,
+            'username': article.author.username,
+            'avatar': article.author.avatar
+        }
     
     # 记录浏览历史
     if current_user.is_authenticated:
@@ -85,7 +115,9 @@ def article(id):
         article.view_count += 1
         db.session.commit()
     
-    return render_template('blog/article.html', article=article)
+    return render_template('blog/article.html', 
+                         article=article,
+                         author_info=author_info)
 
 @bp.route('/article/edit', methods=['GET', 'POST'])
 @bp.route('/article/<int:id>/edit', methods=['GET', 'POST'])

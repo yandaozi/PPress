@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app.models.view_history import ViewHistory
 from app.models.article import Article
@@ -240,4 +240,26 @@ def author(id):
     return render_template('user/author.html', 
                          author=author, 
                          articles=articles,
-                         stats=stats) 
+                         stats=stats)
+
+# 添加新的路由处理删除浏览历史
+@bp.route('/history/<int:history_id>', methods=['DELETE'])
+@login_required
+def delete_history(history_id):
+    history = ViewHistory.query.get_or_404(history_id)
+    
+    # 检查权限
+    if history.user_id != current_user.id:
+        return jsonify({'error': '没有权限删除此记录'}), 403
+    
+    db.session.delete(history)
+    db.session.commit()
+    return '', 204
+
+# 添加批量删除所有历史记录的路由
+@bp.route('/history/all', methods=['DELETE'])
+@login_required
+def delete_all_history():
+    ViewHistory.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    return '', 204 

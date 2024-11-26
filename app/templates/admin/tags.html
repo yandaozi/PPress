@@ -169,7 +169,7 @@ function addTag() {
             showAlert(data.error, 'error', '错误');
         } else {
             showAlert('标签添加成功', 'success', '成功');
-            setTimeout(() => location.reload(), 1500);
+            setTimeout(() => location.reload(), 100);
         }
     });
 }
@@ -206,8 +206,8 @@ function updateTag() {
         if (data.error) {
             showAlert(data.error, 'error', '错误');
         } else {
-            showAlert('标签更新成功', 'success', '成功');
-            setTimeout(() => location.reload(), 1500);
+            showAlert('标签更新成功', 'success', '成功',function (){setTimeout(() => location.reload(), 100);});
+
         }
     });
 }
@@ -222,7 +222,7 @@ function deleteTag(tagId) {
         }).then(response => {
             if (response.ok) {
                 showAlert('标签删除成功', 'success', '成功');
-                setTimeout(() => location.reload(), 1500);
+                setTimeout(() => location.reload(), 100);
             } else {
                 response.json().then(data => {
                     showAlert(data.error, 'error', '错误');

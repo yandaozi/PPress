@@ -77,11 +77,15 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <img src="{{ article.author.avatar }}" alt="avatar" class="w-6 h-6 rounded-full">
-                                <a href="{{ url_for('user.author', id=article.author.id) }}" 
-                                   class="ml-2 text-sm text-gray-900 hover:text-blue-600">
-                                    {{ article.author.username }}
-                                </a>
+                                {% if article.author %}
+                                    <img src="{{ article.author.avatar }}" alt="avatar" class="w-8 h-8 rounded-full">
+                                    <a href="{{ url_for('user.author', id=article.author.id) }}" 
+                                       class="ml-2 text-sm font-medium text-gray-900 hover:text-blue-600">
+                                        {{ article.author.username }}
+                                    </a>
+                                {% else %}
+                                    <span class="ml-2 text-sm text-gray-500">已删除用户</span>
+                                {% endif %}
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -139,7 +143,7 @@ function deleteArticle(articleId) {
         }).then(response => {
             if (response.ok) {
                 showAlert('文章删除成功', 'success', '成功');
-                setTimeout(() => location.reload(), 1500);
+                setTimeout(() => location.reload(), 200);
             } else {
                 response.json().then(data => {
                     showAlert(data.error, 'error', '错误');

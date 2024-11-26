@@ -9,5 +9,4 @@ class ViewHistory(db.Model):
     article_id = db.Column(db.Integer, db.ForeignKey('articles.id', ondelete='CASCADE'))
     viewed_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    article = db.relationship('Article', backref=db.backref('views', lazy=True))
-    user = db.relationship('User', backref=db.backref('view_history', lazy=True)) 
+    article = db.relationship('Article', backref=db.backref('views', lazy=True, cascade='all, delete'))

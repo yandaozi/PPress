@@ -57,18 +57,26 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <img src="{{ comment.user.avatar }}" alt="avatar" class="w-6 h-6 rounded-full">
-                                <a href="{{ url_for('user.author', id=comment.user.id) }}" 
-                                   class="ml-2 text-sm text-gray-900 hover:text-blue-600">
-                                    {{ comment.user.username }}
-                                </a>
+                                {% if comment.user %}
+                                    <img src="{{ comment.user.avatar }}" alt="avatar" class="w-6 h-6 rounded-full">
+                                    <a href="{{ url_for('user.author', id=comment.user.id) }}" 
+                                       class="ml-2 text-sm text-gray-900 hover:text-blue-600">
+                                        {{ comment.user.username }}
+                                    </a>
+                                {% else %}
+                                    <span class="ml-2 text-sm text-gray-500">已删除用户</span>
+                                {% endif %}
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <a href="{{ url_for('blog.article', id=comment.article.id) }}" 
-                               class="text-sm text-blue-600 hover:text-blue-900" target="_blank">
-                                {{ comment.article.title }}
-                            </a>
+                            {% if comment.article %}
+                                <a href="{{ url_for('blog.article', id=comment.article.id) }}" 
+                                   class="text-sm text-blue-600 hover:text-blue-900" target="_blank">
+                                    {{ comment.article.title }}
+                                </a>
+                            {% else %}
+                                <span class="text-sm text-gray-500">已删除文章</span>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}
@@ -106,7 +114,7 @@ function deleteComment(commentId) {
         }).then(response => {
             if (response.ok) {
                 showAlert('评论删除成功', 'success', '成功');
-                setTimeout(() => location.reload(), 1500);
+                setTimeout(() => location.reload(), 200);
             } else {
                 response.json().then(data => {
                     showAlert(data.error, 'error', '错误');

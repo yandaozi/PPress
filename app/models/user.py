@@ -13,8 +13,16 @@ class User(UserMixin, db.Model):
     role = db.Column(db.Enum('user', 'admin'), default='user')
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     
-    articles = db.relationship('Article', backref='author', lazy=True)
-    comments = db.relationship('Comment', backref='user', lazy=True)
+    articles = db.relationship('Article', 
+                             backref=db.backref('author', lazy=True),
+                             lazy=True)
+    comments = db.relationship('Comment',
+                             backref=db.backref('user', lazy=True),
+                             lazy=True)
+    view_history = db.relationship('ViewHistory',
+                                 backref=db.backref('user', lazy=True),
+                                 cascade='all, delete-orphan',
+                                 lazy=True)
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

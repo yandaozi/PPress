@@ -14,13 +14,19 @@
     <!-- 文章内容 -->
     <article class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 mb-8">
         <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{{ article.title }}</h1>
+        <!-- 文章作者信息部分 -->
+        {% set author = get_user_info(article.author) %}
         <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-8">
             <div class="flex items-center">
-                <img src="{{ article.author.avatar }}" alt="avatar" class="w-10 h-10 rounded-full">
-                <a href="{{ url_for('user.author', id=article.author.id) }}" 
-                   class="ml-2 font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
-                    {{ article.author.username }}
-                </a>
+                <img src="{{ author.avatar }}" alt="avatar" class="w-10 h-10 rounded-full">
+                {% if author.id %}
+                    <a href="{{ url_for('user.author', id=author.id) }}" 
+                       class="ml-2 font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+                        {{ author.username }}
+                    </a>
+                {% else %}
+                    <span class="ml-2 font-medium text-gray-500 dark:text-gray-400">{{ author.username }}</span>
+                {% endif %}
             </div>
             <span class="mx-2">•</span>
             <span>{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
@@ -81,14 +87,19 @@
         {% for comment in article.comments %}
         <div class="border-t border-gray-100 dark:border-gray-700 py-6 first:border-t-0">
             <div class="flex items-center mb-2">
-                <img src="{{ comment.user.avatar }}" alt="avatar" 
+                {% set commenter = get_user_info(comment.user) %}
+                <img src="{{ commenter.avatar }}" alt="avatar" 
                      class="w-8 h-8 rounded-full mr-3">
                 <div>
                     <div class="font-medium">
-                        <a href="{{ url_for('user.author', id=comment.user.id) }}" 
-                           class="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
-                            {{ comment.user.username }}
-                        </a>
+                        {% if commenter.id %}
+                            <a href="{{ url_for('user.author', id=commenter.id) }}" 
+                               class="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+                                {{ commenter.username }}
+                            </a>
+                        {% else %}
+                            <span class="font-medium text-gray-500 dark:text-gray-400">{{ commenter.username }}</span>
+                        {% endif %}
                     </div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">
                         {{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}

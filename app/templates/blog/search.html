@@ -122,13 +122,18 @@
                     </a>
                 </h2>
                 <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    <a href="{{ url_for('user.author', id=article.author.id) }}" 
-                       class="flex items-center hover:text-blue-600 dark:hover:text-blue-400">
-                        <img src="{{ article.author.avatar }}" 
-                             alt="avatar" 
-                             class="w-6 h-6 rounded-full mr-2">
-                        {{ article.author.username }}
-                    </a>
+                    {% set author = get_user_info(article.author) %}
+                    <div class="flex items-center">
+                        <img src="{{ author.avatar }}" alt="avatar" class="w-6 h-6 rounded-full">
+                        {% if author.id %}
+                            <a href="{{ url_for('user.author', id=author.id) }}" 
+                               class="ml-2 text-sm font-medium text-gray-900 hover:text-blue-600">
+                                {{ author.username }}
+                            </a>
+                        {% else %}
+                            <span class="ml-2 text-sm text-gray-500">{{ author.username }}</span>
+                        {% endif %}
+                    </div>
                     <span class="mx-2">•</span>
                     <span>{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
                     <span class="mx-2">•</span>

@@ -47,6 +47,13 @@ def dashboard():
     total_comments = Comment.query.count()
     total_views = ViewHistory.query.count()
     
+    # 获取所有分类
+    categories = Category.query.all()
+    
+    # 获取所有标签并随机选择10个
+    all_tags = Tag.query.all()
+    tags = random.sample(all_tags, min(15, len(all_tags)))  # 如果标签总数少于15个，就全部显示
+    
     # 访问量统计图表
     article_views = db.session.query(
         Article.title,
@@ -54,7 +61,7 @@ def dashboard():
     ).join(ViewHistory)\
      .group_by(Article.id, Article.title)\
      .order_by(db.func.count(ViewHistory.id).desc())\
-     .limit(10)\
+     .limit(20)\
      .all()
     
     # 生成图表
@@ -65,10 +72,10 @@ def dashboard():
                     x='views', 
                     y='title',
                     orientation='h',
-                    title='热门文章访问量统计（Top 10）',
+                    title='热门文章访问量统计（Top 20）',
                     labels={'views': '访问量', 'title': '文章标题'})
         fig.update_layout(
-            height=400,
+            height=550,
             showlegend=False,
             plot_bgcolor='white',
             title_x=0.5,
@@ -78,6 +85,20 @@ def dashboard():
     else:
         views_chart = None
     
+    # 创建一个辅助函数来处理用户信息
+    def get_user_info(user):
+        if user:
+            return {
+                'id': user.id,
+                'username': user.username,
+                'avatar': user.avatar
+            }
+        return {
+            'id': None,
+            'username': '已注销用户',
+            'avatar': url_for('static', filename='default_avatar.png')
+        }
+    
     # 获取最近活动
     recent_activities = []
     
@@ -86,7 +107,7 @@ def dashboard():
     for comment in recent_comments:
         recent_activities.append({
             'type': 'comment',
-            'user': comment.user,
+            'user': get_user_info(comment.user),
             'article': comment.article,
             'action': '发表了评论',
             'created_at': comment.created_at
@@ -97,7 +118,7 @@ def dashboard():
     for article in recent_articles:
         recent_activities.append({
             'type': 'article',
-            'user': article.author,
+            'user': get_user_info(article.author),
             'article': article,
             'action': '发布了文章',
             'created_at': article.created_at
@@ -105,12 +126,6 @@ def dashboard():
     
     # 按时间排序
     recent_activities.sort(key=lambda x: x['created_at'], reverse=True)
-    recent_activities = recent_activities[:7]  # 只取最近7条
-    
-    # 获取分类和标签
-    categories = Category.query.all()
-    all_tags = Tag.query.all()
-    tags = random.sample(all_tags, min(20, len(all_tags)))
     
     return render_template('admin/dashboard.html',
                          total_users=total_users,
@@ -247,6 +262,15 @@ def comments():
                          search_type=search_type,
                          search_query=search_query)
 
+@bp.route('/comments/<int:comments_id>', methods=['DELETE'])
+@login_required
+@admin_required
+def delete_comments(comments_id):
+    comment = Comment.query.get_or_404(comments_id)
+    db.session.delete(comment)
+    db.session.commit()
+    return '', 204
+
 @bp.route('/users/<int:user_id>/toggle-role', methods=['POST'])
 @login_required
 @admin_required
@@ -268,9 +292,13 @@ def delete_user(user_id):
         return jsonify({'error': '不能删除自己'}), 400
         
     user = User.query.get_or_404(user_id)
-    db.session.delete(user)
-    db.session.commit()
-    return '', 204
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        return '', 204
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': '删除失败：' + str(e)}), 500
 
 @bp.route('/articles/<int:article_id>', methods=['DELETE'])
 @login_required
@@ -533,4 +561,61 @@ def edit_user(user_id):
         'email': user.email,
         'role': user.role,
         'created_at': user.created_at.strftime('%Y-%m-%d %H:%M')
-    }) 
+    })
+
+@bp.route('/histories')
+@login_required
+@admin_required
+def histories():
+    page = request.args.get('page', 1, type=int)
+    search_type = request.args.get('search_type', '')
+    search_query = request.args.get('q', '').strip()
+    
+    # 构建基础查询
+    query = ViewHistory.query.join(ViewHistory.article).join(ViewHistory.user)
+    
+    if search_query:
+        if search_type == 'id':
+            try:
+                history_id = int(search_query)
+                query = query.filter(ViewHistory.id == history_id)
+            except ValueError:
+                flash('ID必须是数字')
+        elif search_type == 'user':
+            query = query.filter(User.username.like(f'%{search_query}%'))
+        elif search_type == 'article':
+            query = query.filter(Article.title.like(f'%{search_query}%'))
+    
+    # 分页
+    pagination = query.order_by(ViewHistory.id.desc(),ViewHistory.viewed_at.desc()).paginate(
+        page=page, per_page=10, error_out=False
+    )
+    
+    return render_template('admin/histories.html', 
+                         pagination=pagination,
+                         search_type=search_type,
+                         search_query=search_query)
+
+@bp.route('/histories/<int:history_id>', methods=['DELETE'])
+@login_required
+@admin_required
+def delete_history(history_id):
+    history = ViewHistory.query.get_or_404(history_id)
+    db.session.delete(history)
+    db.session.commit()
+    return '', 204
+
+@bp.route('/histories/clear/<int:user_id>', methods=['DELETE'])
+@login_required
+@admin_required
+def clear_user_history(user_id):
+    ViewHistory.query.filter_by(user_id=user_id).delete()
+    db.session.commit()
+    return '', 204
+
+# 添加一个模板上下文处理器
+@bp.context_processor
+def utility_processor():
+    def is_active_group(menu_items):
+        return request.endpoint in [item[0] for item in menu_items]
+    return dict(is_active_group=is_active_group) 
