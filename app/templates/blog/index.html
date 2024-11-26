@@ -1,6 +1,17 @@
 {% extends 'base.html' %}
 
-{% block title %}首页{% endblock %}
+{% block title %}{% if current_category %}{{ current_category.name }}{% else %}
+        首页
+    {% endif %}{% endblock %}
+
+{% block meta %}
+    {% if current_category %}
+        <meta name="keywords" content="{{ current_category.name }},{{ site_config.get_config('site_keywords', 'Pios-blog,技术,博客') }}">
+        <meta name="description" content="浏览{{ current_category.name }}分类下的所有文章 - {{ site_config.get_config('site_description', '分享技术知识和经验') }}">
+    {% else %}
+        {{ super() }}
+    {% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6">
@@ -22,7 +33,7 @@
                             <img src="{{ author.avatar }}" alt="avatar" class="w-8 h-8 rounded-full">
                             {% if author.id %}
                                 <a href="{{ url_for('user.author', id=author.id) }}" 
-                                   class="ml-2 text-sm font-medium text-gray-900 hover:text-blue-600">
+                                   class="ml-2 text-sm font-medium dark:text-white text-gray-900 hover:text-blue-600">
                                     {{ author.username }}
                                 </a>
                             {% else %}
