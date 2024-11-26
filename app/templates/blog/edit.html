@@ -32,7 +32,7 @@
                               text-gray-900 dark:text-white 
                               placeholder-gray-400 dark:placeholder-gray-500">
             </div>
-            
+
             <!-- 内容编辑器 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -40,7 +40,7 @@
                 </label>
                 <textarea id="editor" name="content">{{ article.content if article else '' }}</textarea>
             </div>
-            
+
             <!-- 分类选择 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -52,14 +52,14 @@
                                bg-white dark:bg-gray-700 
                                text-gray-900 dark:text-white">
                     {% for category in categories %}
-                    <option value="{{ category.id }}" 
+                    <option value="{{ category.id }}"
                             {% if article and article.category_id == category.id %}selected{% endif %}>
                         {{ category.name }}
                     </option>
                     {% endfor %}
                 </select>
             </div>
-            
+
             <!-- 标签输入 -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -85,7 +85,7 @@
                               placeholder-gray-400 dark:placeholder-gray-500"
                        placeholder="输入标签，用空格分隔">
             </div>
-            
+
             <!-- 操作按钮 -->
             <div class="flex justify-end space-x-4">
                 <a href="{{ url_for('blog.article', id=article.id) if article else url_for('blog.index') }}"
@@ -107,120 +107,122 @@
 </div>
 
 <script>
-function addTag(tagName) {
-    const input = document.getElementById('tagInput');
-    const currentTags = input.value.split(' ').filter(Boolean);
-    
-    if (!currentTags.includes(tagName)) {
-        currentTags.push(tagName);
-        input.value = currentTags.join(' ');
-    }
-}
+    function addTag(tagName) {
+        const input = document.getElementById('tagInput');
+        const currentTags = input.value.split(' ').filter(Boolean);
 
-// 初始化 TinyMCE
-tinymce.init({
-    selector: '#editor',
-    language: 'zh_CN',
-    base_url: '{{ url_for("static", filename="vendor/tinymce") }}',
-    plugins: [
-        'advlist',
-        'anchor',
-        'autolink',
-        'autoresize',
-        'autosave',
-        'charmap',
-        'code',
-        'codesample',
-        'directionality',
-        'emoticons',
-        'fullscreen',
-        'help',
-        'image',
-        'importcss',
-        'insertdatetime',
-        'link',
-        'lists',
-        'media',
-        'nonbreaking',
-        'pagebreak',
-        'preview',
-        'quickbars',
-        'save',
-        'searchreplace',
-        'visualblocks',
-        'visualchars',
-        'wordcount'
-    ],
-    toolbar: [
-        {
-            name: 'history', items: ['undo', 'redo']
-        },
-        {
-            name: 'styles', items: ['formatselect', 'fontselect', 'fontsizeselect']
-        },
-        {
-            name: 'formatting', 
-            items: ['bold', 'italic', 'underline', 'strikethrough', 'forecolor', 'backcolor']
-        },
-        {
-            name: 'alignment', 
-            items: ['alignleft', 'aligncenter', 'alignright', 'alignjustify']
-        },
-        {
-            name: 'indentation', 
-            items: ['outdent', 'indent']
-        },
-        {
-            name: 'lists', 
-            items: ['bullist', 'numlist']
-        },
-        {
-            name: 'insert',
-            items: ['link', 'image', 'media', 'codesample', 'charmap', 'emoticons']
-        },
-        {
-            name: 'tools',
-            items: ['searchreplace', 'preview', 'code', 'fullscreen']
+        if (!currentTags.includes(tagName)) {
+            currentTags.push(tagName);
+            input.value = currentTags.join(' ');
         }
-    ],
-    menubar: 'file edit view insert format tools',
-    menu: {
-        file: { 
-            title: '文件', 
-            items: 'newdocument restoredraft | preview | print' 
+    }
+
+    // 在 tinymce.init 之前添加主题检测
+    const isDarkMode = document.documentElement.classList.contains('dark');
+
+    tinymce.init({
+        selector: '#editor',
+        language: 'zh_CN',
+        base_url: '{{ url_for("static", filename="vendor/tinymce") }}',
+        plugins: [
+            'advlist',
+            'anchor',
+            'autolink',
+            'autoresize',
+            'autosave',
+            'charmap',
+            'code',
+            'codesample',
+            'directionality',
+            'emoticons',
+            'fullscreen',
+            'help',
+            'image',
+            'importcss',
+            'insertdatetime',
+            'link',
+            'lists',
+            'media',
+            'nonbreaking',
+            'pagebreak',
+            'preview',
+            'quickbars',
+            'save',
+            'searchreplace',
+            'visualblocks',
+            'visualchars',
+            'wordcount'
+        ],
+        toolbar: [
+            {
+                name: 'history', items: ['undo', 'redo']
+            },
+            {
+                name: 'styles', items: ['formatselect', 'fontselect', 'fontsizeselect']
+            },
+            {
+                name: 'formatting',
+                items: ['bold', 'italic', 'underline', 'strikethrough', 'forecolor', 'backcolor']
+            },
+            {
+                name: 'alignment',
+                items: ['alignleft', 'aligncenter', 'alignright', 'alignjustify']
+            },
+            {
+                name: 'indentation',
+                items: ['outdent', 'indent']
+            },
+            {
+                name: 'lists',
+                items: ['bullist', 'numlist']
+            },
+            {
+                name: 'insert',
+                items: ['link', 'image', 'media', 'codesample', 'charmap', 'emoticons']
+            },
+            {
+                name: 'tools',
+                items: ['searchreplace', 'preview', 'code', 'fullscreen']
+            }
+        ],
+        menubar: 'file edit view insert format tools',
+        menu: {
+            file: {
+                title: '文件',
+                items: 'newdocument restoredraft | preview | print'
+            },
+            edit: {
+                title: '编辑',
+                items: 'undo redo | cut copy paste pastetext | selectall searchreplace'
+            },
+            view: {
+                title: '视图',
+                items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen'
+            },
+            insert: {
+                title: '插入',
+                items: 'image link media codesample | charmap emoticons hr | pagebreak nonbreaking anchor | insertdatetime'
+            },
+            format: {
+                title: '格式',
+                items: 'bold italic underline strikethrough superscript subscript | blocks fontfamily fontsize | forecolor backcolor | removeformat'
+            },
+            tools: {
+                title: '工具',
+                items: 'spellchecker wordcount code'
+            }
         },
-        edit: { 
-            title: '编辑', 
-            items: 'undo redo | cut copy paste pastetext | selectall searchreplace' 
-        },
-        view: { 
-            title: '视图', 
-            items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' 
-        },
-        insert: { 
-            title: '插入', 
-            items: 'image link media codesample | charmap emoticons hr | pagebreak nonbreaking anchor | insertdatetime' 
-        },
-        format: { 
-            title: '格式', 
-            items: 'bold italic underline strikethrough superscript subscript | blocks fontfamily fontsize | forecolor backcolor | removeformat' 
-        },
-        tools: { 
-            title: '工具', 
-            items: 'spellchecker wordcount code' 
-        }
-    },
-    autosave_ask_before_unload: true,
-    autosave_interval: '30s',
-    autosave_prefix: 'tinymce-autosave-{path}-' + ({{ article.id if article else 0 }}),
+        autosave_ask_before_unload: true,
+        autosave_interval: '30s',
+        autosave_prefix: 'tinymce-autosave-{path}-' + ({{ article.id if article else 0 }}),
     autosave_restore_when_empty: false,
-    autosave_retention: '2m',
-    height: 600,
-    resize: true,
-    branding: false,
-    image_advtab: true,
-    image_caption: true,
-    codesample_languages: [
+        autosave_retention: '2m',
+        height: 600,
+        resize: true,
+        branding: false,
+        image_advtab: true,
+        image_caption: true,
+        codesample_languages: [
         { text: 'HTML/XML', value: 'markup' },
         { text: 'JavaScript', value: 'javascript' },
         { text: 'CSS', value: 'css' },
@@ -230,7 +232,7 @@ tinymce.init({
         { text: 'C', value: 'c' },
         { text: 'C++', value: 'cpp' }
     ],
-    images_upload_handler: function (blobInfo, progress) {
+        images_upload_handler: function (blobInfo, progress) {
         return new Promise((resolve, reject) => {
             const formData = new FormData();
             formData.append('upload', blobInfo.blob(), blobInfo.filename());
@@ -241,33 +243,35 @@ tinymce.init({
                 body: formData,
                 credentials: 'same-origin'
             })
-            .then(response => response.json())
-            .then(result => {
-                if (result.location) {
-                    resolve(result.location);
-                } else {
-                    reject('上传失败：' + (result.error || '未知错误'));
-                }
-            })
-            .catch(error => {
-                reject('上传失败：' + error);
-            });
+                .then(response => response.json())
+                .then(result => {
+                    if (result.location) {
+                        resolve(result.location);
+                    } else {
+                        reject('上传失败：' + (result.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    reject('上传失败：' + error);
+                });
         });
     },
     image_dimensions: false,
-    image_class_list: [
+        image_class_list: [
         { title: '响应式', value: 'img-fluid' }
     ],
-    skin: document.documentElement.classList.contains('dark') ? 'oxide-dark' : 'oxide',
-    content_css: document.documentElement.classList.contains('dark') ? 'dark' : 'default',
-    content_style: `
+        // 根据当前主题设置皮肤
+        skin: isDarkMode ? 'oxide-dark' : 'oxide',
+        content_css: isDarkMode ? 'dark' : 'default',
+        // 设置编辑器内容的样式
+        content_style: `
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             font-size: 16px;
             line-height: 1.6;
             padding: 1rem;
-            background-color: ${document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff'};
-            color: ${document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#000000'};
+            background-color: ${isDarkMode ? '#1f2937' : '#ffffff'};
+            color: ${isDarkMode ? '#e5e7eb' : '#000000'};
         }
         img {
             max-width: 100%;
@@ -275,48 +279,64 @@ tinymce.init({
             border-radius: 0.375rem;
         }
         pre {
-            background: ${document.documentElement.classList.contains('dark') ? '#374151' : '#f4f4f4'};
+            background: ${isDarkMode ? '#374151' : '#f4f4f4'};
             padding: 1rem;
             border-radius: 0.375rem;
-            color: ${document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#1f2937'};
+            color: ${isDarkMode ? '#e5e7eb' : '#1f2937'};
         }
         blockquote {
-            border-left: 4px solid ${document.documentElement.classList.contains('dark') ? '#4b5563' : '#e5e7eb'};
+            border-left: 4px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'};
             padding-left: 1rem;
             margin-left: 0;
-            color: ${document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'};
+            color: ${isDarkMode ? '#9ca3af' : '#6b7280'};
         }
         .dark-theme {
             background-color: #1f2937;
             color: #e5e7eb;
         }
     `,
-    setup: function(editor) {
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.attributeName === 'class') {
-                    const isDark = document.documentElement.classList.contains('dark');
-                    const content = editor.getContent();
-                    editor.setContent(''); // 临时清空内容
-                    if (isDark) {
-                        editor.dom.addClass(editor.getBody(), 'dark-theme');
-                        editor.getBody().style.backgroundColor = '#1f2937';
-                        editor.getBody().style.color = '#e5e7eb';
-                    } else {
-                        editor.dom.removeClass(editor.getBody(), 'dark-theme');
-                        editor.getBody().style.backgroundColor = '#ffffff';
-                        editor.getBody().style.color = '#000000';
-                    }
-                    editor.setContent(content); // 恢复内容
+        // 监听主题变化
+        setup: function(editor) {
+            // 等待编辑器初始化完成后再设置初始主题
+            editor.on('init', function() {
+                // 设置初始主题
+                const isDark = document.documentElement.classList.contains('dark');
+                if (isDark) {
+                    editor.dom.addClass(editor.getBody(), 'dark-theme');
+                    editor.getBody().setAttribute('data-mce-style', 
+                        'overflow-y: hidden; padding-left: 1px; padding-right: 1px; min-height: inherit; background: #1f2937;'
+                    );
                 }
             });
-        });
 
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['class']
-        });
-    }
-});
+            // 监听主题变化
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === 'class') {
+                        const isDark = document.documentElement.classList.contains('dark');
+                        const content = editor.getContent();
+                        editor.setContent(''); // 临时清空内容
+                        if (isDark) {
+                            editor.dom.addClass(editor.getBody(), 'dark-theme');
+                            editor.getBody().setAttribute('data-mce-style', 
+                                'overflow-y: hidden; padding-left: 1px; padding-right: 1px; min-height: inherit; background: #1f2937;'
+                            );
+                        } else {
+                            editor.dom.removeClass(editor.getBody(), 'dark-theme');
+                            editor.getBody().setAttribute('data-mce-style', 
+                                'overflow-y: hidden; padding-left: 1px; padding-right: 1px; min-height: inherit;'
+                            );
+                        }
+                        editor.setContent(content); // 恢复内容
+                    }
+                });
+            });
+
+            observer.observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        }
+    });
 </script>
 {% endblock %} 
