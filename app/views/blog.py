@@ -16,6 +16,7 @@ from flask import current_app
 from app.models.category import Category
 from datetime import datetime, timedelta
 import random
+from app.models.file import File
 
 bp = Blueprint('blog', __name__)
 
@@ -336,11 +337,22 @@ def upload_image():
         # 获取文件扩展名
         file_ext = file.filename.rsplit('.', 1)[1].lower()
 
-        # 生成文件内容的 MD5 哈希值作为文件名
+        # 生成文件内容的 MD5 哈希值
         file_content = file.read()
         file_hash = hashlib.md5(file_content).hexdigest()
+        file.stream.seek(0)  # 重置文件指针
+
+        # 检查是否存在相同的文件
+        existing_file = File.query.filter_by(md5=file_hash).first()
+        if existing_file:
+            # 如果文件已存在，直接返回已存在文件的URL
+            return jsonify({
+                'location': existing_file.file_path,
+                'url': existing_file.file_path,
+                'uploaded': True
+            })
+
         filename = f"{file_hash}.{file_ext}"
-        file.stream.seek(0)  # 重置文件指针以保存文件
 
         # 生成日期路径
         date_path = datetime.now().strftime('%Y%m%d')
@@ -351,13 +363,34 @@ def upload_image():
         file_path = os.path.join(upload_folder, filename)
         file.save(file_path)
 
-        # 返回文件 URL
-        url = url_for('static', filename=f'uploads/images/{date_path}/{filename}', _external=True)
-        return jsonify({
-            'location': url,  # TinyMCE 需要 location 字段
-            'url': url,       # 兼容其他情况
-            'uploaded': True
-        })
+        try:
+            # 使用相对路径
+            relative_path = f'/static/uploads/images/{date_path}/{filename}'
+
+            # 保存文件信息到数据库
+            db_file = File(
+                filename=filename,
+                original_filename=file.filename,
+                file_path=relative_path,  # 保存相对路径
+                file_type='image',
+                file_size=os.path.getsize(file_path),
+                md5=file_hash,
+                uploader_id=current_user.id
+            )
+            db.session.add(db_file)
+            db.session.commit()
+
+            return jsonify({
+                'location': relative_path,  # TinyMCE 需要 location 字段
+                'url': relative_path,       # 兼容其他情况
+                'uploaded': True
+            })
+        except Exception as e:
+            db.session.rollback()
+            # 如果数据库操作失败，删除已上传的文件
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            return jsonify({'error': f'保存文件信息失败：{str(e)}'}), 500
 
     return jsonify({'error': '不支持的文件类型'}), 400
 

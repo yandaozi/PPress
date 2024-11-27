@@ -3,7 +3,7 @@ from datetime import datetime
 
 class Plugin(db.Model):
     __tablename__ = 'plugins'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)  # 插件名称
     directory = db.Column(db.String(100), unique=True, nullable=False)  # 插件目录名
@@ -15,10 +15,10 @@ class Plugin(db.Model):
     installed_at = db.Column(db.DateTime, default=datetime.utcnow)  # 安装时间
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # 更新时间
     config = db.Column(db.JSON)  # 插件配置(JSON格式)
-    
+
     def __repr__(self):
         return f'<Plugin {self.name}>'
-    
+
     @staticmethod
     def add_plugin(plugin_info, directory):
         """添加插件记录"""
@@ -34,7 +34,7 @@ class Plugin(db.Model):
         db.session.add(plugin)
         db.session.commit()
         return plugin
-    
+
     @staticmethod
     def remove_plugin(name):
         """删除插件记录"""
@@ -44,9 +44,9 @@ class Plugin(db.Model):
             db.session.commit()
             return True
         return False
-    
+
     def update_config(self, config):
         """更新插件配置"""
         self.config = config
         self.updated_at = datetime.utcnow()
-        db.session.commit() 
+        db.session.commit()

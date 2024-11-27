@@ -4,6 +4,11 @@ from .extensions import db, login_manager, csrf
 from .utils.theme_manager import ThemeManager
 from app.plugins import get_plugin_manager
 
+def init_plugins(app):
+    """初始化插件"""
+    plugin_manager = get_plugin_manager()
+    plugin_manager.init_app(app)
+
 def create_app(config_name='default'):
     app = Flask(__name__)
 
@@ -25,15 +30,19 @@ def create_app(config_name='default'):
     # 添加这行配置，自动处理 URL 结尾的斜杠
     app.url_map.strict_slashes = False
 
-    # 初始化插件
+    # 初始化基础扩展
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
     login_manager.login_view = 'auth.login'
 
-    # 初始化插件管理器
-    plugin_manager = get_plugin_manager()
-    plugin_manager.init_app(app)
+    # 注册一个请求钩子来延迟初始化插件
+    @app.before_request
+    def lazy_init_plugins():
+        if not hasattr(app, '_plugins_initialized'):
+            with app.app_context():
+                init_plugins(app)
+            app._plugins_initialized = True
 
     # 注册蓝图
     from .views import auth, blog, admin, user

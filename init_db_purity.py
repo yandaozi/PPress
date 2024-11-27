@@ -7,9 +7,11 @@ from datetime import datetime
 def init_db():
     app = create_app()
     with app.app_context():
+        print("开始初始化数据库...")
         # 删除所有现有数据
         db.drop_all()
         # 创建表
+        print("创建新表...")
         db.create_all()
         
         # 初始化网站配置

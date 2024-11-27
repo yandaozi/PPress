@@ -1,5 +1,5 @@
 from app import create_app, db
-from app.models import User, Article, Tag, Comment, ViewHistory, Category, SiteConfig
+from app.models import User, Article, Tag, Comment, ViewHistory, Category, SiteConfig, Plugin, File
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 import random
@@ -8,10 +8,13 @@ app = create_app()
 
 def init_db():
     with app.app_context():
+        print("开始初始化数据库...")
         # 清空所有表
         db.drop_all()
+        print("创建新表...")
         db.create_all()
-        
+        db.session.commit()
+
         # 初始化网站配置
         default_configs = [
             {'key': 'site_name', 'value': 'PPress', 'description': '网站名称'},
@@ -25,7 +28,7 @@ def init_db():
         for config in default_configs:
             db.session.add(SiteConfig(**config))
         db.session.commit()
-        
+
         # 创建管理员用户
         admin = User(
             username='admin',
@@ -34,7 +37,7 @@ def init_db():
         )
         admin.set_password('123456')
         db.session.add(admin)
-        
+
         # 创建普通用户
         users = []
         for i in range(25):
@@ -46,7 +49,7 @@ def init_db():
             )
             users.append(user)
             db.session.add(user)
-        
+
         # 创建标签
         tags = []
         tag_names = ['Python', 'Java', 'C++', ' 数据结构 ', ' 算法 ', ' 人工智能 ', ' 机器学习 ', ' 深度学习 ', ' 数据分析 ', ' 数据挖掘 ', ' 大数据 ', ' 云计算 ', ' 区块链 ', ' 网络安全 ', ' 物联网 ', ' 移动开发 ', 'Android', 'iOS', ' 游戏开发 ', ' 图形图像 ', ' 音视频处理 ', ' 数据库设计 ', 'SQL', 'NoSQL', 'MongoDB', 'Redis', 'Web 框架 ', 'Django', 'Flask', 'Spring', 'Hibernate', ' 前端框架 ', 'Vue.js', 'React', 'Angular', 'HTML5', 'CSS3', 'JavaScript', 'TypeScript', 'Node.js', ' 后端开发 ', ' 服务器 ', ' 运维 ', 'Linux', 'Unix', 'Windows 开发 ', ' 软件测试 ', ' 自动化测试 ', ' 性能测试 ', ' 单元测试 ', ' 集成测试 ', ' 系统测试 ', 'UI 设计 ', 'UX 设计 ', ' 交互设计 ', ' 产品设计 ', ' 项目管理 ', ' 敏捷开发 ', ' 瀑布模型 ', ' 迭代开发 ', ' 版本控制 ', 'Git', 'SVN', ' 代码规范 ', ' 编程思想 ', ' 设计模式 ', ' 软件工程 ', ' 计算机网络 ', 'TCP/IP', 'HTTP', 'HTTPS', ' 网络协议 ', ' 路由交换 ', ' 无线网络 ', ' 云计算平台 ', 'AWS', 'Azure', ' 阿里云 ', ' 腾讯云 ', ' 虚拟化技术 ', 'Docker', 'Kubernetes', ' 微服务架构 ', ' 消息队列 ', 'Kafka', 'RabbitMQ', ' 缓存技术 ', ' 数据存储 ', ' 文件系统 ', ' 分布式系统 ', ' 一致性算法 ', ' 分布式数据库 ', ' 数据仓库 ', ' 数据湖 ', ' 数据可视化 ', 'Echarts', 'Tableau', 'PowerBI', ' 商业智能 ', ' 人工智能算法 ', ' 神经网络 ', ' 卷积神经网络 ', ' 循环神经网络 ', ' 自然语言处理 ', ' 语音识别 ', ' 图像识别 ', ' 计算机视觉 ', ' 机器人技术 ', ' 智能硬件 ', ' 传感器技术 ', ' 嵌入式系统 ', ' 电子电路 ', ' 单片机 ', 'PLC 编程 ', ' 工业自动化 ', ' 增材制造 ', '3D 打印 ', ' 虚拟现实 ', ' 增强现实 ', ' 混合现实 ', ' 元宇宙 ', ' 数字孪生 ', ' 教育科技 ', ' 在线教育 ', ' 教育信息化 ', ' 智慧教育 ', ' 金融科技 ', ' 数字货币 ', ' 区块链金融 ', ' 支付系统 ', ' 风控系统 ', ' 保险科技 ', ' 医疗科技 ', ' 医疗信息化 ', ' 电子病历 ', ' 远程医疗 ', ' 医学影像 ', ' 生物识别 ', ' 基因技术 ', ' 精准医疗 ', ' 农业科技 ', ' 智慧农业 ', ' 农业物联网 ', ' 农业大数据 ', ' 无人机植保 ', ' 智能家居 ', ' 智能家电 ', ' 智能照明 ', ' 智能安防 ', ' 智能门锁 ', ' 智能窗帘 ', ' 智能音箱 ', ' 智能手表 ', ' 智能手环 ', ' 智能交通 ', ' 自动驾驶 ', ' 车联网 ', ' 智能物流 ', ' 物流信息化 ', ' 供应链管理 ', ' 电商平台 ', ' 电商运营 ', ' 电商营销 ', ' 跨境电商 ', ' 社交网络 ', ' 社交媒体 ', ' 短视频 ', ' 直播 ', ' 内容创作 ', ' 数字营销 ', ' 搜索引擎优化 ', ' 搜索引擎营销 ', ' 社交媒体营销 ', ' 电子邮件营销 ', ' 内容管理系统 ', 'WordPress', 'Drupal', 'Joomla']
@@ -54,7 +57,7 @@ def init_db():
             tag = Tag(name=name)
             tags.append(tag)
             db.session.add(tag)
-        
+
         # 创建分类
         categories = []
         default_categories = [
@@ -76,7 +79,44 @@ def init_db():
             category = Category(**category_data)
             categories.append(category)
             db.session.add(category)
-        
+
+        # 初始化插件表
+        default_plugins = [
+            {
+                'name': 'Article Stats',
+                'directory': 'article_stats',
+                'description': '为文章提供阅读时长估算、字数统计等功能',
+                'version': '1.0.0',
+                'author': '言道子',
+                'author_url': 'https://gitee.com/fojie',
+                'enabled': True,
+                'config': {
+                    'enabled': True,
+                    'show_word_count': True,
+                    'show_read_time': True,
+                    'show_code_blocks': True,
+                    'show_images': True,
+                    'words_per_minute': {
+                        'chinese': 300,
+                        'english': 200
+                    }
+                }
+            }
+        ]
+
+        for plugin_info in default_plugins:
+            plugin = Plugin(
+                name=plugin_info['name'],
+                directory=plugin_info['directory'],
+                description=plugin_info['description'],
+                version=plugin_info['version'],
+                author=plugin_info['author'],
+                author_url=plugin_info['author_url'],
+                enabled=plugin_info['enabled'],
+                config=plugin_info['config']
+            )
+            db.session.add(plugin)
+
         # 提交以获取ID
         db.session.commit()
 
@@ -114,7 +154,7 @@ Flask的主要优点包括：
 
 前端开发不仅要注重功能实现，还要关注用户体验、页面性能和代码质量。'''
         ]
-        
+
         # 创建文章
         articles = []
         for i in range(1000):
@@ -131,10 +171,10 @@ Flask的主要优点包括：
             article.tags = random.sample(tags, random.randint(2, 4))
             articles.append(article)
             db.session.add(article)
-        
+
         # 提交以获取文章ID
         db.session.commit()
-        
+
         # 创建评论
         for _ in range(150):
             comment = Comment(
@@ -151,7 +191,7 @@ Flask的主要优点包括：
                 created_at=datetime.now() - timedelta(days=random.randint(0, 30))
             )
             db.session.add(comment)
-        
+
         # 创建浏览历史
         for _ in range(100):
             view = ViewHistory(
@@ -160,10 +200,10 @@ Flask的主要优点包括：
                 viewed_at=datetime.now() - timedelta(days=random.randint(0, 30))
             )
             db.session.add(view)
-        
+
         # 最终提交
         db.session.commit()
-        
+
         print("测试数据库初始化完成！作者QQ：575732022")
         print("\n测试账号：")
         print("管理员 - 用户名：admin，密码：123456")

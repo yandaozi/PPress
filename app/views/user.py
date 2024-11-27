@@ -18,6 +18,7 @@ import os
 from werkzeug.utils import secure_filename
 from flask import current_app
 from datetime import datetime
+from app.models.file import File
 
 bp = Blueprint('user', __name__, url_prefix='/user')
 
@@ -161,31 +162,62 @@ def edit_profile():
             if '.' not in avatar.filename:
                 flash('文件名无效')
                 return redirect(url_for('user.edit_profile'))
-            file_extension = avatar.filename.rsplit('.', 1)[1].lower()
-            if file_extension not in allowed_extensions:
+            file_ext = avatar.filename.rsplit('.', 1)[1].lower()
+            if file_ext not in allowed_extensions:
                 flash('不支持的文件格式，请上传 PNG、JPG、GIF 或 WebP 格式的图片')
                 return redirect(url_for('user.edit_profile'))
-            # 生成日期路径
-            date_path = datetime.now().strftime('%Y%m%d')
-            avatar_dir = os.path.join(current_app.static_folder, 'uploads', 'avatars', date_path)
-            os.makedirs(avatar_dir, exist_ok=True)
 
-            # 生成文件的 MD5 哈希值作为文件名
+            # 生成文件的 MD5 哈希值
             file_content = avatar.read()
             file_hash = hashlib.md5(file_content).hexdigest()
-            filename = f"{file_hash}.{file_extension}"
-            avatar.seek(0)  # 重置文件指针以保存文件
+            avatar.seek(0)  # 重置文件指针
 
-            # 保存文件
-            full_path = os.path.join(avatar_dir, filename)
-            avatar.save(full_path)
+            # 检查是否存在相同的文件
+            existing_file = File.query.filter_by(md5=file_hash).first()
+            if existing_file:
+                # 如果文件已存在，直接使用已存在的文件
+                current_user.avatar = existing_file.file_path
+            else:
+                # 生成日期路径
+                date_path = datetime.now().strftime('%Y%m%d')
+                upload_folder = os.path.join(current_app.static_folder, 'uploads', 'avatars', date_path)
+                os.makedirs(upload_folder, exist_ok=True)
 
-            # 更新用户头像路径（使用正斜杠）
-            avatar_url = f"/static/uploads/avatars/{date_path}/{filename}"
-            current_user.avatar = avatar_url
+                # 生成文件名和保存文件
+                filename = f"{file_hash}.{file_ext}"
+                file_path = os.path.join(upload_folder, filename)
+                avatar.save(file_path)
+
+                # 使用相对路径
+                relative_path = f'/static/uploads/avatars/{date_path}/{filename}'
+
+                try:
+                    # 保存文件信息到数据库
+                    db_file = File(
+                        filename=filename,
+                        original_filename=avatar.filename,
+                        file_path=relative_path,
+                        file_type='avatar',
+                        file_size=os.path.getsize(file_path),
+                        md5=file_hash,
+                        uploader_id=current_user.id
+                    )
+                    db.session.add(db_file)
+                    current_user.avatar = relative_path
+                except Exception as e:
+                    # 如果数据库操作失败，删除已上传的文件
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                    flash(f'头像上传失败：{str(e)}')
+                    return redirect(url_for('user.edit_profile'))
+        
+        try:
+            db.session.commit()
+            flash('个人信息更新成功！')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'保存失败：{str(e)}')
             
-        db.session.commit()
-        flash('个人信息更新成功！')
         return redirect(url_for('user.profile'))
         
     return render_template('user/edit_profile.html')
@@ -274,4 +306,4 @@ def delete_history(history_id):
 def delete_all_history():
     ViewHistory.query.filter_by(user_id=current_user.id).delete()
     db.session.commit()
-    return '', 204 
+    return '', 204

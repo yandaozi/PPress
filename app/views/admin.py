@@ -20,6 +20,7 @@ import numpy as np
 from ..utils.theme_manager import ThemeManager
 from app.plugins import plugin_manager, get_plugin_manager
 import io
+from app.models.file import File
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -993,6 +994,66 @@ def reload_plugin(plugin_name):
             'status': 'error',
             'message': f'重载失败：{str(e)}'
         })
+
+@bp.route('/files')
+@login_required
+@admin_required
+def manage_files():
+    page = request.args.get('page', 1, type=int)
+    search_query = request.args.get('q', '').strip()
+    search_type = request.args.get('type', 'filename')
+    
+    # 构建查询
+    query = File.query
+    
+    # 搜索
+    if search_query:
+        if search_type == 'filename':
+            query = query.filter(File.original_filename.ilike(f'%{search_query}%'))
+        elif search_type == 'type':
+            query = query.filter(File.file_type.ilike(f'%{search_query}%'))
+        elif search_type == 'uploader':
+            query = query.join(File.uploader).filter(User.username.ilike(f'%{search_query}%'))
+    
+    # 分页
+    pagination = query.order_by(File.upload_time.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    
+    return render_template(
+        'admin/files.html',
+        files=pagination,
+        search_query=search_query,
+        search_type=search_type
+    )
+
+@bp.route('/files/<int:file_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_file(file_id):
+    file = File.query.get_or_404(file_id)
+    
+    try:
+        # 获取文件的物理路径
+        file_path = os.path.join(current_app.root_path, file.file_path.lstrip('/'))
+        
+        # 删除物理文件
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            
+            # 如果文件所在目录为空，删除目录
+            directory = os.path.dirname(file_path)
+            if not os.listdir(directory):
+                os.rmdir(directory)
+        
+        # 从数据库中删除记录
+        db.session.delete(file)
+        db.session.commit()
+        
+        return '', 204
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'删除失败：{str(e)}'}), 500
 
 # 添加一个模板上下文处理器
 @bp.context_processor

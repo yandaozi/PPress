@@ -1,0 +1,131 @@
+{% extends theme_path('admin/base.html') %}
+
+{% block title %}附件管理{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <!-- 标题和搜索栏 -->
+        <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white self-start sm:self-center">附件管理</h2>
+            
+            <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                <!-- 搜索表单 -->
+                <form action="{{ url_for('admin.manage_files') }}" method="get" 
+                      class="flex items-center w-full sm:w-auto">
+                    <div class="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
+                        <!-- 搜索类型下拉框 -->
+                        <select name="type" 
+                                class="px-4 py-2 bg-gray-50 dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-600 transition-colors duration-200">
+                            <option value="filename" {% if search_type == 'filename' %}selected{% endif %}>文件名</option>
+                            <option value="type" {% if search_type == 'type' %}selected{% endif %}>类型</option>
+                            <option value="uploader" {% if search_type == 'uploader' %}selected{% endif %}>上传者</option>
+                        </select>
+
+                        <!-- 搜索框 -->
+                        <div class="relative flex-1">
+                            <input type="text" 
+                                   name="q" 
+                                   value="{{ search_query }}"
+                                   placeholder="搜索附件..."
+                                   class="w-full sm:w-64 px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none transition-colors duration-200">
+                            <button type="submit" 
+                                    class="absolute right-0 top-0 h-full px-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 搜索结果统计 -->
+        {% if search_query %}
+        <div class="mb-4 px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <p class="text-sm text-gray-600 dark:text-gray-300">
+                找到 <span class="font-medium text-gray-900 dark:text-white">{{ files.total }}</span> 个匹配的文件
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- 文件列表 -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {% for file in files.items %}
+            <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
+                <!-- 文件预览 -->
+                <div class="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-900">
+                    {% if file.file_type == 'image' or file.file_type == 'avatar' %}
+                    <img src="{{ file.file_path }}" alt="{{ file.original_filename }}" 
+                         class="object-cover w-full h-full">
+                    {% else %}
+                    <div class="flex items-center justify-center">
+                        <svg class="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 文件信息 -->
+                <div class="p-3 sm:p-4">
+                    <div class="mb-1 sm:mb-2 truncate" title="{{ file.original_filename }}">
+                        <a href="{{ file.file_path }}" target="_blank" 
+                           class="text-xs sm:text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600">
+                            {{ file.original_filename }}
+                        </a>
+                    </div>
+                    <div class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 space-y-0.5 sm:space-y-1">
+                        <p>类型：{{ file.file_type }}</p>
+                        <p>大小：{{ (file.file_size / 1024)|round(2) }} KB</p>
+                        <p>上传时间：{{ file.upload_time.strftime('%Y-%m-%d %H:%M') }}</p>
+                        <p>上传者：{{ file.uploader.username }}</p>
+                    </div>
+                    <div class="mt-2 sm:mt-4 flex justify-end">
+                        <button type="button"
+                                onclick="confirmDelete({{ file.id }})" 
+                                class="text-xs sm:text-sm text-red-600 hover:text-red-800">
+                            删除
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-span-full text-center py-12">
+                <p class="text-gray-500 dark:text-gray-400">暂无文件</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- 分页 -->
+        {% if files.pages > 1 %}
+        <div class="mt-6">
+            {% include theme_path('components/pagination.html') %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function confirmDelete(fileId) {
+    showAlert('确定要删除这个文件吗？此操作不可恢复！', 'warning', '确认删除', function() {
+        fetch(`/admin/files/${fileId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        }).then(response => {
+            if (response.ok) {
+                showAlert('文件已删除', 'success', '成功');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showAlert('删除失败', 'error', '错误');
+            }
+        }).catch(error => {
+            showAlert('删除失败：' + error, 'error', '错误');
+        });
+    });
+}
+</script>
+{% endblock %} 
