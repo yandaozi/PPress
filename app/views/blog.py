@@ -372,7 +372,7 @@ def upload_image():
                 filename=filename,
                 original_filename=file.filename,
                 file_path=relative_path,  # 保存相对路径
-                file_type='image',
+                file_type='images/'+file_ext,
                 file_size=os.path.getsize(file_path),
                 md5=file_hash,
                 uploader_id=current_user.id

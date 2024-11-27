@@ -56,7 +56,7 @@
             <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
                 <!-- 文件预览 -->
                 <div class="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-900">
-                    {% if file.file_type == 'image' or file.file_type == 'avatar' %}
+                    {% if file.file_type.split('/')[-1] in ['jpg', 'jpeg', 'webp', 'png', 'gif', 'bmp'] or file.file_type.startswith(('avatar/', 'images/')) %}
                     <img src="{{ file.file_path }}" alt="{{ file.original_filename }}" 
                          class="object-cover w-full h-full">
                     {% else %}
@@ -118,7 +118,7 @@ function confirmDelete(fileId) {
         }).then(response => {
             if (response.ok) {
                 showAlert('文件已删除', 'success', '成功');
-                setTimeout(() => window.location.reload(), 1000);
+                setTimeout(() => window.location.reload(), 300);
             } else {
                 showAlert('删除失败', 'error', '错误');
             }

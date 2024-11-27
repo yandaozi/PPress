@@ -197,7 +197,7 @@ def edit_profile():
                         filename=filename,
                         original_filename=avatar.filename,
                         file_path=relative_path,
-                        file_type='avatar',
+                        file_type='avatar/'+file_ext,
                         file_size=os.path.getsize(file_path),
                         md5=file_hash,
                         uploader_id=current_user.id
