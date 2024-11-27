@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %} - {{ site_config.get_config('site_name', 'PPress') }}</title>
-
-    <!-- 默认的 meta 标签 -->
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     {% block meta %}
     <meta name="keywords" content="{{ site_config.get_config('site_keywords', 'PPress,技术,博客,Python,Web开发') }}">
     <meta name="description" content="{{ site_config.get_config('site_description', '分享技术知识和经验') }}">
@@ -183,7 +182,7 @@
 
     {% block content %}{% endblock %}
 </main>
-<script src="{{ url_for('static', filename='defaultjs/search.js') }}"></script>
+<script src="{{ url_for('static', filename='default/js/search.js') }}"></script>
 <script>
     function toggleDropdown(button) {
         const dropdown = document.getElementById('userDropdown');
