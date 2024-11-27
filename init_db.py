@@ -37,7 +37,7 @@ def init_db():
         
         # 创建普通用户
         users = []
-        for i in range(5):
+        for i in range(25):
             user = User(
                 username=f'user{i}',
                 email=f'user{i}@example.com',
@@ -63,6 +63,14 @@ def init_db():
             {'name': '项目实战', 'description': '实际项目开发经验'},
             {'name': '技术资讯', 'description': '行业新闻和技术动态'},
             {'name': '其他', 'description': '其他类型的文章'},
+            {'name': '其他1', 'description': '其他类型的文章'},
+            {'name': '其他2', 'description': '其他类型的文章'},
+            {'name': '其他3', 'description': '其他类型的文章'},
+            {'name': '其他4', 'description': '其他类型的文章'},
+            {'name': '其他5', 'description': '其他类型的文章'},
+            {'name': '其他6', 'description': '其他类型的文章'},
+            {'name': '其他7', 'description': '其他类型的文章'},
+            {'name': '其他8', 'description': '其他类型的文章'},
         ]
         for category_data in default_categories:
             category = Category(**category_data)

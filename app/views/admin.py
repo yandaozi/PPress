@@ -75,7 +75,7 @@ def dashboard():
                     y='title',
                     orientation='h',
                     title='热门文章访问量统计（Top 20）',
-                    labels={'views': '访问量', 'title': '文章标题'})
+                    labels={'views': '访问量', 'title': ''})
         fig.update_layout(
             height=550,
             showlegend=False,
@@ -641,5 +641,17 @@ def theme_preview(theme):
 @bp.context_processor
 def utility_processor():
     def is_active_group(menu_items):
-        return request.endpoint in [item[0] for item in menu_items]
-    return dict(is_active_group=is_active_group) 
+        menu_endpoints = [item[0] for item in menu_items]
+        current_endpoint = request.endpoint
+        # 检查当前页面的endpoint是否在这个菜单组的任何子菜单中
+        return current_endpoint in menu_endpoints
+    
+    def is_current_menu(menu_items):
+        # 检查当前页面是否属于这个菜单组
+        current_endpoint = request.endpoint
+        return current_endpoint and any(current_endpoint == item[0] for item in menu_items)
+    
+    return dict(
+        is_active_group=is_active_group,
+        is_current_menu=is_current_menu
+    ) 
