@@ -125,6 +125,8 @@ def edit_profile():
         username = request.form.get('username')
         email = request.form.get('email')
         avatar = request.files.get('avatar')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
         
         if username and username != current_user.username:
             if User.query.filter_by(username=username).first():
@@ -137,6 +139,15 @@ def edit_profile():
                 flash('邮箱已存在')
                 return redirect(url_for('user.edit_profile'))
             current_user.email = email
+            
+        if password:
+            if not confirm_password:
+                flash('请确认新密码')
+                return redirect(url_for('user.edit_profile'))
+            if password != confirm_password:
+                flash('两次输入的密码不一致')
+                return redirect(url_for('user.edit_profile'))
+            current_user.set_password(password)
             
         if avatar:
             # 检查文件大小（2MB限制）
