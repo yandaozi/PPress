@@ -1,0 +1,20 @@
+{
+    "name": "Article Stats",
+    "description": "为文章提供阅读时长估算、字数统计等功能",
+    "version": "1.0.0",
+    "author": "言道子",
+    "author_url": "https://gitee.com/fojie",
+    "plugin_class": "Plugin",
+    "requires": [],
+    "config": {
+        "enabled": true,
+        "show_word_count": true,
+        "show_read_time": true,
+        "show_code_blocks": true,
+        "show_images": true,
+        "words_per_minute": {
+            "chinese": 300,
+            "english": 200
+        }
+    }
+} 

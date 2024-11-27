@@ -1,0 +1,128 @@
+<form method="post" class="space-y-8">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <!-- 显示选项 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-6">
+        <div class="border-b dark:border-gray-700 pb-4">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">显示选项</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">选择要在文章页面显示的统计信息</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 字数统计 -->
+            <div class="relative flex items-start">
+                <div class="flex items-center h-5">
+                    <input type="checkbox" name="show_word_count" id="show_word_count"
+                           {% if settings.show_word_count.value %}checked{% endif %}
+                           class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                </div>
+                <div class="ml-3">
+                    <label for="show_word_count" class="font-medium text-gray-700 dark:text-gray-300">
+                        显示字数统计
+                    </label>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">显示文章的总字数（包括中英文）</p>
+                </div>
+            </div>
+
+            <!-- 阅读时间 -->
+            <div class="relative flex items-start">
+                <div class="flex items-center h-5">
+                    <input type="checkbox" name="show_read_time" id="show_read_time"
+                           {% if settings.show_read_time.value %}checked{% endif %}
+                           class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                </div>
+                <div class="ml-3">
+                    <label for="show_read_time" class="font-medium text-gray-700 dark:text-gray-300">
+                        显示阅读时间
+                    </label>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">显示预计阅读完文章需要的时间</p>
+                </div>
+            </div>
+
+            <!-- 代码块数量 -->
+            <div class="relative flex items-start">
+                <div class="flex items-center h-5">
+                    <input type="checkbox" name="show_code_blocks" id="show_code_blocks"
+                           {% if settings.show_code_blocks.value %}checked{% endif %}
+                           class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                </div>
+                <div class="ml-3">
+                    <label for="show_code_blocks" class="font-medium text-gray-700 dark:text-gray-300">
+                        显示代码块数量
+                    </label>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">显示文章中包含的代码块数量</p>
+                </div>
+            </div>
+
+            <!-- 图片数量 -->
+            <div class="relative flex items-start">
+                <div class="flex items-center h-5">
+                    <input type="checkbox" name="show_images" id="show_images"
+                           {% if settings.show_images.value %}checked{% endif %}
+                           class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                </div>
+                <div class="ml-3">
+                    <label for="show_images" class="font-medium text-gray-700 dark:text-gray-300">
+                        显示图片数量
+                    </label>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">显示文章中包含的图片数量</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 阅读速度设置 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 space-y-6">
+        <div class="border-b dark:border-gray-700 pb-4">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">阅读速度设置</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">设置不同语言的阅读速度，用于计算预计阅读时间</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 中文阅读速度 -->
+            <div>
+                <label for="words_per_minute_chinese" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    中文阅读速度（字/分钟）
+                </label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <input type="number" style="outline: none" name="words_per_minute_chinese" id="words_per_minute_chinese"
+                           value="{{ settings.words_per_minute_chinese.value }}"
+                           min="100" max="1000" step="10"
+                           class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-0">
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm">字/分</span>
+                    </div>
+                </div>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">建议值：300-500，默认：300</p>
+            </div>
+
+            <!-- 英文阅读速度 -->
+            <div>
+                <label for="words_per_minute_english" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    英文阅读速度（词/分钟）
+                </label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <input type="number" style="outline: none" name="words_per_minute_english" id="words_per_minute_english"
+                           value="{{ settings.words_per_minute_english.value }}"
+                           min="50" max="500" step="10"
+                           class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-0">
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm">词/分</span>
+                    </div>
+                </div>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">建议值：150-250，默认：200</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 保存按钮 -->
+    <div class="flex justify-end">
+        <button type="submit" 
+                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            保存设置
+        </button>
+    </div>
+</form> 

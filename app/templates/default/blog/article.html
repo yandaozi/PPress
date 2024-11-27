@@ -35,6 +35,13 @@
     <!-- 文章内容 -->
     <article class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 mb-8">
         <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{{ article.title }}</h1>
+        
+        <!-- 添加文章统计信息 -->
+        <div id="article-stats" class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 mb-4" 
+             data-article-id="{{ article.id }}">
+            <!-- 统计信息将通过 JavaScript 动态加载 -->
+        </div>
+        
         <!-- 文章作者信息部分 -->
         {% set author = get_user_info(article.author) %}
         <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-8">
@@ -164,4 +171,9 @@ function deleteComment(commentId) {
     }
 }
 </script>
+
+<!-- 在页面底部添加插件的 JavaScript -->
+{% if config.get('ARTICLE_STATS_JS') %}
+<script src="{{ config.ARTICLE_STATS_JS }}"></script>
+{% endif %}
 {% endblock %} 

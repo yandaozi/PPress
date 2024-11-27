@@ -1,0 +1,55 @@
+{% extends theme_path('admin/base.html') %}
+
+{% block title %}{{ plugin.name }} - 插件设置{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ plugin.name }} - 插件设置</h2>
+            <p class="text-gray-600 dark:text-gray-400 mt-2">{{ plugin.description }}</p>
+        </div>
+
+        {% if settings %}
+            {% if custom_template %}
+                {{ custom_template | safe }}
+            {% else %}
+                <!-- 默认设置表单 -->
+                <form action="{{ url_for('admin.plugin_settings', plugin_name=plugin.name) }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% for key, setting in settings.items() %}
+                    <div class="mb-4">
+                        <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="{{ key }}">
+                            {{ setting.label }}
+                        </label>
+                        {% if setting.type == 'text' %}
+                        <input type="text" name="{{ key }}" id="{{ key }}" 
+                               value="{{ setting.value }}"
+                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        {% elif setting.type == 'number' %}
+                        <input type="number" name="{{ key }}" id="{{ key }}" 
+                               value="{{ setting.value }}"
+                               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        {% elif setting.type == 'checkbox' %}
+                        <input type="checkbox" name="{{ key }}" id="{{ key }}" 
+                               {% if setting.value %}checked{% endif %}
+                               class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        {% endif %}
+                        {% if setting.description %}
+                        <p class="text-gray-600 dark:text-gray-400 text-xs mt-1">{{ setting.description }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <div class="flex justify-end mt-6">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            保存设置
+                        </button>
+                    </div>
+                </form>
+            {% endif %}
+        {% else %}
+        <p class="text-gray-500 dark:text-gray-400 text-center py-12">该插件没有可配置的设置项</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

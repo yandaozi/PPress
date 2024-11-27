@@ -1,0 +1,90 @@
+{% extends theme_path('admin/base.html') %}
+
+{% block title %}插件管理{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">插件管理</h2>
+            <form action="{{ url_for('admin.upload_plugin') }}" 
+                  method="post" 
+                  enctype="multipart/form-data" 
+                  class="flex items-center" 
+                  onsubmit="event.preventDefault(); handleFormSubmit(this); return false;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="file" name="plugin" accept=".zip" class="hidden" id="plugin-file">
+                <label for="plugin-file" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
+                    上传插件
+                </label>
+            </form>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for plugin in plugins %}
+            <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
+                <div class="p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ plugin.name }}</h3>
+                        <div class="flex items-center space-x-2">
+                            <form action="{{ url_for('admin.toggle_plugin', plugin_name=plugin.directory) }}" 
+                                  method="post" 
+                                  class="inline"
+                                  onsubmit="event.preventDefault(); handleFormSubmit(this); return false;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" 
+                                        class="px-3 py-1 rounded-lg text-sm {% if plugin.enabled %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-700{% endif %}">
+                                    {{ '已启用' if plugin.enabled else '已禁用' }}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">{{ plugin.description }}</p>
+                    <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        <span>版本: {{ plugin.version }}</span>
+                        <span class="mx-2">•</span>
+                        <span>
+                            作者: 
+                            {% if plugin.author_url %}
+                            <a href="{{ plugin.author_url }}" target="_blank" class="text-blue-600 hover:underline">{{ plugin.author }}</a>
+                            {% else %}
+                            {{ plugin.author }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        安装时间: {{ plugin.installed_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                    <div class="flex space-x-2">
+                        <form action="{{ url_for('admin.uninstall_plugin', plugin_name=plugin.name) }}" 
+                              method="post" 
+                              class="inline" 
+                              onsubmit="event.preventDefault(); confirmUninstall(this); return false;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
+                                卸载
+                            </button>
+                        </form>
+                        
+                        <a href="{{ url_for('admin.plugin_settings', plugin_name=plugin.directory) }}" 
+                           class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
+                            设置
+                        </a>
+                        
+                        <a href="{{ url_for('admin.export_plugin', plugin_name=plugin.name) }}" 
+                           class="px-3 py-1 bg-blue-100 dark:bg-blue-700 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-600">
+                            导出
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-span-full text-center py-12">
+                <p class="text-gray-500 dark:text-gray-400">暂无已安装的插件</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='default/js/plugins.js') }}"></script>
+{% endblock %}

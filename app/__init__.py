@@ -1,7 +1,8 @@
-from flask import Flask, url_for
+from flask import Flask, url_for, render_template
 import os
 from .extensions import db, login_manager, csrf
 from .utils.theme_manager import ThemeManager
+from app.plugins import get_plugin_manager
 
 def create_app(config_name='default'):
     app = Flask(__name__)
@@ -21,11 +22,18 @@ def create_app(config_name='default'):
         }
     }
 
+    # 添加这行配置，自动处理 URL 结尾的斜杠
+    app.url_map.strict_slashes = False
+
     # 初始化插件
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
     login_manager.login_view = 'auth.login'
+
+    # 初始化插件管理器
+    plugin_manager = get_plugin_manager()
+    plugin_manager.init_app(app)
 
     # 注册蓝图
     from .views import auth, blog, admin, user
@@ -33,6 +41,11 @@ def create_app(config_name='default'):
     app.register_blueprint(blog.bp)
     app.register_blueprint(admin.bp)
     app.register_blueprint(user.bp)
+
+    # 注册404错误处理器
+    @app.errorhandler(404)
+    def page_not_found(e):
+        return render_template(ThemeManager.get_template_path('errors/404.html')), 404
 
     # 添加user_loader回调
     from .models import User
@@ -62,7 +75,7 @@ def create_app(config_name='default'):
             'reject': lambda items, key: {k: v for k, v in items if k != key}
         }
 
-    # 添加用户信息处理函数
+    # 添加用户信息处理函
     @app.context_processor
     def user_info_processor():
         def get_user_info(user):

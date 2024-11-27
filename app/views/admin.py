@@ -10,6 +10,7 @@ from app.models.view_history import ViewHistory
 from app.models.site_config import SiteConfig
 from app.models.category import Category
 from app.models.tag import Tag
+from app.models import Plugin
 from app import db
 from functools import wraps
 import pandas as pd
@@ -17,6 +18,8 @@ import plotly.express as px
 import json
 import numpy as np
 from ..utils.theme_manager import ThemeManager
+from app.plugins import plugin_manager, get_plugin_manager
+import io
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -188,7 +191,7 @@ def articles():
     search_type = request.args.get('search_type', '')
     search_query = request.args.get('q', '').strip()
     
-    # 构建基础查询
+    # 构建基查询
     query = Article.query
     
     if search_query:
@@ -636,6 +639,286 @@ def change_theme():
 def theme_preview(theme):
     preview_path = os.path.join(current_app.root_path, 'templates', theme, 'preview.png')
     return send_file(preview_path, mimetype='image/png')
+
+@bp.route('/plugins')
+@login_required
+@admin_required
+def plugins():
+    """插件管理页面"""
+    try:
+        # 从数据库获取所有插件信息
+        from app.models import Plugin as PluginModel
+        plugins = PluginModel.query.all()
+        
+        # 获取已加载的插件实例
+        loaded_plugins = plugin_manager.plugins
+        
+        # 合并插件信息
+        plugin_info = []
+        for plugin in plugins:
+            info = {
+                'name': plugin.name,
+                'directory': plugin.directory,
+                'description': plugin.description,
+                'version': plugin.version,
+                'author': plugin.author,
+                'author_url': plugin.author_url,
+                'enabled': plugin.enabled,
+                'installed_at': plugin.installed_at,
+                'is_loaded': plugin.directory in loaded_plugins,
+                'config': plugin.config
+            }
+            plugin_info.append(info)
+            
+        return render_template(
+            'admin/plugins.html',
+            plugins=plugin_info
+        )
+    except Exception as e:
+        flash(f'加载插件列表失败: {str(e)}', 'error')
+        return redirect(url_for('admin.dashboard'))
+
+@bp.route('/plugins/<plugin_name>/uninstall', methods=['POST'])
+@login_required
+@admin_required
+def uninstall_plugin(plugin_name):
+    """卸载插件"""
+    try:
+        # 先从数据库中获取插件记录
+        plugin_record = Plugin.query.filter_by(name=plugin_name).first_or_404()
+        plugin_dir = plugin_record.directory
+        
+        # 获取插件的实际目录路径
+        installed_dir = os.path.join(current_app.root_path, 'plugins', 'installed')
+        plugin_path = os.path.join(installed_dir, plugin_dir)
+        
+        # 添加调试日志
+        current_app.logger.debug(f'Uninstalling plugin: {plugin_name}')
+        current_app.logger.debug(f'Plugin directory: {plugin_path}')
+        
+        # 如果插件已加载，先卸载它
+        if plugin_dir in plugin_manager.plugins:
+            plugin_manager.unload_plugin(plugin_dir)
+        
+        # 删除插件目录
+        if os.path.exists(plugin_path):
+            import shutil
+            shutil.rmtree(plugin_path)
+        
+        # 从数据库中删除插件记录
+        db.session.delete(plugin_record)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success', 
+            'message': f'插件 {plugin_name} 卸载成功'
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'Plugin uninstall error: {str(e)}')
+        return jsonify({
+            'status': 'error', 
+            'message': f'卸载失败：{str(e)}'
+        })
+
+@bp.route('/plugins/<plugin_name>/settings', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def plugin_settings(plugin_name):
+    """插件设置页面"""
+    try:
+        plugin = plugin_manager.get_plugin(plugin_name)
+        if not plugin:
+            flash('插件不存在', 'error')
+            return redirect(url_for('admin.plugins'))
+            
+        if request.method == 'POST':
+            # 保存设置
+            if hasattr(plugin, 'get_settings'):
+                settings = {}
+                plugin_settings = plugin.get_settings()
+                
+                # 处理每个设置项
+                for key, setting in plugin_settings.items():
+                    if setting['type'] == 'checkbox':
+                        settings[key] = key in request.form
+                    elif setting['type'] == 'number':
+                        settings[key] = int(request.form.get(key, setting['value']))
+                    else:
+                        settings[key] = request.form.get(key, setting['value'])
+                
+                plugin.save_settings(settings)
+                flash('设置已保存', 'success')
+                return redirect(url_for('admin.plugin_settings', plugin_name=plugin_name))
+            
+            flash('该插件不支持设置', 'error')
+            return redirect(url_for('admin.plugins'))
+            
+        # GET 请求显示设置页面
+        if hasattr(plugin, 'get_settings'):
+            settings = plugin.get_settings()
+            # 渲染插件自定义模板或使用默认模板
+            custom_template = plugin.render_settings_template(settings)
+            return render_template(
+                'admin/plugin_settings.html',
+                plugin=plugin,
+                settings=settings,
+                custom_template=custom_template
+            )
+            
+        flash('该插件没有设置项', 'info')
+        return redirect(url_for('admin.plugins'))
+        
+    except Exception as e:
+        flash(f'加载插件设置失败: {str(e)}', 'error')
+        return redirect(url_for('admin.plugins'))
+
+@bp.route('/plugins/upload', methods=['POST'])
+@login_required
+@admin_required
+def upload_plugin():
+    """上传插件"""
+    import tempfile, zipfile, shutil  # 把导入移到函数开头
+    
+    try:
+        if 'plugin' not in request.files:
+            return jsonify({'status': 'error', 'message': '没有上传文件'})
+            
+        file = request.files['plugin']
+        if file.filename == '':
+            return jsonify({'status': 'error', 'message': '没有选择文件'})
+            
+        if not file.filename.endswith('.zip'):
+            return jsonify({'status': 'error', 'message': '只支持 zip 格式的插件包'})
+        
+        # 创建临时目录
+        temp_dir = tempfile.mkdtemp()
+        zip_path = os.path.join(temp_dir, file.filename)
+        
+        try:
+            # 保存上传的文件
+            file.save(zip_path)
+            
+            # 解压文件
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(temp_dir)
+            
+            # 检查插件格式是否正确
+            if not os.path.exists(os.path.join(temp_dir, 'plugin.json')):
+                return jsonify({'status': 'error', 'message': '无效的插件格式'})
+            
+            # 读取插件信息
+            with open(os.path.join(temp_dir, 'plugin.json'), 'r', encoding='utf-8') as f:
+                plugin_info = json.load(f)
+            
+            plugin_name = plugin_info.get('name')
+            if not plugin_name:
+                return jsonify({'status': 'error', 'message': '插件信息不完整'})
+            
+            # 检查插件是否已存在
+            if Plugin.query.filter_by(name=plugin_name).first():
+                return jsonify({'status': 'error', 'message': '插件已存在'})
+            
+            # 生成目录名
+            directory = plugin_info.get('directory', plugin_name.lower().replace(' ', '_'))
+            plugin_dir = os.path.join(current_app.root_path, 'plugins', 'installed', directory)
+            
+            if os.path.exists(plugin_dir):
+                return jsonify({'status': 'error', 'message': '插件目录已存在'})
+            
+            # 复制文件到插件目录
+            shutil.copytree(temp_dir, plugin_dir)
+            
+            # 添加插件记录到数据库
+            Plugin.add_plugin(plugin_info, directory)
+            
+            # 加载插件
+            if plugin_manager.load_plugin(directory):
+                return jsonify({'status': 'success', 'message': f'插件 {plugin_name} 安装成功'})
+            else:
+                # 安装失败，清理
+                shutil.rmtree(plugin_dir)
+                Plugin.remove_plugin(plugin_name)
+                return jsonify({'status': 'error', 'message': '插件加载失败'})
+                
+        finally:
+            # 清理临时目录
+            shutil.rmtree(temp_dir)
+                
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'上传插件失败: {str(e)}'})
+
+@bp.route('/plugins/<plugin_name>/toggle', methods=['POST'])
+@login_required
+@admin_required
+def toggle_plugin(plugin_name):
+    """启用/禁用插件"""
+    try:
+        plugin = Plugin.query.filter_by(directory=plugin_name).first_or_404()
+        plugin.enabled = not plugin.enabled
+        db.session.commit()
+        
+        if plugin.enabled:
+            # 启用插件时，尝试加载它
+            if plugin_manager.load_plugin(plugin_name):
+                status = '启用'
+            else:
+                # 加载失败时回滚状态
+                plugin.enabled = False
+                db.session.commit()
+                return jsonify({
+                    'status': 'error',
+                    'message': '插件加载失败'
+                })
+        else:
+            # 禁用插件时，卸载它
+            plugin_manager.unload_plugin(plugin_name)
+            status = '禁用'
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'插件已{status}',
+            'reload_required': False  # 不再需要重启
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'操作失败：{str(e)}'
+        })
+
+@bp.route('/plugins/<plugin_name>/export')
+@login_required
+@admin_required
+def export_plugin(plugin_name):
+    """导出插件"""
+    try:
+        # 先从数据库获取插件记录
+        plugin_record = Plugin.query.filter_by(name=plugin_name).first_or_404()
+        plugin_dir = plugin_record.directory
+        
+        # 获取插件实例
+        plugin = plugin_manager.get_plugin(plugin_dir)
+        if not plugin:
+            flash('插件未加载', 'error')
+            return redirect(url_for('admin.plugins'))
+        
+        content, filename = plugin.export_plugin()
+        
+        # 设置响应头
+        response = send_file(
+            io.BytesIO(content),
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=filename
+        )
+        response.headers["Cache-Control"] = "no-cache"
+        response.headers["Pragma"] = "no-cache"
+        return response
+        
+    except Exception as e:
+        current_app.logger.error(f'Export plugin error: {str(e)}')
+        flash(f'导出插件失败: {str(e)}', 'error')
+        return redirect(url_for('admin.plugins'))
 
 # 添加一个模板上下文处理器
 @bp.context_processor
