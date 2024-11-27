@@ -23,6 +23,16 @@
     <script src="{{ url_for('static', filename='default/js/darkMode.js') }}"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     {% block head %}{% endblock %}
+    <style>
+        /* 隐藏滚动条但保持可滚动 */
+        .scrollbar-hide {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;     /* Firefox */
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;             /* Chrome, Safari and Opera */
+        }
+    </style>
 </head>
 <body class="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
 <nav class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
@@ -204,8 +214,18 @@
                 </div>
             </form>
         </div>
-        <div class="px-4">
-            <div class="flex space-x-8 overflow-x-auto">
+        <div class="relative px-4">
+            <button id="scrollLeft" class="hidden lg:flex absolute left-2 top-1/2 -translate-y-1/2 z-10 items-center justify-center w-8 h-8 bg-white/80 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 rounded-full shadow-md">
+                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            <button id="scrollRight" class="hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 z-10 items-center justify-center w-8 h-8 bg-white/80 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 rounded-full shadow-md">
+                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+            <div id="categoriesContainer" class="flex space-x-8 overflow-x-auto scrollbar-hide px-4 lg:px-8">
                 <a href="{{ url_for('blog.index') }}"
                    class="py-4 px-1 border-b-2 {% if request.endpoint == 'blog.index' and not request.args.get('category') %}border-blue-500 text-blue-600{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300{% endif %} whitespace-nowrap transition-colors duration-200">
                     全部

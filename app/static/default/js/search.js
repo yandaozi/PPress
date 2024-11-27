@@ -66,4 +66,39 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    const container = document.getElementById('categoriesContainer');
+    const scrollLeftBtn = document.getElementById('scrollLeft');
+    const scrollRightBtn = document.getElementById('scrollRight');
+
+    if (container && scrollLeftBtn && scrollRightBtn) {
+        // 更新按钮显示状态
+        function updateScrollButtons() {
+            const hasOverflow = container.scrollWidth > container.clientWidth;
+            const atStart = container.scrollLeft <= 0;
+            const atEnd = container.scrollLeft >= container.scrollWidth - container.clientWidth;
+
+            // 只在有溢出内容时显示按钮
+            scrollLeftBtn.style.display = hasOverflow && !atStart ? 'flex' : 'none';
+            scrollRightBtn.style.display = hasOverflow && !atEnd ? 'flex' : 'none';
+        }
+
+        // 滚动处理函数
+        function scroll(direction) {
+            const scrollAmount = container.clientWidth / 2;
+            container.scrollBy({
+                left: direction * scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+
+        // 事件监听
+        scrollLeftBtn.addEventListener('click', () => scroll(-1));
+        scrollRightBtn.addEventListener('click', () => scroll(1));
+        container.addEventListener('scroll', updateScrollButtons);
+        window.addEventListener('resize', updateScrollButtons);
+
+        // 初始化按钮状态
+        updateScrollButtons();
+    }
 }); 
