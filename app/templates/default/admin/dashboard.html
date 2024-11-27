@@ -1,4 +1,4 @@
-{% extends 'admin/base.html' %}
+{% extends theme_path('admin/base.html') %}
 
 {% block title %}仪表盘{% endblock %}
 
@@ -75,7 +75,7 @@
             <h3 class="text-lg font-medium mb-4">访问量统计</h3>
             {% if views_chart %}
             <div id="viewsChart"></div>
-            <script src="{{ url_for('static', filename='vendor/plotly.min.js') }}"></script>
+            <script src="{{ url_for('static', filename='default/vendor/plotly.min.js') }}"></script>
             <script>
                 var chartData = {{ views_chart | safe }};
                 Plotly.newPlot('viewsChart', chartData.data, chartData.layout);

@@ -1,6 +1,7 @@
 import random
+import os
 
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, send_file, current_app
 from flask_login import login_required, current_user
 from app.models.user import User
 from app.models.article import Article
@@ -15,6 +16,7 @@ import pandas as pd
 import plotly.express as px
 import json
 import numpy as np
+from ..utils.theme_manager import ThemeManager
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -328,21 +330,6 @@ def site_config():
         return redirect(url_for('admin.site_config'))
     
     configs = SiteConfig.query.all()
-    if not configs:
-        # 初始化默认配置
-        default_configs = [
-            {'key': 'site_name', 'value': 'Pios-blog', 'description': '网站名称'},
-            {'key': 'site_keywords', 'value': 'Pios-blog,技术,博客,Python,Web开发', 'description': '网站关键词'},
-            {'key': 'site_description', 'value': '分享技术知识和经验', 'description': '网站描'},
-            {'key': 'contact_email', 'value': '575732022@qq.com', 'description': '联系邮箱'},
-            {'key': 'icp_number', 'value': '', 'description': 'ICP备案号'},
-            {'key': 'footer_text', 'value': '© 2024 Pios-blog 版权所有', 'description': '页脚文本'},
-        ]
-        for config in default_configs:
-            db.session.add(SiteConfig(**config))
-        db.session.commit()
-        configs = SiteConfig.query.all()
-    
     return render_template('admin/site_config.html', configs=configs)
 
 @bp.route('/categories')
@@ -612,6 +599,43 @@ def clear_user_history(user_id):
     ViewHistory.query.filter_by(user_id=user_id).delete()
     db.session.commit()
     return '', 204
+
+@bp.route('/themes')
+@login_required
+@admin_required
+def themes():
+    from app.models.site_config import SiteConfig
+    
+    themes = ThemeManager.get_available_themes()
+    current_theme = SiteConfig.get_config('site_theme', 'default')
+    return render_template('admin/themes.html', 
+                         themes=themes,
+                         current_theme=current_theme)
+
+@bp.route('/change-theme', methods=['POST'])
+@login_required
+@admin_required
+def change_theme():
+    from app.models.site_config import SiteConfig
+    
+    theme = request.form.get('theme')
+    if theme:
+        config = SiteConfig.query.filter_by(key='site_theme').first()
+        if config:
+            config.value = theme
+        else:
+            config = SiteConfig(key='site_theme', value=theme)
+            db.session.add(config)
+        db.session.commit()
+        flash('主题已更新')
+    return redirect(url_for('admin.themes'))
+
+@bp.route('/theme-preview/<theme>')
+@login_required
+@admin_required
+def theme_preview(theme):
+    preview_path = os.path.join(current_app.root_path, 'templates', theme, 'preview.png')
+    return send_file(preview_path, mimetype='image/png')
 
 # 添加一个模板上下文处理器
 @bp.context_processor

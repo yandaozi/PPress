@@ -1,5 +1,5 @@
 from app import create_app, db
-from app.models import User, Article, Tag, Comment, ViewHistory, Category
+from app.models import User, Article, Tag, Comment, ViewHistory, Category, SiteConfig
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 import random
@@ -12,13 +12,27 @@ def init_db():
         db.drop_all()
         db.create_all()
         
+        # 初始化网站配置
+        default_configs = [
+            {'key': 'site_name', 'value': 'PPress', 'description': '网站名称'},
+            {'key': 'site_keywords', 'value': 'PPress,技术,博客,Python,Web开发', 'description': '网站关键词'},
+            {'key': 'site_description', 'value': '分享技术知识和经验', 'description': '网站描述'},
+            {'key': 'contact_email', 'value': '575732022@qq.com', 'description': '联系邮箱'},
+            {'key': 'icp_number', 'value': '', 'description': 'ICP备案号'},
+            {'key': 'footer_text', 'value': '© 2024 PPress 版权所有', 'description': '页脚文本'},
+            {'key': 'site_theme', 'value': 'default', 'description': '网站主题'},
+        ]
+        for config in default_configs:
+            db.session.add(SiteConfig(**config))
+        db.session.commit()
+        
         # 创建管理员用户
         admin = User(
             username='admin',
             email='575732022@qq.com',
-            password_hash=generate_password_hash('123456'),
             role='admin'
         )
+        admin.set_password('123456')
         db.session.add(admin)
         
         # 创建普通用户
@@ -60,7 +74,7 @@ def init_db():
 
         # 文章内容模板
         article_contents = [
-            '''Pios-blog,FlaksIOS风Blog系统，作者QQ：575732022.Flask是一个轻量级的Python Web框架，它提供了基础的核心功能，同时具有很强的可扩展性。本文将介绍Flask的主要特点和基本使用方法。
+            '''PPress,FlaksIOS风Blog系统，作者QQ：575732022.Flask是一个轻量级的Python Web框架，它提供了基础的核心功能，同时具有很强的可扩展性。本文将介绍Flask的主要特点和基本使用方法。
 
 Flask的设计理念是"微框架"，这意味着它的核心很简单，但可以通过各种扩展来增加功能。它不会强制你使用特定的项目布局或依赖特定的数据库。
 
@@ -142,7 +156,7 @@ Flask的主要优点包括：
         # 最终提交
         db.session.commit()
         
-        print("数据库初始化完成！作者QQ：575732022")
+        print("测试数据库初始化完成！作者QQ：575732022")
         print("\n测试账号：")
         print("管理员 - 用户名：admin，密码：123456")
         print("普通用户 - 用户名：user0-4，密码：user0-4123")

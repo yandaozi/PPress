@@ -1,12 +1,12 @@
-{% extends 'base.html' %}
+{% extends theme_path('base.html') %}
 
 {% block title %}{{ current_user.username }}的个人中心{% endblock %}
 
 {% block head %}
 {{ super() }}
 <!-- 确保在页面头部加载必要的脚本 -->
-<script src="{{ url_for('static', filename='vendor/plotly.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+<script src="{{ url_for('static', filename='default/vendor/plotly.min.js') }}"></script>
+<script src="{{ url_for('static', filename='default/js/profile.js') }}"></script>
 {% endblock %}
 
 {% block content %}

@@ -1,8 +1,9 @@
 from flask import Flask, url_for
 import os
 from .extensions import db, login_manager, csrf
+from .utils.theme_manager import ThemeManager
 
-def create_app():
+def create_app(config_name='default'):
     app = Flask(__name__)
 
     # 配置
@@ -77,5 +78,15 @@ def create_app():
                 'avatar': url_for('static', filename='default_avatar.png')
             }
         return dict(get_user_info=get_user_info)
+
+    # 添加模板全局函数
+    @app.context_processor
+    def inject_template_utils():
+        return {
+            'theme_path': ThemeManager.get_template_path
+        }
+
+    # 修改 Jinja2 模板加载器配置
+    app.jinja_loader = ThemeManager.get_theme_loader(app)
 
     return app 

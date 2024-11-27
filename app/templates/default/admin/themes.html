@@ -1,0 +1,37 @@
+{% extends theme_path('admin/base.html') %}
+
+{% block title %}主题管理{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6">
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-2xl font-bold mb-6">主题管理</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for theme in themes %}
+            <div class="border rounded-lg overflow-hidden {% if theme.id == current_theme %}ring-2 ring-blue-500{% endif %}">
+                <img src="{{ theme.preview }}" alt="{{ theme.name }}" class="w-full h-48 object-cover">
+                <div class="p-4">
+                    <h3 class="text-lg font-bold mb-2">{{ theme.name }}</h3>
+                    <p class="text-gray-600 text-sm mb-4">{{ theme.description }}</p>
+                    {% if theme.id == current_theme %}
+                    <button disabled class="w-full px-4 py-2 bg-gray-100 text-gray-500 rounded-lg">
+                        当前使用中
+                    </button>
+                    {% else %}
+                    <form method="post" action="{{ url_for('admin.change_theme') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="theme" value="{{ theme.id }}">
+                        <button type="submit" 
+                                class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            使用此主题
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

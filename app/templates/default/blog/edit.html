@@ -1,14 +1,14 @@
-{% extends 'base.html' %}
+{% extends theme_path('base.html') %}
 
 {% block title %}{{ '编辑文章' if article else '创建文章' }}{% endblock %}
 
 {% block head %}
 <!-- 修改为本地 TinyMCE 引用 -->
-<script src="{{ url_for('static', filename='vendor/tinymce/tinymce.min.js') }}"></script>
+<script src="{{ url_for('static', filename='default/vendor/tinymce/tinymce.min.js') }}"></script>
 <!-- 如果需要中文语言包 -->
-<script src="{{ url_for('static', filename='vendor/tinymce/langs/zh_CN.js') }}"></script>
+<script src="{{ url_for('static', filename='default/vendor/tinymce/langs/zh_CN.js') }}"></script>
 
-<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/edit.css') }}" />
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='default/css/edit.css') }}" />
 {% endblock %}
 
 {% block content %}
