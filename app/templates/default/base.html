@@ -44,7 +44,7 @@
                             </span>
                     </a>
                 </div>
-                <div class="flex-1 flex items-center justify-center px-8 max-w-3xl">
+                <div class="hidden md:flex flex-1 items-center justify-center px-8 max-w-3xl">
                     <div class="w-full relative">
                         <form action="{{ url_for('blog.search') }}" method="get" class="flex items-center" onsubmit="return validateSearch(this)">
                             <div class="relative flex-1">
@@ -64,13 +64,13 @@
                                 搜索
                             </button>
                         </form>
-                        <div id="searchSuggestions" class="absolute w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 hidden z-50"></div>
+                        <div id="searchSuggestions" class="absolute w-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-600 border-gray-200 hidden z-50"></div>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
                     {% if current_user.is_authenticated %}
                     <a href="{{ url_for('blog.edit') }}"
-                       class="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200">
+                       class="hidden md:inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                         </svg>
@@ -88,6 +88,13 @@
                             </svg>
                         </button>
                         <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 hidden z-50">
+                            <a href="{{ url_for('blog.edit') }}"
+                               class="md:hidden flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                发布文章
+                            </a>
                             <a href="{{ url_for('user.profile') }}"
                                class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,6 +127,23 @@
                                 </svg>
                                 退出登录
                             </a>
+                            <button onclick="toggleTheme()"
+                                    class="md:hidden w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <svg id="mobile-dark-icon" 
+                                     class="w-4 h-4 mr-2 block dark:hidden" 
+                                     fill="currentColor" 
+                                     viewBox="0 0 20 20">
+                                   <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                               </svg>
+                               <svg id="mobile-light-icon"
+                                    class="w-4 h-4 mr-2 hidden dark:block"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20">
+                                   <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path>
+                               </svg>
+                               <span class="block dark:hidden">黑夜模式</span>
+                               <span class="hidden dark:block">白天模式</span>
+                            </button>
                         </div>
                     </div>
                     {% else %}
@@ -134,7 +158,7 @@
                     {% endif %}
                     <button id="theme-toggle"
                             onclick="toggleTheme()"
-                            class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
+                            class="hidden md:block text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
                         <svg id="theme-toggle-dark-icon"
                              class="w-5 h-5"
                              fill="currentColor"
@@ -148,8 +172,37 @@
                             <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path>
                         </svg>
                     </button>
+                    <button onclick="toggleMobileSearch()"
+                            class="md:hidden text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-2.5">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
+        </div>
+        <div id="mobileSearch" class="hidden md:hidden px-4 py-3 border-b dark:border-gray-700">
+            <form action="{{ url_for('blog.search') }}" method="get" class="flex items-center" 
+                  onsubmit="return validateSearch(this)">
+                <div class="relative flex-1">
+                    <input type="text" name="q"
+                           id="mobilesearchInput"
+                           autocomplete="off"
+                           class="w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                  bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                           placeholder="搜索文章...">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <div id="mobilesearchSuggestions" 
+                         class="absolute w-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 hidden z-50">
+                    </div>
+                </div>
+            </form>
         </div>
         <div class="px-4">
             <div class="flex space-x-8 overflow-x-auto">
@@ -223,6 +276,11 @@
         setTimeout(() => {
             flashDiv.remove();
         }, 3000);
+    }
+
+    function toggleMobileSearch() {
+        const searchBar = document.getElementById('mobileSearch');
+        searchBar.classList.toggle('hidden');
     }
 </script>
 <footer class="bg-white dark:bg-gray-800 mt-8 border-t dark:border-gray-700">

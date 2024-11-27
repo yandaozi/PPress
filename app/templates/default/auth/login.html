@@ -34,13 +34,13 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         验证码
                     </label>
-                    <div class="flex space-x-4">
+                    <div class="flex items-center gap-3">
                         <input type="text" name="captcha" required
-                               class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
+                               class="w-32 sm:w-40 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
                         <img src="{{ url_for('auth.captcha') }}" 
                              alt="captcha"
                              onclick="this.src='{{ url_for('auth.captcha') }}?'+ Math.random()"
-                             class="h-10 rounded cursor-pointer">
+                             class="h-10 w-32 sm:w-40 rounded cursor-pointer object-cover">
                     </div>
                 </div>
                 

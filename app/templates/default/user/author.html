@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-8">
-    <div class="grid grid-cols-12 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- 左侧作者信息 -->
-        <div class="col-span-3 space-y-6">
+        <div class="lg:col-span-3 space-y-6">
             <!-- 基本信息卡片 -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                 <div class="flex flex-col items-center">
@@ -15,12 +15,12 @@
                     <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ author.username }}</h1>
                     <p class="text-gray-500 dark:text-gray-400 mt-2">加入时间：{{ author.created_at.strftime('%Y-%m-%d') }}</p>
                     {% if author.role == 'admin' %}
-                    <span class="mt-2 px-3 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-sm">管理员</span>
+                    <span class="mt-2 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">管理员</span>
                     {% endif %}
                 </div>
                 
                 <!-- 统计信息 -->
-                <div class="grid grid-cols-3 gap-4 mt-6 text-center">
+                <div class="grid grid-cols-3 gap-2 sm:gap-4 mt-6 text-center">
                     <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
                         <div class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ stats.article_count }}</div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">文章</div>
@@ -61,13 +61,13 @@
                 <div class="space-y-3">
                     {% for category, count in stats.top_categories %}
                     <div class="flex items-center">
-                        <span class="text-sm text-gray-600 dark:text-gray-300 w-24">{{ category }}</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-300 w-20 sm:w-24 truncate">{{ category }}</span>
                         <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full">
                             <div class="h-2 bg-blue-500 dark:bg-blue-400 rounded-full" 
                                  style="width: {{ (count / stats.article_count * 100)|round|int }}%">
                             </div>
                         </div>
-                        <span class="ml-3 text-sm text-gray-500 dark:text-gray-400">{{ count }}篇</span>
+                        <span class="ml-2 sm:ml-3 text-sm text-gray-500 dark:text-gray-400">{{ count }}篇</span>
                     </div>
                     {% else %}
                     <p class="text-gray-500 dark:text-gray-400 text-center">暂无数据</p>
@@ -92,7 +92,7 @@
         </div>
 
         <!-- 右侧文章列表 -->
-        <div class="col-span-9">
+        <div class="lg:col-span-9">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
                 <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">发布的文章</h2>
                 <div class="space-y-6">
@@ -104,14 +104,14 @@
                                 {{ article.title }}
                             </a>
                         </h3>
-                        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
-                            <span>{{ article.category.name }}</span>
-                            <span class="mx-2">•</span>
-                            <span>{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
-                            <span class="mx-2">•</span>
-                            <span>阅读 {{ article.view_count }}</span>
-                            <span class="mx-2">•</span>
-                            <span>评论 {{ article.comments|length }}</span>
+                        <div class="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-3">
+                            <span class="flex-shrink-0">{{ article.category.name }}</span>
+                            <span class="hidden sm:inline">•</span>
+                            <span class="flex-shrink-0">{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            <span class="hidden sm:inline">•</span>
+                            <span class="flex-shrink-0">阅读 {{ article.view_count }}</span>
+                            <span class="hidden sm:inline">•</span>
+                            <span class="flex-shrink-0">评论 {{ article.comments|length }}</span>
                         </div>
                         <div class="text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
                             {{ article.content|striptags|truncate(200) }}

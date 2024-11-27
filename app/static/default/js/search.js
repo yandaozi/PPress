@@ -1,52 +1,69 @@
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.querySelector('input[name="q"]');
-    const suggestionsContainer = document.createElement('div');
-    suggestionsContainer.className = 'absolute w-full bg-white border rounded-lg shadow-lg mt-1 hidden';
-    searchInput.parentElement.appendChild(suggestionsContainer);
-    
-    let debounceTimer;
-    
-    searchInput.addEventListener('input', function() {
-        clearTimeout(debounceTimer);
-        const query = this.value.trim();
-        
+    const mobileSearchInput = document.querySelector('#mobilesearchInput');
+    const suggestionsBox = document.getElementById('searchSuggestions');
+    const mobileSuggestionsBox = document.getElementById('mobilesearchSuggestions');
+
+    function showSuggestions(input, suggestionsContainer) {
+        const query = input.value.trim();
         if (query.length < 2) {
-            suggestionsContainer.innerHTML = '';
             suggestionsContainer.classList.add('hidden');
             return;
         }
-        
-        debounceTimer = setTimeout(() => {
-            fetch(`/search/suggestions?q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(suggestions => {
-                    if (suggestions.length > 0) {
-                        suggestionsContainer.innerHTML = suggestions.map(s => `
-                            <div class="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+
+        fetch(`/search/suggestions?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(suggestions => {
+                if (suggestions && suggestions.length > 0) {
+                    suggestionsContainer.innerHTML = suggestions
+                        .map(s => `
+                            <a href="/search?q=${encodeURIComponent(s)}" 
+                               class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                 ${s}
-                            </div>
+                            </a>
                         `).join('');
-                        suggestionsContainer.classList.remove('hidden');
-                        
-                        // 点击建议项
-                        suggestionsContainer.querySelectorAll('div').forEach(div => {
-                            div.addEventListener('click', function() {
-                                searchInput.value = this.textContent.trim();
-                                suggestionsContainer.classList.add('hidden');
-                                searchInput.form.submit();
-                            });
-                        });
-                    } else {
-                        suggestionsContainer.classList.add('hidden');
-                    }
-                });
-        }, 300);
-    });
-    
-    // 点击外部时隐藏建议
-    document.addEventListener('click', function(e) {
-        if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
-            suggestionsContainer.classList.add('hidden');
-        }
-    });
+                    suggestionsContainer.classList.remove('hidden');
+                } else {
+                    suggestionsContainer.classList.add('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('搜索建议获取失败:', error);
+                suggestionsContainer.classList.add('hidden');
+            });
+    }
+
+    let debounceTimer;
+    function debounce(func, wait) {
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(debounceTimer);
+                func(...args);
+            };
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(later, wait);
+        };
+    }
+
+    const debouncedShowSuggestions = debounce(showSuggestions, 300);
+
+    // 桌面端搜索
+    if (searchInput) {
+        searchInput.addEventListener('input', () => debouncedShowSuggestions(searchInput, suggestionsBox));
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                suggestionsBox.classList.add('hidden');
+            }
+        });
+    }
+
+    // 移动端搜索
+    if (mobileSearchInput) {
+        mobileSearchInput.addEventListener('input', () => debouncedShowSuggestions(mobileSearchInput, mobileSuggestionsBox));
+        document.addEventListener('click', (e) => {
+            if (!mobileSearchInput.contains(e.target) && !mobileSuggestionsBox.contains(e.target)) {
+                mobileSuggestionsBox.classList.add('hidden');
+            }
+        });
+    }
 }); 

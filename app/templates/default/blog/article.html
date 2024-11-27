@@ -37,8 +37,8 @@
         <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{{ article.title }}</h1>
         <!-- 文章作者信息部分 -->
         {% set author = get_user_info(article.author) %}
-        <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-8">
-            <div class="flex items-center">
+        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-8">
+            <div class="flex items-center flex-shrink-0">
                 <img src="{{ author.avatar }}" alt="avatar" class="w-10 h-10 rounded-full">
                 {% if author.id %}
                     <a href="{{ url_for('user.author', id=author.id) }}" 
@@ -46,15 +46,17 @@
                         {{ author.username }}
                     </a>
                 {% else %}
-                    <span class="ml-2 font-medium text-gray-500 dark:text-gray-400">{{ author.username }}</span>
+                    <span class="ml-2 font-medium text-gray-500">{{ author.username }}</span>
                 {% endif %}
             </div>
-            <span class="mx-2">•</span>
-            <span>{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
-            <span class="mx-2">•</span>
-            <span>阅读 {{ article.view_count }}</span>
+            <div class="flex items-center flex-wrap gap-2">
+                <span>{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                <span class="hidden sm:inline">•</span>
+                <span>阅读 {{ article.view_count }}</span>
+            </div>
             
             <!-- 情感分析标签 -->
+            <div class="flex-shrink-0">
             {% if article.sentiment_score > 0.3 %}
             <span class="ml-2 px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-xs">积极</span>
             {% elif article.sentiment_score < -0.3 %}
@@ -62,6 +64,7 @@
             {% else %}
             <span class="ml-2 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-xs">中性</span>
             {% endif %}
+            </div>
         </div>
 
         <!-- 文章内容 -->
@@ -70,8 +73,8 @@
         </div>
 
         <!-- 在文章内容下方添加标签显示 -->
-        <div class="flex items-center mt-4">
-            <span class="text-gray-600 dark:text-gray-400 mr-2">文章标签：</span>
+        <div class="flex flex-wrap items-center gap-2 mt-4">
+            <span class="text-gray-600 dark:text-gray-400">文章标签：</span>
             {% for tag in article.tags %}
             <a href="{{ url_for('blog.tag', id=tag.id) }}" 
                class="text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full mr-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200">

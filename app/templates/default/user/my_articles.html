@@ -22,20 +22,20 @@
                         {{ article.title }}
                     </a>
                 </h2>
-                <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
-                    <span>{{ article.category.name }}</span>
-                    <span class="mx-2">•</span>
-                    <span>{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
-                    <span class="mx-2">•</span>
-                    <span>阅读 {{ article.view_count }}</span>
-                    <span class="mx-2">•</span>
-                    <span>评论 {{ article.comments|length }}</span>
+                <div class="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-3">
+                    <span class="flex-shrink-0">{{ article.category.name }}</span>
+                    <span class="hidden sm:inline">•</span>
+                    <span class="flex-shrink-0">{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    <span class="hidden sm:inline">•</span>
+                    <span class="flex-shrink-0">阅读 {{ article.view_count }}</span>
+                    <span class="hidden sm:inline">•</span>
+                    <span class="flex-shrink-0">评论 {{ article.comments|length }}</span>
                 </div>
                 <div class="text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
                     {{ article.content|striptags|truncate(200) }}
                 </div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-2">
                         {% for tag in article.tags %}
                         <a href="{{ url_for('blog.tag', id=tag.id) }}" 
                            class="text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full mr-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200">
@@ -43,7 +43,7 @@
                         </a>
                         {% endfor %}
                     </div>
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center gap-3 flex-shrink-0">
                         <a href="{{ url_for('blog.edit', id=article.id) }}" 
                            class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
                             编辑
