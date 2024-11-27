@@ -646,16 +646,33 @@ def theme_preview(theme):
 def plugins():
     """插件管理页面"""
     try:
-        # 从数据库获取所有插件信息
-        from app.models import Plugin as PluginModel
-        plugins = PluginModel.query.all()
+        page = request.args.get('page', 1, type=int)
+        search_query = request.args.get('q', '').strip()
+        
+        # 构建查询
+        query = Plugin.query
+        
+        # 搜索
+        if search_query:
+            query = query.filter(
+                db.or_(
+                    Plugin.name.ilike(f'%{search_query}%'),
+                    Plugin.description.ilike(f'%{search_query}%'),
+                    Plugin.author.ilike(f'%{search_query}%')
+                )
+            )
+        
+        # 分页
+        pagination = query.order_by(Plugin.installed_at.desc()).paginate(
+            page=page, per_page=9, error_out=False
+        )
         
         # 获取已加载的插件实例
         loaded_plugins = plugin_manager.plugins
         
-        # 合并插件信息
+        # 处理插件信息
         plugin_info = []
-        for plugin in plugins:
+        for plugin in pagination.items:
             info = {
                 'name': plugin.name,
                 'directory': plugin.directory,
@@ -672,7 +689,9 @@ def plugins():
             
         return render_template(
             'admin/plugins.html',
-            plugins=plugin_info
+            plugins=plugin_info,
+            pagination=pagination,
+            search_query=search_query
         )
     except Exception as e:
         flash(f'加载插件列表失败: {str(e)}', 'error')
@@ -878,7 +897,7 @@ def toggle_plugin(plugin_name):
         return jsonify({
             'status': 'success',
             'message': f'插件已{status}',
-            'reload_required': False  # 不再需要重启
+            'reload_required': False  # 不再要重启
         })
     except Exception as e:
         return jsonify({
@@ -919,6 +938,61 @@ def export_plugin(plugin_name):
         current_app.logger.error(f'Export plugin error: {str(e)}')
         flash(f'导出插件失败: {str(e)}', 'error')
         return redirect(url_for('admin.plugins'))
+
+@bp.route('/plugins/<plugin_name>/reload', methods=['POST'])
+@login_required
+@admin_required
+def reload_plugin(plugin_name):
+    """重载插件"""
+    try:
+        # 先从数据库获取插件记录
+        plugin_record = Plugin.query.filter_by(directory=plugin_name).first_or_404()
+        
+        # 如果插件已加载，先卸载它
+        if plugin_name in plugin_manager.plugins:
+            plugin_manager.unload_plugin(plugin_name)
+        
+        # 重新加载插件信息
+        plugin_dir = os.path.join(current_app.root_path, 'plugins', 'installed', plugin_name)
+        plugin_json = os.path.join(plugin_dir, 'plugin.json')
+        
+        if os.path.exists(plugin_json):
+            with open(plugin_json, 'r', encoding='utf-8') as f:
+                plugin_info = json.load(f)
+                
+            # 更新数据库记录
+            plugin_record.name = plugin_info.get('name', plugin_record.name)
+            plugin_record.description = plugin_info.get('description', plugin_record.description)
+            plugin_record.version = plugin_info.get('version', plugin_record.version)
+            plugin_record.author = plugin_info.get('author', plugin_record.author)
+            plugin_record.author_url = plugin_info.get('author_url', plugin_record.author_url)
+            plugin_record.config = plugin_info.get('config', plugin_record.config)
+            db.session.commit()
+        
+        # 如果插件是启用状态，重新加载它
+        if plugin_record.enabled:
+            if plugin_manager.load_plugin(plugin_name):
+                return jsonify({
+                    'status': 'success',
+                    'message': f'插件 {plugin_record.name} 重载成功'
+                })
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': '插件重载失败'
+                })
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'插件 {plugin_record.name} 配置已更新'
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f'Plugin reload error: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': f'重载失败：{str(e)}'
+        })
 
 # 添加一个模板上下文处理器
 @bp.context_processor

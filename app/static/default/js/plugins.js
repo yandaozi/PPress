@@ -1,3 +1,15 @@
+// 确认重载插件
+function confirmReload(form) {
+    showAlert(
+        '重载插件将重新加载插件的配置信息与已设置内容，确定要继续吗？',
+        'warning', 
+        '确认重载', 
+        function() {
+            handleFormSubmit(form);
+        }
+    );
+}
+
 // 处理表单提交
 function handleFormSubmit(form) {
     const formData = new FormData(form);
@@ -28,9 +40,14 @@ function handleFormSubmit(form) {
 
 // 确认卸载插件
 function confirmUninstall(form) {
-    showAlert('确定要卸载该插件吗？', 'warning', '确认', function() {
-        handleFormSubmit(form);
-    });
+    showAlert(
+        '确定要卸载该插件吗？此操作不可恢复！', 
+        'warning', 
+        '确认卸载', 
+        function() {
+            handleFormSubmit(form);
+        }
+    );
 }
 
 // 初始化文件上传处理
