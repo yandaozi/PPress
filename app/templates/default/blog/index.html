@@ -173,19 +173,18 @@
         <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">最新评论</h2>
             <div class="space-y-4">
-                {% for comment in latest_comments %}
+                {% for comment, user, article in latest_comments %}
                 <div class="border-b dark:border-gray-700 last:border-0 pb-4 last:pb-0">
                     <!-- 用户信息行 -->
                     <div class="flex items-center mb-2">
-                        {% set commenter = get_user_info(comment.user) %}
-                        <img src="{{ commenter.avatar }}" alt="avatar" class="w-6 h-6 rounded-full">
-                        {% if commenter.id %}
-                            <a href="{{ url_for('user.author', id=commenter.id) }}" 
+                        <img src="{{ user.avatar }}" alt="avatar" class="w-6 h-6 rounded-full">
+                        {% if user.id %}
+                            <a href="{{ url_for('user.author', id=user.id) }}" 
                                class="ml-2 text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
-                                {{ commenter.username }}
+                                {{ user.username }}
                             </a>
                         {% else %}
-                            <span class="ml-2 text-sm font-medium text-gray-500">{{ commenter.username }}</span>
+                            <span class="ml-2 text-sm font-medium text-gray-500">{{ user.username }}</span>
                         {% endif %}
                         <span class="mx-2 text-xs text-gray-400">•</span>
                         <span class="text-xs text-gray-400">{{ comment.created_at.strftime('%Y-%m-%d') }}</span>
@@ -197,9 +196,9 @@
                     </div>
                     
                     <!-- 文章链接 -->
-                    <a href="{{ url_for('blog.article', id=comment.article.id) }}" 
+                    <a href="{{ url_for('blog.article', id=article.id) }}" 
                        class="text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 line-clamp-1">
-                        评论于：{{ comment.article.title }}
+                        评论于：{{ article.title }}
                     </a>
                 </div>
                 {% else %}

@@ -1,17 +1,19 @@
 import random
 import os
+import time
+from datetime import datetime
 
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, send_file, current_app
 from flask_login import login_required, current_user
 from app.models.user import User
-from app.models.article import Article
+from app.models.article import Article, article_tags
 from app.models.comment import Comment
 from app.models.view_history import ViewHistory
 from app.models.site_config import SiteConfig
 from app.models.category import Category
 from app.models.tag import Tag
 from app.models import Plugin
-from app import db
+from app import db, cache
 from functools import wraps
 import pandas as pd
 import plotly.express as px
@@ -21,6 +23,8 @@ from ..utils.theme_manager import ThemeManager
 from app.plugins import plugin_manager, get_plugin_manager
 import io
 from app.models.file import File
+from flask_paginate import Pagination
+import sys
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -47,26 +51,33 @@ class NumpyEncoder(json.JSONEncoder):
 @login_required
 @admin_required
 def dashboard():
-    # 基础统计数据
+    # 基础统计数据 - 直接使用 count()
     total_users = User.query.count()
     total_articles = Article.query.count()
     total_comments = Comment.query.count()
     total_views = ViewHistory.query.count()
     
-    # 获取所有分类
-    categories = Category.query.all()
+    # 直接获取分类及其文章数量
+    categories = [{
+        'id': cat.id,
+        'name': cat.name,
+        'article_count': cat.article_count
+    } for cat in Category.query.all()]
     
-    # 获取所有标签并随机选择10个
-    all_tags = Tag.query.all()
-    tags = random.sample(all_tags, min(15, len(all_tags)))  # 如果标签总数少于15个，就全部显示
+    # 直接获取标签及其文章数量
+    selected_tags = [{
+        'id': tag.id,
+        'name': tag.name,
+        'article_count': tag.article_count
+    } for tag in Tag.query.order_by(db.func.random()).limit(15)]
     
-    # 访问量统计图表
+    # 访问量统计图表 - 使用子查询优化
     article_views = db.session.query(
         Article.title,
         db.func.count(ViewHistory.id).label('views')
     ).join(ViewHistory)\
      .group_by(Article.id, Article.title)\
-     .order_by(db.func.count(ViewHistory.id).desc())\
+     .order_by(db.text('count(*) DESC'))\
      .limit(20)\
      .all()
     
@@ -91,40 +102,39 @@ def dashboard():
     else:
         views_chart = None
     
-    # 创建一个辅助函数来处理用户信息
-    def get_user_info(user):
-        if user:
-            return {
-                'id': user.id,
-                'username': user.username,
-                'avatar': user.avatar
-            }
-        return {
-            'id': None,
-            'username': '已注销用户',
-            'avatar': url_for('static', filename='default_avatar.png')
-        }
+    # 获取最近活动 - 预加载关联数据
+    recent_comments = Comment.query.options(
+        db.joinedload(Comment.user),
+        db.joinedload(Comment.article)
+    ).order_by(Comment.created_at.desc()).limit(5).all()
     
-    # 获取最近活动
+    recent_articles = Article.query.options(
+        db.joinedload(Article.author)
+    ).order_by(Article.created_at.desc()).limit(5).all()
+    
+    # 组装活动据
     recent_activities = []
-    
-    # 最近评论
-    recent_comments = Comment.query.order_by(Comment.created_at.desc()).limit(5).all()
     for comment in recent_comments:
         recent_activities.append({
             'type': 'comment',
-            'user': get_user_info(comment.user),
+            'user': {
+                'id': comment.user.id if comment.user else None,
+                'username': comment.user.username if comment.user else '已注销用户',
+                'avatar': comment.user.avatar if comment.user else url_for('static', filename='default_avatar.png')
+            },
             'article': comment.article,
             'action': '发表了评论',
             'created_at': comment.created_at
         })
     
-    # 最近文章
-    recent_articles = Article.query.order_by(Article.created_at.desc()).limit(5).all()
     for article in recent_articles:
         recent_activities.append({
             'type': 'article',
-            'user': get_user_info(article.author),
+            'user': {
+                'id': article.author.id if article.author else None,
+                'username': article.author.username if article.author else '已注销用户',
+                'avatar': article.author.avatar if article.author else url_for('static', filename='default_avatar.png')
+            },
             'article': article,
             'action': '发布了文章',
             'created_at': article.created_at
@@ -141,7 +151,7 @@ def dashboard():
                          views_chart=views_chart,
                          recent_activities=recent_activities,
                          categories=categories,
-                         tags=tags)
+                         tags=selected_tags)
 
 @bp.route('/users')
 @login_required
@@ -208,15 +218,15 @@ def articles():
             # 按分类搜索
             query = query.join(Category).filter(Category.name == search_query)
         elif search_type == 'tag':
-            # 按标签搜索 - 修改为支持模糊匹配
+            # 按标签搜索 - 为支持模匹配
             query = query.join(Article.tags).filter(
                 db.or_(
                     Tag.name == search_query,  # 精确匹配
                     Tag.name.like(f'%{search_query}%')  # 模糊匹配
                 )
-            ).distinct()  # 添加distinct避免重复结果
+            ).distinct()  # 添加distinct避免重复结
         else:
-            # 标题搜索
+            # 标题搜
             exact_matches = query.filter(Article.title == search_query)
             fuzzy_matches = query.filter(
                 Article.title.like(f'%{search_query}%'),
@@ -344,6 +354,7 @@ def categories():
     search_type = request.args.get('search_type', '')
     search_query = request.args.get('q', '').strip()
     
+    # 构建基础查询
     query = Category.query
     
     if search_query:
@@ -362,8 +373,69 @@ def categories():
             )
             query = exact_matches.union(fuzzy_matches)
     
-    pagination = query.order_by(Category.id.desc()).paginate(
-        page=page, per_page=10, error_out=False
+    # 获取分类 - 直接使用 article_count 字段
+    categories = [{
+        'id': cat.id,
+        'name': cat.name,
+        'description': cat.description,
+        'article_count': cat.article_count
+    } for cat in query.all()]
+    
+    # 手动分页
+    per_page = 10
+    total = len(categories)
+    total_pages = (total + per_page - 1) // per_page
+    page = min(max(page, 1), total_pages)
+    start = (page - 1) * per_page
+    end = start + per_page
+    
+    # 创建分页对象
+    class Pagination:
+        def __init__(self, items, total, page, per_page):
+            self.items = items
+            self.total = total
+            self.page = page
+            self.per_page = per_page
+            self.pages = total_pages
+            
+        @property
+        def has_prev(self):
+            return self.page > 1
+            
+        @property
+        def has_next(self):
+            return self.page < self.pages
+            
+        @property
+        def prev_num(self):
+            return self.page - 1 if self.has_prev else None
+            
+        @property
+        def next_num(self):
+            return self.page + 1 if self.has_next else None
+        
+        def iter_pages(self, left_edge=2, left_current=2, right_current=5, right_edge=2):
+            """迭代页码"""
+            last = 0
+            for num in range(1, self.pages + 1):
+                if (
+                    num <= left_edge
+                    or (
+                        num > self.page - left_current - 1
+                        and num < self.page + right_current
+                    )
+                    or num > self.pages - right_edge
+                ):
+                    if last + 1 != num:
+                        yield None
+                    yield num
+                    last = num
+    
+    pagination = Pagination(
+        items=categories[start:end],
+        total=total,
+        page=page,
+        per_page=per_page
     )
     
     return render_template('admin/categories.html', 
@@ -390,12 +462,48 @@ def add_category():
 @login_required
 @admin_required
 def delete_category(id):
-    category = Category.query.get_or_404(id)
-    if category.articles:
-        return jsonify({'error': '该分类下还有文章，不能删除'}), 400
-    db.session.delete(category)
-    db.session.commit()
-    return '', 204
+    try:
+        category = Category.query.get_or_404(id)
+        
+        # 如默分(ID为1)
+        if category.id == 1:
+            return jsonify({'error': '不能删除默认分类'}), 400
+        
+        # 如果分类下有文章，将文章移动到默认分类(ID为1)
+        if category.articles:
+            default_category = Category.query.get(1)
+            if not default_category:
+                # 如果默认分类不存在，创建一个
+                default_category = Category(id=1, name='默认分类')
+                db.session.add(default_category)
+                db.session.flush()  # 获取ID
+            
+            # 获取要移动的文章数量
+            articles_count = category.article_count  # 使用字段而不是重新计算
+            
+            # 更新文章的分类ID
+            Article.query.filter_by(category_id=category.id).update({
+                'category_id': default_category.id
+            })
+            
+            # 更新默认分类的文章计数
+            default_category.article_count += articles_count
+            
+            # 确保更新生效
+            db.session.flush()
+        
+        # 删除分类
+        db.session.delete(category)
+        
+        # 清除相关缓存
+        cache.delete_many('index_*', 'categories_*')
+        
+        db.session.commit()
+        return '', 204
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'删除分类失败：{str(e)}'}), 500
 
 @bp.route('/categories/<int:id>/edit', methods=['POST'])
 @login_required
@@ -426,8 +534,10 @@ def tags():
     search_type = request.args.get('search_type', '')
     search_query = request.args.get('q', '').strip()
     
+    # 构建基础查询 - 只查询标签基本信息
     query = Tag.query
     
+    # 搜索过滤
     if search_query:
         if search_type == 'id':
             try:
@@ -436,19 +546,14 @@ def tags():
             except ValueError:
                 flash('ID必须是数字')
         else:
-            # 名称搜索
-            exact_matches = query.filter(Tag.name == search_query)
-            fuzzy_matches = query.filter(
-                Tag.name.like(f'%{search_query}%'),
-                Tag.name != search_query
-            )
-            query = exact_matches.union(fuzzy_matches)
+            query = query.filter(Tag.name.ilike(f'%{search_query}%'))
     
+    # 排序并分页
     pagination = query.order_by(Tag.id.desc()).paginate(
-        page=page, per_page=10, error_out=False
+        page=page, per_page=20, error_out=False
     )
     
-    return render_template('admin/tags.html', 
+    return render_template('admin/tags.html',
                          pagination=pagination,
                          search_type=search_type,
                          search_query=search_query)
@@ -484,7 +589,7 @@ def edit_tag(id):
     name = request.form.get('name')
     
     if name != tag.name and Tag.query.filter_by(name=name).first():
-        return jsonify({'error': '标签名称已存在'}), 400
+        return jsonify({'error': '标签称已存在'}), 400
         
     tag.name = name
     db.session.commit()
@@ -631,7 +736,7 @@ def change_theme():
             config = SiteConfig(key='site_theme', value=theme)
             db.session.add(config)
         db.session.commit()
-        flash('主题已更新')
+        flash('主题更新')
     return redirect(url_for('admin.themes'))
 
 @bp.route('/theme-preview/<theme>')
@@ -645,7 +750,7 @@ def theme_preview(theme):
 @login_required
 @admin_required
 def plugins():
-    """插件管理页面"""
+    """插件管页面"""
     try:
         page = request.args.get('page', 1, type=int)
         search_query = request.args.get('q', '').strip()
@@ -695,7 +800,7 @@ def plugins():
             search_query=search_query
         )
     except Exception as e:
-        flash(f'加载插件列表失败: {str(e)}', 'error')
+        flash(f'载插件列表失败: {str(e)}', 'error')
         return redirect(url_for('admin.dashboard'))
 
 @bp.route('/plugins/<plugin_name>/uninstall', methods=['POST'])
@@ -774,7 +879,7 @@ def plugin_settings(plugin_name):
             flash('该插件不支持设置', 'error')
             return redirect(url_for('admin.plugins'))
             
-        # GET 请求显示设置页面
+        # GET 请显示设置页面
         if hasattr(plugin, 'get_settings'):
             settings = plugin.get_settings()
             # 渲染插件自定义模板或使用默认模板
@@ -1046,7 +1151,7 @@ def delete_file(file_id):
             if not os.listdir(directory):
                 os.rmdir(directory)
         
-        # 从数据库中删除记录
+        # 从据库中删除记录
         db.session.delete(file)
         db.session.commit()
         
@@ -1073,3 +1178,170 @@ def utility_processor():
         is_active_group=is_active_group,
         is_current_menu=is_current_menu
     ) 
+
+@bp.route('/cache')
+@login_required
+@admin_required
+def cache_manage():
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    
+    # 获取并分类缓存键
+    cache_keys = {}
+    cache_categories = {
+        'index': 0,
+        'article': 0,
+        'category': 0,
+        'tag': 0,
+        'search': 0,
+        'other': 0
+    }
+    
+    # 获取缓存信息
+    total_size = 0
+    for key in cache.cache._cache:
+        try:
+            value = cache.get(key)
+            if value is not None:
+                # 计算大小
+                size = sys.getsizeof(value)
+                total_size += size
+                
+                # 分类统计 - 根据实际的缓存键前缀
+                if 'categories_with_count' in key:
+                    cache_categories['category'] += 1
+                elif 'article_' in key:
+                    cache_categories['article'] += 1
+                elif 'hot_articles_today' in key:
+                    cache_categories['article'] += 1
+                elif 'hot_articles_week' in key:
+                    cache_categories['article'] += 1
+                elif 'random_articles' in key:
+                    cache_categories['article'] += 1
+                elif 'random_tags' in key:
+                    cache_categories['tag'] += 1
+                elif 'latest_comments' in key:
+                    cache_categories['other'] += 1
+                elif 'search_' in key:
+                    cache_categories['search'] += 1
+                else:
+                    cache_categories['other'] += 1
+                
+                # 保存缓存信息
+                cache_keys[key] = {
+                    'type': type(value).__name__,
+                    'size': f"{size / 1024:.2f} KB",
+                    'modified': datetime.now()
+                }
+        except Exception as e:
+            current_app.logger.error(f"Error processing cache key {key}: {str(e)}")
+            continue
+    
+    # 计算总缓存数
+    total_cache_count = sum(cache_categories.values())
+    
+    # 获取缓存统计信息
+    cache_stats = {
+        'total_keys': total_cache_count,
+        'memory_usage': f"{total_size / 1024:.2f} KB",
+        'hit_rate': '不支持统计'
+    }
+    
+    # 分页处理
+    total = len(cache_keys)
+    total_pages = (total + per_page - 1) // per_page
+    page = min(max(page, 1), total_pages if total_pages > 0 else 1)
+    start = (page - 1) * per_page
+    end = start + per_page
+    
+    # 按修改时间倒序排序
+    sorted_items = sorted(
+        cache_keys.items(), 
+        key=lambda x: x[1]['modified'],
+        reverse=True
+    )
+    sorted_keys = dict(sorted_items[start:end])
+    
+    # 创建分页对象
+    class Pagination:
+        def __init__(self, page, per_page, total):
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.pages = total_pages
+            self.items = sorted_keys
+        
+        @property
+        def has_prev(self):
+            return self.page > 1
+        
+        @property
+        def has_next(self):
+            return self.page < self.pages
+        
+        @property
+        def prev_num(self):
+            return self.page - 1 if self.has_prev else None
+        
+        @property
+        def next_num(self):
+            return self.page + 1 if self.has_next else None
+        
+        def iter_pages(self, left_edge=2, left_current=2, right_current=5, right_edge=2):
+            last = 0
+            for num in range(1, self.pages + 1):
+                if (
+                    num <= left_edge
+                    or (
+                        num > self.page - left_current - 1
+                        and num < self.page + right_current
+                    )
+                    or num > self.pages - right_edge
+                ):
+                    if last + 1 != num:
+                        yield None
+                    yield num
+                    last = num
+    
+    # 创建分页对象实例
+    pagination = Pagination(page, per_page, total)
+            
+    return render_template('admin/cache.html', 
+                         cache_stats=cache_stats,
+                         cache_keys=sorted_keys,
+                         cache_categories=cache_categories,
+                         pagination=pagination,
+                         total_cache_count=total_cache_count) 
+
+@bp.route('/cache/clear/category/<category>', methods=['POST'])
+@login_required
+@admin_required
+def clear_cache_by_category(category):
+    try:
+        deleted_count = 0
+        for key in list(cache.cache._cache.keys()):
+            should_delete = False
+            
+            if category == 'all':
+                should_delete = True
+            elif category == 'index' and ('index' in key):
+                should_delete = True
+            elif category == 'article' and ('article' in key):
+                should_delete = True
+            elif category == 'category' and ('category' in key or 'categories' in key):
+                should_delete = True
+            elif category == 'tag' and ('tag' in key or 'tags' in key):
+                should_delete = True
+            elif category == 'search' and ('search' in key):
+                should_delete = True
+            
+            if should_delete:
+                cache.delete(key)
+                deleted_count += 1
+        
+        return jsonify({
+            'message': f'已清除 {deleted_count} 个缓存',
+            'category': category
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'清除缓存失败：{str(e)}'}), 500 

@@ -19,6 +19,7 @@ from werkzeug.utils import secure_filename
 from flask import current_app
 from datetime import datetime
 from app.models.file import File
+from app.utils.common import get_categories_data
 
 bp = Blueprint('user', __name__, url_prefix='/user')
 
@@ -113,11 +114,16 @@ def profile():
     
     avg_sentiment = sentiment_data.avg_sentiment if sentiment_data.avg_sentiment else 0
     
+    # 获取分类数据
+    categories, article_counts = get_categories_data()
+    
     return render_template('user/profile.html',
                          view_history=view_history,
                          user_articles=user_articles,
                          interests_chart=interests_chart,
-                         avg_sentiment=avg_sentiment)
+                         avg_sentiment=avg_sentiment,
+                         categories=categories,
+                         article_counts=article_counts)
 
 @bp.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
@@ -220,7 +226,12 @@ def edit_profile():
             
         return redirect(url_for('user.profile'))
         
-    return render_template('user/edit_profile.html')
+    # 获取分类数据
+    categories, article_counts = get_categories_data()
+    
+    return render_template('user/edit_profile.html',
+                         categories=categories,
+                         article_counts=article_counts)
 
 @bp.route('/my-articles')
 @login_required
@@ -232,7 +243,13 @@ def my_articles():
         .order_by(Article.id.desc(), Article.created_at.desc())\
         .paginate(page=page, per_page=10, error_out=False)
     
-    return render_template('user/my_articles.html', articles=articles)
+    # 获取分类数据
+    categories, article_counts = get_categories_data()
+    
+    return render_template('user/my_articles.html', 
+                         articles=articles,
+                         categories=categories,
+                         article_counts=article_counts)
 
 @bp.route('/author/<int:id>')
 def author(id):
@@ -281,10 +298,15 @@ def author(id):
          .limit(8).all()
     }
     
+    # 获取分类数据
+    categories, article_counts = get_categories_data()
+    
     return render_template('user/author.html', 
                          author=author, 
                          articles=articles,
-                         stats=stats)
+                         stats=stats,
+                         categories=categories,
+                         article_counts=article_counts)
 
 # 添加新的路由处理删除浏览历史
 @bp.route('/history/<int:history_id>', methods=['DELETE'])

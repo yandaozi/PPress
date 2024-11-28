@@ -3,6 +3,9 @@ import os
 from .extensions import db, login_manager, csrf
 from .utils.theme_manager import ThemeManager
 from app.plugins import get_plugin_manager
+from flask_caching import Cache
+
+cache = Cache()
 
 def init_plugins(app):
     """初始化插件"""
@@ -35,6 +38,13 @@ def create_app(config_name='default'):
     login_manager.init_app(app)
     csrf.init_app(app)
     login_manager.login_view = 'auth.login'
+
+    # 使用内存缓存
+    app.config['CACHE_TYPE'] = 'simple'
+    app.config['CACHE_DEFAULT_TIMEOUT'] = 300
+
+    # 初始化缓存
+    cache.init_app(app)
 
     # 注册一个请求钩子来延迟初始化插件
     @app.before_request
@@ -110,5 +120,15 @@ def create_app(config_name='default'):
 
     # 修改 Jinja2 模板加载器配置
     app.jinja_loader = ThemeManager.get_theme_loader(app)
+
+    # 添加全局上下文处理器
+    @app.context_processor
+    def inject_categories_data():
+        from app.utils.common import get_categories_data
+        categories, article_counts = get_categories_data()
+        return dict(
+            categories=categories,
+            article_counts=article_counts
+        )
 
     return app 

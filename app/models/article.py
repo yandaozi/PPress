@@ -11,13 +11,74 @@ class Article(db.Model):
     __tablename__ = 'articles'
     
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
+    title = db.Column(db.String(200), nullable=False, index=True)
     content = db.Column(db.Text(collation='utf8mb4_unicode_ci'), nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), index=True)
     sentiment_score = db.Column(db.Float)
-    view_count = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    view_count = db.Column(db.Integer, default=0, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), index=True)
     
     tags = db.relationship('Tag', secondary=article_tags, backref=db.backref('articles', lazy=True))
+    
+    # 修改复合索引，只对 title 和排序字段创建索引
+    __table_args__ = (
+        db.Index('idx_article_sort', 'created_at', 'view_count'),  # 排序索引
+    )
+
+# 将事件监听器移到文件末尾，并使用延迟导入
+def init_article_events():
+    from .category import Category
+    from .tag import Tag
+    
+    @db.event.listens_for(Article, 'after_insert')
+    def article_after_insert(mapper, connection, target):
+        """文章创建后更新计数"""
+        if target.category_id:
+            connection.execute(
+                Category.__table__.update().
+                values(article_count=Category.__table__.c.article_count + 1).
+                where(Category.__table__.c.id == target.category_id)
+            )
+        
+        # 更新标签计数
+        for tag in target.tags:
+            connection.execute(
+                Tag.__table__.update().
+                values(article_count=Tag.__table__.c.article_count + 1).
+                where(Tag.__table__.c.id == tag.id)
+            )
+
+    @db.event.listens_for(Article, 'after_delete')
+    def article_after_delete(mapper, connection, target):
+        """文章删除后更新计数"""
+        if target.category_id:
+            connection.execute(
+                Category.__table__.update().
+                values(article_count=Category.__table__.c.article_count - 1).
+                where(Category.__table__.c.id == target.category_id)
+            )
+        
+        # 更新标签计数
+        for tag in target.tags:
+            connection.execute(
+                Tag.__table__.update().
+                values(article_count=Tag.__table__.c.article_count - 1).
+                where(Tag.__table__.c.id == tag.id)
+            )
+
+    @db.event.listens_for(Article.category_id, 'set')
+    def article_category_changed(target, value, oldvalue, initiator):
+        """文章分类变更时更新计数"""
+        if oldvalue is not None:
+            Category.query.filter_by(id=oldvalue).update(
+                {Category.__table__.c.article_count: Category.__table__.c.article_count - 1}
+            )
+        if value is not None:
+            Category.query.filter_by(id=value).update(
+                {Category.__table__.c.article_count: Category.__table__.c.article_count + 1}
+            )
+
+# 初始化事件监听器
+init_article_events()

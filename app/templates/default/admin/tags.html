@@ -46,7 +46,7 @@
                     <tr>
                         <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                         <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">文章数</th>
+                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">文章数</th>
                         <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                     </tr>
                 </thead>
@@ -55,14 +55,14 @@
                     <tr>
                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ tag.id }}</td>
                         <td class="px-4 sm:px-6 py-4">
-                            <span class="px-2 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-full">
-                                {{ tag.name }}
-                            </span>
-                            <div class="sm:hidden mt-1 text-xs text-gray-500">
-                                文章数：{{ tag.articles|length }}
-                            </div>
+                            <a href="{{ url_for('admin.articles', search_type='tag', q=tag.name) }}" 
+                               class="hover:text-blue-600">
+                                <span class="px-2 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200">
+                                    {{ tag.name }}
+                                </span>
+                            </a>
                         </td>
-                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ tag.articles|length }}</td>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ tag.article_count }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <div class="flex items-center space-x-4">
                                 <button onclick="showEditTagModal({{ tag.id }}, '{{ tag.name }}')"

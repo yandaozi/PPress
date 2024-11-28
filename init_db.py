@@ -8,7 +8,7 @@ app = create_app()
 
 def init_db():
     with app.app_context():
-        print("开始初始化数据库...")
+        print("开始初始化1000条测试数据库...")
         # 清空所有表
         db.drop_all()
         print("创建新表...")

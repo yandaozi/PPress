@@ -60,11 +60,11 @@
                             <!-- 移动端显示的额外信息 -->
                             <div class="sm:hidden mt-1 text-xs text-gray-500 space-y-1">
                                 <div>{{ category.description or '无描述' }}</div>
-                                <div>文章数：{{ category.articles|length }}</div>
+                                <div>文章数：{{ category.article_count }}</div>
                             </div>
                         </td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-500">{{ category.description or '无' }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ category.articles|length }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ category.article_count }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <div class="flex items-center space-x-4">
                                 <button onclick="showEditCategoryModal({{ category.id }}, '{{ category.name }}', '{{ category.description|default('', true) }}')"
@@ -232,7 +232,7 @@ function updateCategory() {
 }
 
 function deleteCategory(categoryId) {
-    showAlert('确定要删除此分类吗？如果分类下有文章将无法删除！', 'warning', '确认删除', function() {
+    showAlert('确定要删除此分类吗？分类下若有文章将移动到id为1的默认分类下！！', 'warning', '确认删除', function() {
         fetch(`/admin/categories/${categoryId}`, {
             method: 'DELETE',
             headers: {
