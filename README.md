@@ -37,65 +37,41 @@
   - Plotly.js - 图表库
 
 ## 项目截图
-<p align="center">首页截图</p>
+![1.png](viewimg/1.png)
 
-![首页截图](/viewimg/index.png)
+![2.png](viewimg/2.png)
 
-<p align="center">标签页</p>
+![3.png](viewimg/3.png)
 
-![标签页](/viewimg/tagpage.png)
+![4.png](viewimg/4.png)
 
-<p align="center">搜索页</p>
+![5.png](viewimg/5.png)
 
-![搜索页](/viewimg/search.png)
+![6.png](viewimg/6.png)
 
-<p align="center">文章内页</p>
+![7.png](viewimg/7.png)
 
-![文章内页](/viewimg/article.png)
+![8.png](viewimg/8.png)
 
-<p align="center">个人中心</p>
+![9.png](viewimg/9.png)
 
-![个人中心](/viewimg/mepage.png)
+![10.png](viewimg/10.png)
 
-<p align="center">创建文章</p>
+![11.png](viewimg/11.png)
 
-![创建文章](/viewimg/create_article.png)
+![12.png](viewimg/12.png)
 
-<p align="center">我的文章</p>
+![13.png](viewimg/13.png)
 
-![我的文章](/viewimg/myarticle.png)
+![14.png](viewimg/14.png)
 
-<p align="center">文章作者主页</p>
+![15.png](viewimg/15.png)
 
-![文章作者主页](/viewimg/userpage.png)
+![16.png](viewimg/16.png)
 
-<p align="center">管理控制面板首页</p>
+![17.png](viewimg/17.png)
 
-![管理控制面板首页](/viewimg/admin_dashboard.png)
-
-<p align="center">用户管理</p>
-
-![用户管理](/viewimg/admin_users.png)
-
-<p align="center">文章管理</p>
-
-![文章管理](/viewimg/admin_articles.png)
-
-<p align="center">评论管理</p>
-
-![评论管理](/viewimg/admin_comments.png)
-
-<p align="center">分类管理</p>
-
-![分类管理](/viewimg/admin_categories.png)
-
-<p align="center">标签管理</p>
-
-![标签管理](/viewimg/admin_tags.png)
-
-<p align="center">网站信息配置</p>
-
-![网站信息配置](/viewimg/admin_siteconfig.png)
+![18.png](viewimg/18.png)
 
 
 
