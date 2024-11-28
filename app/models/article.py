@@ -1,5 +1,7 @@
 from ..extensions import db
 from datetime import datetime
+from flask import current_app
+from sqlalchemy.orm.attributes import NO_VALUE
 
 # 创建文章-标签关联表
 article_tags = db.Table('article_tags',
@@ -12,7 +14,7 @@ class Article(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False, index=True)
-    content = db.Column(db.Text(collation='utf8mb4_unicode_ci'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), index=True)
     sentiment_score = db.Column(db.Float)
     view_count = db.Column(db.Integer, default=0, index=True)
@@ -22,9 +24,9 @@ class Article(db.Model):
     
     tags = db.relationship('Tag', secondary=article_tags, backref=db.backref('articles', lazy=True))
     
-    # 修改复合索引，只对 title 和排序字段创建索引
+    # 静态定义表参数
     __table_args__ = (
-        db.Index('idx_article_sort', 'created_at', 'view_count'),  # 排序索引
+        db.Index('idx_article_sort', 'created_at', 'view_count'),
     )
 
 # 将事件监听器移到文件末尾，并使用延迟导入
@@ -71,20 +73,23 @@ def init_article_events():
     @db.event.listens_for(Article.category_id, 'set')
     def article_category_changed(target, value, oldvalue, initiator):
         """文章分类变更时更新计数"""
-        if oldvalue == value:  # 如果新旧值相同，不需要更新
+        # 如果新旧值相同，不需要更新
+        if oldvalue == value:
             return
         
         try:
-            if oldvalue is not None:
+            # 处理旧分类
+            if oldvalue not in (None, NO_VALUE):  # 添加 NO_VALUE 检查
                 old_category = Category.query.get(oldvalue)
                 if old_category:
                     old_category.article_count = Category.query.filter_by(id=oldvalue).first().articles.count()
-                
-            if value is not None:
+            
+            # 处理新分类
+            if value is not None:  # 只在有新分类时更新
                 new_category = Category.query.get(value)
                 if new_category:
                     new_category.article_count = Category.query.filter_by(id=value).first().articles.count()
-                
+            
             db.session.commit()
         except Exception as e:
             db.session.rollback()

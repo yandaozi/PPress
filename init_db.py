@@ -1,20 +1,47 @@
+import os
+import click
 from app import create_app, db
 from app.models import User, Article, Tag, Comment, ViewHistory, Category, SiteConfig, Plugin, File
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 import random
+import pymysql
+from config.database import MYSQL_CONFIG
 
-app = create_app()
-
-def init_db():
+def init_db(db_type='mysql'):
+    """初始化数据库
+    Args:
+        db_type: 数据库类型,'mysql' 或 'sqlite'
+    """
+    if db_type == 'mysql':
+        # 使用配置文件中的连接信息
+        conn = pymysql.connect(
+            host=MYSQL_CONFIG['host'],
+            user=MYSQL_CONFIG['user'],
+            password=MYSQL_CONFIG['password']
+        )
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute('DROP DATABASE IF EXISTS ' + MYSQL_CONFIG['database'])
+                cursor.execute(
+                    f"CREATE DATABASE {MYSQL_CONFIG['database']} "
+                    'CHARACTER SET utf8mb4 '
+                    'COLLATE utf8mb4_unicode_ci'
+                )
+        finally:
+            conn.close()
+    
+    # 创建应用实例
+    app = create_app(db_type=db_type)
+    
     with app.app_context():
-        print("开始初始化500条测试数据库...")
+        print(f"\n开始初始化100条测试数据到 {db_type} 数据库...")
         # 清空所有表
         db.drop_all()
         print("创建新表...")
         db.create_all()
         db.session.commit()
-
+        
         # 初始化网站配置
         default_configs = [
             {'key': 'site_name', 'value': 'PPress', 'description': '网站名称'},
@@ -209,5 +236,23 @@ Flask的主要优点包括：
         print("管理员 - 用户名：admin，密码：123456")
         print("普通用户 - 用户名：user0-4，密码：user0-4123")
 
+def get_db_type():
+    """交互式获取数据库类型"""
+    while True:
+        choice = input("\n请选择数据库类型 [1/2]:\n1. MySQL (默认)\n2. SQLite\n请输入(直接回车使用MySQL): ").strip()
+        
+        if choice == '':
+            print("\n已选择: MySQL")
+            return 'mysql'
+        elif choice == '1':
+            print("\n已选择: MySQL")
+            return 'mysql'
+        elif choice == '2':
+            print("\n已选择: SQLite")
+            return 'sqlite'
+        else:
+            print("\n输入无效,请重新选择")
+
 if __name__ == '__main__':
-    init_db()
+    db_type = get_db_type()
+    init_db(db_type)

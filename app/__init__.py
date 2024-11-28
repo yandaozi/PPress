@@ -4,6 +4,7 @@ from .extensions import db, login_manager, csrf
 from .utils.theme_manager import ThemeManager
 from app.plugins import get_plugin_manager
 from flask_caching import Cache
+from config.database import get_db_url
 
 cache = Cache()
 
@@ -12,24 +13,25 @@ def init_plugins(app):
     plugin_manager = get_plugin_manager()
     plugin_manager.init_app(app)
 
-def create_app(config_name='default'):
+def create_app(config_name='default', db_type='mysql'):
     app = Flask(__name__)
 
     # 配置
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev')
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://flaskiosblog:flaskiosblog@localhost/flaskiosblog?charset=utf8mb4'
+    app.config['SQLALCHEMY_DATABASE_URI'] = get_db_url(db_type)
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
 
     # 添加数据库连接选项
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_pre_ping': True,
-        'pool_recycle': 300,
-        'connect_args': {
-            'charset': 'utf8mb4'
+    if db_type == 'mysql':
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'pool_pre_ping': True,
+            'pool_recycle': 300,
+            'connect_args': {
+                'charset': 'utf8mb4'
+            }
         }
-    }
-
+    
     # 添加这行配置，自动处理 URL 结尾的斜杠
     app.url_map.strict_slashes = False
 
