@@ -157,7 +157,7 @@ Flask的主要优点包括：
 
         # 创建文章
         articles = []
-        for i in range(500):
+        for i in range(100):
             article = Article(
                 title=f'技术探讨：{random.choice(["Web开发实践", "数据库优化", "前端技术", "后端架构", "系统设计"])} {i+1}',
                 content=random.choice(article_contents),

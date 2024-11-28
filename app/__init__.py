@@ -131,4 +131,10 @@ def create_app(config_name='default'):
             article_counts=article_counts
         )
 
+    # 注册加密版权信息函数
+    @app.template_global()
+    def get_encrypted_copyright():
+        from .utils.encrypt import CopyrightEncryptor
+        return CopyrightEncryptor.get_copyright()
+
     return app 
