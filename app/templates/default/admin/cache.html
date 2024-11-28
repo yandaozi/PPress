@@ -175,7 +175,7 @@ function clearCacheCategory(category) {
                 showAlert(data.error, 'error', '错误');
             } else {
                 showAlert(data.message, 'success', '成功');
-                setTimeout(() => location.reload(), 1000);
+                setTimeout(() => location.reload(), 300);
             }
         });
     });
