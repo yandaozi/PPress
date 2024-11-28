@@ -71,14 +71,24 @@ def init_article_events():
     @db.event.listens_for(Article.category_id, 'set')
     def article_category_changed(target, value, oldvalue, initiator):
         """文章分类变更时更新计数"""
-        if oldvalue is not None:
-            Category.query.filter_by(id=oldvalue).update(
-                {Category.__table__.c.article_count: Category.__table__.c.article_count - 1}
-            )
-        if value is not None:
-            Category.query.filter_by(id=value).update(
-                {Category.__table__.c.article_count: Category.__table__.c.article_count + 1}
-            )
+        if oldvalue == value:  # 如果新旧值相同，不需要更新
+            return
+        
+        try:
+            if oldvalue is not None:
+                old_category = Category.query.get(oldvalue)
+                if old_category:
+                    old_category.article_count = Category.query.filter_by(id=oldvalue).first().articles.count()
+                
+            if value is not None:
+                new_category = Category.query.get(value)
+                if new_category:
+                    new_category.article_count = Category.query.filter_by(id=value).first().articles.count()
+                
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error updating category counts: {str(e)}")
 
 # 初始化事件监听器
 init_article_events()

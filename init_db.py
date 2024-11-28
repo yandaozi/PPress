@@ -8,7 +8,7 @@ app = create_app()
 
 def init_db():
     with app.app_context():
-        print("开始初始化1000条测试数据库...")
+        print("开始初始化500条测试数据库...")
         # 清空所有表
         db.drop_all()
         print("创建新表...")
@@ -157,7 +157,7 @@ Flask的主要优点包括：
 
         # 创建文章
         articles = []
-        for i in range(1000):
+        for i in range(500):
             article = Article(
                 title=f'技术探讨：{random.choice(["Web开发实践", "数据库优化", "前端技术", "后端架构", "系统设计"])} {i+1}',
                 content=random.choice(article_contents),
