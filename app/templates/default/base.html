@@ -32,6 +32,19 @@
         .scrollbar-hide::-webkit-scrollbar {
             display: none;             /* Chrome, Safari and Opera */
         }
+        /* 添加页面布局样式 footer于底部 */
+        html, body {
+            height: 100%;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        main {
+            flex: 1 0 auto;
+            width: 100%;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
@@ -303,7 +316,7 @@
         searchBar.classList.toggle('hidden');
     }
 </script>
-<footer class="bg-white dark:bg-gray-800 mt-8 border-t dark:border-gray-700">
+<footer class="bg-white dark:bg-gray-800 mt-auto border-t dark:border-gray-700">
     <div class="max-w-7xl mx-auto px-4 py-8">
         <div class="flex flex-col items-center">
             <div class="text-gray-500 dark:text-gray-400 mb-2">
