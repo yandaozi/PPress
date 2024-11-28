@@ -19,6 +19,7 @@ import random
 from app.models.file import File
 from app.models.user import User
 from app.utils.common import get_categories_data
+from sqlalchemy.orm import joinedload
 
 bp = Blueprint('blog', __name__)
 
@@ -72,7 +73,7 @@ def index():
     @cache.cached(timeout=300, key_prefix='hot_articles_today')
     def get_hot_articles_today_cache():
         today = datetime.now().date()
-        # 使用子查���优化
+        # 使用子查优化
         views_subquery = db.session.query(
             ViewHistory.article_id,
             db.func.count(ViewHistory.id).label('views')
@@ -207,31 +208,30 @@ def index():
 
 @bp.route('/article/<int:id>')
 def article(id):
-    article = get_article(id)
-    
-    # 获取所有分类及其文章数量
-    @cache.cached(timeout=3600, key_prefix='categories_with_count')
-    def get_categories_with_count_cache():
-        categories = Category.query.all()
-        result = []
-        for category in categories:
-            count = Article.query.filter_by(category_id=category.id).count()
-            result.append((category, count))
-        return result
+    # 使用缓存获取文章
+    @cache.memoize(timeout=300)  # 5分钟缓存
+    def get_article_with_relations(article_id):
+        return Article.query.options(
+            joinedload(Article.author),  # 预加载作者
+            joinedload(Article.tags),    # 预加载标签
+            joinedload(Article.category),  # 预加载分类
+            joinedload(Article.comments).joinedload(Comment.user)  # 预加载评论及评论用户
+        ).get_or_404(article_id)
     
     try:
-        categories_with_count = get_categories_with_count_cache()
-        categories = [cat for cat, _ in categories_with_count]
-        article_counts = dict((cat.id, count) for cat, count in categories_with_count)
-    except Exception:
-        categories = Category.query.all()
-        article_counts = {}
+        article = get_article_with_relations(id)
+    except Exception as e:
+        current_app.logger.error(f"Error loading article: {str(e)}")
+        abort(404)
+        
+    # 获取分类数据
+    categories, article_counts = get_categories_data()
     
     # 创建一个默认作者信息
     author_info = {
-        'id': None,  # 不提供链接
+        'id': None,
         'username': '已注销用户',
-        'avatar': url_for('static', filename='default_avatar.png')  # 默认头像
+        'avatar': url_for('static', filename='default_avatar.png')
     }
     
     # 如果作者存在，使用作者信息
@@ -378,7 +378,7 @@ def search():
             db.joinedload(Article.category)
         )
         
-        # 只搜索标题，��搜索内容
+        # 只搜索标题，搜索内容
         base_query = base_query.filter(Article.title.ilike(f'%{query}%'))
         
         # 标签过滤 - 如果有标签筛选，使用子查询
