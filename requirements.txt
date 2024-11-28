@@ -1,6 +1,8 @@
 beautifulsoup4
 Flask
+Flask_Caching
 Flask_Login
+flask_paginate
 flask_sqlalchemy
 flask_wtf
 Jinja2
