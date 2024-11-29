@@ -300,8 +300,17 @@ def edit(id=None):
                     article.tags.append(tag)
                 
                 # 清除相关缓存
+                # 1. 清除文章详情缓存 - 遍历所有缓存键查找文章缓存
+                for key in list(cache.cache._cache.keys()):
+                    try:
+                        value = cache.get(key)
+                        if value is not None and isinstance(value, Article) and value.id == article.id:
+                            cache.delete(key)
+                    except Exception as e:
+                        current_app.logger.error(f"Error processing cache key {key}: {str(e)}")
+                
+                # 2. 清除其他相关缓存
                 cache.delete_many(
-                    f'article_{article.id}',  # 文章详情缓存
                     'categories_with_count',  # 分类统计缓存
                     'hot_articles_today',     # 今日热门缓存
                     'hot_articles_week',      # 本周热门缓存
@@ -328,16 +337,6 @@ def edit(id=None):
                     article.tags.append(tag)
             
             db.session.commit()
-            
-            # 如果是新文章，清除首页相关缓存
-            if not id:
-                cache.delete_many(
-                    'categories_with_count',
-                    'hot_articles_today',
-                    'hot_articles_week',
-                    'random_articles',
-                    'random_tags'
-                )
             
             flash('文章保存成功！')
             return redirect(url_for('blog.article', id=article.id))
