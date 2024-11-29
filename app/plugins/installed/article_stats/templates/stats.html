@@ -1,0 +1,37 @@
+<div id="article-stats" class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+    <!-- 统计信息将通过 JS 动态加载 -->
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const articleContainer = document.querySelector('article');
+    if (articleContainer) {
+        const articleId = articleContainer.dataset.articleId;
+        if (articleId) {
+            fetch(`/calculate/${articleId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const statsContainer = document.getElementById('article-stats');
+                    if (statsContainer) {
+                        let statsHtml = '<div class="space-y-2">';
+                        if (data.word_count) {
+                            statsHtml += `<div>字数：${data.word_count}</div>`;
+                        }
+                        if (data.read_time) {
+                            statsHtml += `<div>预计阅读时间：${data.read_time} 分钟</div>`;
+                        }
+                        if (data.code_blocks) {
+                            statsHtml += `<div>代码块：${data.code_blocks} 个</div>`;
+                        }
+                        if (data.images) {
+                            statsHtml += `<div>图片：${data.images} 张</div>`;
+                        }
+                        statsHtml += '</div>';
+                        statsContainer.innerHTML = statsHtml;
+                    }
+                })
+                .catch(error => console.error('Error calculating stats:', error));
+        }
+    }
+});
+</script>

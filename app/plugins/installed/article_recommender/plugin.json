@@ -1,0 +1,9 @@
+{
+    "name": "Article Recommender",
+    "description": "基于文章标签和分类的智能文章推荐系统",
+    "version": "1.0.0",
+    "author": "言道子",
+    "author_url": "https://gitee.com/fojie",
+    "plugin_class": "Plugin",
+    "requires": []
+} 

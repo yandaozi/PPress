@@ -1,0 +1,35 @@
+{% extends "admin/base.html" %}
+
+{% block title %}自定义仪表盘{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+        <h1 class="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-4">
+            这是被插件重写的仪表盘！
+        </h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg p-6 text-white">
+                <h3 class="text-lg font-medium mb-2">插件功能展示</h3>
+                <p class="opacity-80">这个插件成功重写了原有的仪表盘路由</p>
+            </div>
+            
+            <div class="bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg p-6 text-white">
+                <h3 class="text-lg font-medium mb-2">路由优先级</h3>
+                <p class="opacity-80">插件路由的优先级高于应用路由</p>
+            </div>
+            
+            <div class="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg p-6 text-white">
+                <h3 class="text-lg font-medium mb-2">动态更新</h3>
+                <p class="opacity-80">插件可以随时启用/禁用，无需重启应用</p>
+            </div>
+        </div>
+        
+        <div class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 text-yellow-700 dark:text-yellow-300">
+            <p class="font-medium">提示</p>
+            <p class="mt-1">禁用此插件后将恢复原始仪表盘</p>
+        </div>
+    </div>
+</div>
+{% endblock %} 
