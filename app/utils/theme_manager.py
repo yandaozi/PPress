@@ -10,6 +10,11 @@ class ThemeManager:
         templates_dir = os.path.join(app.root_path, 'templates')
         theme_loaders = []
         
+        # 添加管理后台模板目录
+        admin_dir = os.path.join(templates_dir, 'admin')
+        if os.path.isdir(admin_dir):
+            theme_loaders.append(FileSystemLoader(admin_dir))
+        
         # 添加默认主题目录
         default_theme_dir = os.path.join(templates_dir, 'default')
         if os.path.isdir(default_theme_dir):
@@ -17,7 +22,7 @@ class ThemeManager:
         
         # 添加其他主题目录
         for theme in os.listdir(templates_dir):
-            if theme != 'default':  # 跳过默认主题，因为已经添加过了
+            if theme not in ['default', 'admin']:  # 跳过默认主题和管理后台
                 theme_dir = os.path.join(templates_dir, theme)
                 if os.path.isdir(theme_dir):
                     theme_loaders.append(FileSystemLoader(theme_dir))
@@ -25,7 +30,6 @@ class ThemeManager:
         # 最后添加原始模板目录作为后备
         theme_loaders.append(app.jinja_loader)
         
-        # 使用 ChoiceLoader 组合所有加载器
         return ChoiceLoader(theme_loaders)
 
     @staticmethod
@@ -64,5 +68,10 @@ class ThemeManager:
     @staticmethod
     def get_template_path(template_name):
         """获取模板的完整路径"""
+        # 如果是管理后台模板，直接返回
+        if template_name.startswith('admin/'):
+            return template_name
+            
+        # 其他模板使用主题
         theme = SiteConfig.get_config('site_theme', 'default')
         return f'{theme}/{template_name}' 
