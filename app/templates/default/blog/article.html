@@ -37,7 +37,9 @@
         <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{{ article.title }}</h1>
         
         <!-- 添加文章统计信息 -->
-
+        {% if render_article_stats is defined %}
+        {{ render_article_stats()|safe }}
+        {% endif %}
         <!-- 文章作者信息部分 -->
         {% set author = get_user_info(article.author) %}
         <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-8">
