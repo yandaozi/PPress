@@ -39,6 +39,7 @@ class PluginBase:
         self._view_functions = {}
         self._endpoints = {}
         self.enabled = True
+        self._plugin_name = self.__class__.__name__.lower()  # 添加插件名称
     
     def init_app(self, app):
         """初始化插件"""
@@ -65,7 +66,8 @@ class PluginBase:
     def route(self, rule, **options):
         """注册路由装饰器"""
         def decorator(f):
-            endpoint = options.pop('endpoint', f"{self.__class__.__name__.lower()}_{f.__name__}")
+            # 使用插件名称作为前缀，确保端点唯一
+            endpoint = options.pop('endpoint', f"{self._plugin_name}_{f.__name__}")
             route = DynamicRoute(rule, endpoint, f, options.get('methods', ['GET']))
             self._routes.append(route)
             self._view_functions[endpoint] = f
@@ -80,7 +82,16 @@ class PluginBase:
         for route in self._routes:
             if route.endpoint not in self.app.view_functions:
                 # 注册视图函数
-                self.app.view_functions[route.endpoint] = route.view_func
+                view_func = route.view_func
+                
+                # 如果是静态文件路由，包装视图函数以确保独立性
+                if 'static' in route.endpoint:
+                    original_func = view_func
+                    def wrapped_static_func(*args, **kwargs):
+                        return original_func(*args, **kwargs)
+                    view_func = wrapped_static_func
+                
+                self.app.view_functions[route.endpoint] = view_func
                 
                 # 创建路由规则
                 rule = Rule(
@@ -91,8 +102,11 @@ class PluginBase:
                 )
                 
                 # 添加到 URL Map
-                self.app.url_map.add(rule)
-                print(f"Registered route: {route.rule} -> {route.endpoint}")
+                try:
+                    self.app.url_map.add(rule)
+                    print(f"[{self._plugin_name}] Registered route: {route.rule} -> {route.endpoint}")
+                except Exception as e:
+                    print(f"[{self._plugin_name}] Error registering route {route.rule}: {str(e)}")
     
     def unregister_routes(self):
         """注销所有路由"""
@@ -117,17 +131,19 @@ class PluginBase:
         
         # 更新 URL Map
         self.app.url_map.update()
-        print("Routes unregistered")
+        print(f"[{self._plugin_name}] Routes unregistered")
     
     def enable(self):
         """启用插件"""
         self.enabled = True
         self.register_routes()
+        print(f"[{self._plugin_name}] Plugin enabled")
     
     def disable(self):
         """禁用插件"""
         self.enabled = False
         self.unregister_routes()
+        print(f"[{self._plugin_name}] Plugin disabled")
     
     def load_settings(self):
         """加载插件设置"""
@@ -250,6 +266,7 @@ class PluginManager:
                 old_plugin = self.plugins[plugin_name]
                 old_plugin.disable()  # 禁用旧插件
                 old_plugin.teardown()  # 清理旧插件
+                del self.plugins[plugin_name]  # 移除旧插件
             
             # 创建新的插件实例
             plugin = plugin_class()

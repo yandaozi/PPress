@@ -19,7 +19,9 @@ class Plugin(PluginBase):
             return jsonify(stats)
         
         # 注册静态文件路由
-        @self.route('/plugin/article_stats/static/<path:filename>')
+        @self.route('/plugin/article_stats/static/<path:filename>', 
+                   endpoint='article_stats_static',
+                   methods=['GET'])
         def serve_static(filename):
             """提供静态文件访问"""
             static_folder = os.path.join(os.path.dirname(__file__), 'static')

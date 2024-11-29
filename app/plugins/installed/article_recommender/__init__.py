@@ -9,7 +9,7 @@ class Plugin(PluginBase):
     def __init__(self):
         super().__init__()
         
-        # 注册路由时添加前缀
+        # 注册API路由
         @self.route('/plugin/article_recommender/recommend/<int:article_id>', methods=['GET'])
         def get_recommendations(article_id):
             """获取文章推荐"""
@@ -44,7 +44,9 @@ class Plugin(PluginBase):
                 return jsonify({'error': str(e)}), 500
         
         # 注册静态文件路由
-        @self.route('/plugin/article_recommender/static/<path:filename>')
+        @self.route('/plugin/article_recommender/static/<path:filename>', 
+                   endpoint='article_recommender_static',
+                   methods=['GET'])
         def serve_static(filename):
             """提供静态文件访问"""
             static_folder = os.path.join(os.path.dirname(__file__), 'static')
