@@ -12,7 +12,7 @@ class File(db.Model):
     file_type = db.Column(db.String(50))
     file_size = db.Column(db.Integer)
     md5 = db.Column(db.String(32), unique=True, nullable=False)
-    upload_time = db.Column(db.DateTime, default=datetime.utcnow)
+    upload_time = db.Column(db.DateTime, default=datetime.now)
     uploader_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     uploader = db.relationship(
         'User',

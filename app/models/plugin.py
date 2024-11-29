@@ -12,8 +12,8 @@ class Plugin(db.Model):
     author = db.Column(db.String(50))  # 作者
     author_url = db.Column(db.String(200))  # 作者网址
     enabled = db.Column(db.Boolean, default=True)  # 是否启用
-    installed_at = db.Column(db.DateTime, default=datetime.utcnow)  # 安装时间
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # 更新时间
+    installed_at = db.Column(db.DateTime, default=datetime.now)  # 安装时间
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)  # 更新时间
     config = db.Column(db.JSON)  # 插件配置(JSON格式)
 
     def __repr__(self):
@@ -48,5 +48,5 @@ class Plugin(db.Model):
     def update_config(self, config):
         """更新插件配置"""
         self.config = config
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now()
         db.session.commit()

@@ -1,6 +1,7 @@
 from ..extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+from datetime import datetime
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -11,7 +12,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     avatar = db.Column(db.String(255), default='/static/default_avatar.png')
     role = db.Column(db.Enum('user', 'admin'), default='user')
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    created_at = db.Column(db.DateTime, default=datetime.now)
     
     articles = db.relationship('Article', 
                              backref=db.backref('author', lazy=True),

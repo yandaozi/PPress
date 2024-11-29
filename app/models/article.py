@@ -18,8 +18,8 @@ class Article(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), index=True)
     sentiment_score = db.Column(db.Float)
     view_count = db.Column(db.Integer, default=0, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), index=True)
     
     tags = db.relationship('Tag', secondary=article_tags, backref=db.backref('articles', lazy=True))
