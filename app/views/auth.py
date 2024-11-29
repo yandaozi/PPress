@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session, make_response
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 from app.models.user import User
 from app.utils.captcha import generate_captcha
 from app import db
@@ -19,6 +19,10 @@ def captcha():
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # 如果用户已登录，重定向到首页
+    if current_user.is_authenticated:
+        return redirect(url_for('blog.index'))
+        
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -38,6 +42,10 @@ def login():
 
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
+    # 如果用户已登录，重定向到首页
+    if current_user.is_authenticated:
+        return redirect(url_for('blog.index'))
+        
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
