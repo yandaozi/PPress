@@ -33,15 +33,11 @@
     </nav>
 
     <!-- 文章内容 -->
-    <article class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 mb-8">
+    <article class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 mb-8" data-article-id="{{ article.id }}">
         <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{{ article.title }}</h1>
         
         <!-- 添加文章统计信息 -->
-        <div id="article-stats" class="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 mb-4" 
-             data-article-id="{{ article.id }}">
-            <!-- 统计信息将通过 JavaScript 动态加载 -->
-        </div>
-        
+
         <!-- 文章作者信息部分 -->
         {% set author = get_user_info(article.author) %}
         <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-8">
@@ -89,11 +85,16 @@
             </a>
             {% else %}
             <span class="text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full mr-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200">
-                暂无评论
+                暂无标签
             </span>
             {% endfor %}
         </div>
     </article>
+
+
+    {% if render_recommendations is defined %}
+    {{ render_recommendations()|safe }}
+    {% endif %}
 
     <!-- 评论区 -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8">
@@ -172,8 +173,5 @@ function deleteComment(commentId) {
 }
 </script>
 
-<!-- 在页面底部添加插件的 JavaScript -->
-{% if config.get('ARTICLE_STATS_JS') %}
-<script src="{{ config.ARTICLE_STATS_JS }}"></script>
-{% endif %}
+
 {% endblock %} 

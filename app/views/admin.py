@@ -983,9 +983,11 @@ def toggle_plugin(plugin_name):
         plugin.enabled = not plugin.enabled
         db.session.commit()
         
+        plugin_manager = get_plugin_manager()
+        
         if plugin.enabled:
-            # 启用插件时，尝试加载它
-            if plugin_manager.load_plugin(plugin_name):
+            # 启用插件 - 重新加载
+            if plugin_manager.reload_plugin(plugin_name):
                 status = '启用'
             else:
                 # 加载失败时回滚状态
@@ -996,14 +998,14 @@ def toggle_plugin(plugin_name):
                     'message': '插件加载失败'
                 })
         else:
-            # 禁用插件时，卸载它
+            # 禁用插件
             plugin_manager.unload_plugin(plugin_name)
             status = '禁用'
         
         return jsonify({
             'status': 'success',
             'message': f'插件已{status}',
-            'reload_required': False  # 不再要重启
+            'reload_required': False
         })
     except Exception as e:
         return jsonify({

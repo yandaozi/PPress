@@ -10,9 +10,9 @@ cache = Cache()
 
 def init_plugins(app):
     """初始化插件"""
-    plugin_manager = get_plugin_manager()
-    plugin_manager.init_app(app)
-
+    with app.app_context():
+        plugin_manager = get_plugin_manager()
+        plugin_manager.init_app(app)
 
 def create_app(config_name='default', db_type=DB_TYPE):
     app = Flask(__name__)
@@ -45,17 +45,7 @@ def create_app(config_name='default', db_type=DB_TYPE):
     # 使用内存缓存
     app.config['CACHE_TYPE'] = 'simple'
     app.config['CACHE_DEFAULT_TIMEOUT'] = 300
-
-    # 初始化缓存
     cache.init_app(app)
-
-    # 注册一个请求钩子来延迟初始化插件
-    @app.before_request
-    def lazy_init_plugins():
-        if not hasattr(app, '_plugins_initialized'):
-            with app.app_context():
-                init_plugins(app)
-            app._plugins_initialized = True
 
     # 注册蓝图
     from .views import auth, blog, admin, user
@@ -63,6 +53,15 @@ def create_app(config_name='default', db_type=DB_TYPE):
     app.register_blueprint(blog.bp)
     app.register_blueprint(admin.bp)
     app.register_blueprint(user.bp)
+
+    # 初始化插件 - 移到这里，确保在所有蓝图注册之后
+    # 注册一个请求钩子来延迟初始化插件
+    @app.before_request
+    def lazy_init_plugins():
+        if not hasattr(app, '_plugins_initialized'):
+            with app.app_context():
+                init_plugins(app)
+            app._plugins_initialized = True
 
     # 注册404错误处理器
     @app.errorhandler(404)
