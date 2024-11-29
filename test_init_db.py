@@ -28,6 +28,30 @@ def check_db_lock():
         return True
     return False
 
+def update_db_config(db_type):
+    """更新数据库配置文件"""
+    config_path = os.path.join(os.path.dirname(__file__), 'config', 'database.py')
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # 使用正则表达式替换 DB_TYPE
+        import re
+        new_content = re.sub(
+            r'DB_TYPE\s*=\s*["\'].*["\']',
+            f'DB_TYPE = "{db_type}"',
+            content
+        )
+
+        with open(config_path, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+
+        print(f"\n数据库配置已更新：DB_TYPE = {db_type}")
+
+    except Exception as e:
+        print(f"\n更新数据库配置失败：{str(e)}")
+
 def create_db_lock():
     """创建数据库锁文件"""
     with open(LOCK_FILE, 'w', encoding='utf-8') as f:
@@ -262,11 +286,11 @@ Flask的主要优点包括：
         print("\n测试账号：")
         print("管理员 - 用户名：admin，密码：123456")
         print("普通用户 - 用户名：user0-4，密码：user0-4123")
-        if db_type == "mysql":
-            print("请修改 config/database.py 文件中的 DB_TYPE = \"sqlite\" 为 DB_TYPE = \"mysql\"")
-        
         # 创建数据库锁文件
         create_db_lock()
+
+        # 更新数据库配置
+        update_db_config(db_type)
 
 def get_db_type():
     """交互式获取数据库类型"""
