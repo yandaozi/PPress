@@ -25,6 +25,8 @@ import io
 from app.models.file import File
 from flask_paginate import Pagination
 import sys
+from importlib import import_module
+import tempfile, zipfile, shutil
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -332,7 +334,7 @@ def site_config():
     if request.method == 'POST':
         for key in request.form:
             if key.startswith('config_'):
-                config_key = key[7:]  # 去掉'config_'前缀
+                config_key = key[7:]  # 去掉'config_'缀
                 config = SiteConfig.query.filter_by(key=config_key).first()
                 if config:
                     config.value = request.form[key]
@@ -750,7 +752,7 @@ def theme_preview(theme):
 @login_required
 @admin_required
 def plugins():
-    """插件管页面"""
+    """插件管理页面"""
     try:
         page = request.args.get('page', 1, type=int)
         search_query = request.args.get('q', '').strip()
@@ -882,19 +884,19 @@ def save_plugin_settings(plugin_name):
 @admin_required
 def upload_plugin():
     """上传插件"""
-    import tempfile, zipfile, shutil  # 把导入移到函数开头
+    import tempfile, zipfile, shutil
+    
+    if 'plugin' not in request.files:
+        return jsonify({'status': 'error', 'message': '没有上传文件'})
+    
+    file = request.files['plugin']
+    if file.filename == '':
+        return jsonify({'status': 'error', 'message': '没有选择文件'})
+        
+    if not file.filename.endswith('.zip'):
+        return jsonify({'status': 'error', 'message': '只支持 zip 格式的插件包'})
     
     try:
-        if 'plugin' not in request.files:
-            return jsonify({'status': 'error', 'message': '没有上传文件'})
-            
-        file = request.files['plugin']
-        if file.filename == '':
-            return jsonify({'status': 'error', 'message': '没有选择文件'})
-            
-        if not file.filename.endswith('.zip'):
-            return jsonify({'status': 'error', 'message': '只支持 zip 格式的插件包'})
-        
         # 创建临时目录
         temp_dir = tempfile.mkdtemp()
         zip_path = os.path.join(temp_dir, file.filename)
@@ -938,26 +940,35 @@ def upload_plugin():
             if os.path.exists(plugin_zip):
                 os.remove(plugin_zip)
             
-            # 添加插件记录到数据库
-            Plugin.add_plugin(plugin_info, directory)
+            # 导入插件模块获取默认配置
+            module = import_module(f'app.plugins.installed.{directory}')
+            plugin_class = getattr(module, plugin_info.get('plugin_class', 'Plugin'))
+            plugin = plugin_class()
+            default_config = plugin.default_settings if hasattr(plugin, 'default_settings') else {}
             
-            # 加载插件
-            if plugin_manager.load_plugin(directory):
-                return jsonify({'status': 'success', 'message': f'插件 {plugin_name} 安装成功'})
-            else:
-                # 安装失败，清理
-                shutil.rmtree(plugin_dir)
-                Plugin.remove_plugin(plugin_name)
-                return jsonify({'status': 'error', 'message': '插件加载失败'})
-                
+            # 获取启用状态
+            enabled = plugin_info.get('enabled', True)  # 如果未指定，默认为启用
+            
+            # 添加到数据库
+            Plugin.add_plugin(plugin_info, directory, enabled=enabled, config=default_config)
+            
+            # 如果插件默认启用，则立即加载它
+            if enabled:
+                plugin_manager.load_plugin(directory)
+            
+            return jsonify({
+                'status': 'success',
+                'message': f'插件 {plugin_name} 安装成功！(默认状态：{"启用" if enabled else "禁用"})'
+            })
+            
         finally:
             # 清理临时目录
             shutil.rmtree(temp_dir)
-                
+            
     except Exception as e:
-        return jsonify({'status': 'error', 'message': f'上传插件失败: {str(e)}'})
+        return jsonify({'status': 'error', 'message': f'安装失败：{str(e)}'})
 
-@bp.route('/plugins/<plugin_name>/toggle', methods=['POST'])
+@bp.route('/plugins/<path:plugin_name>/toggle', methods=['POST'])
 @login_required
 @admin_required
 def toggle_plugin(plugin_name):
@@ -1031,46 +1042,49 @@ def export_plugin(plugin_name):
         flash(f'导出插件失败: {str(e)}', 'error')
         return redirect(url_for('admin.plugins'))
 
-@bp.route('/plugins/<plugin_name>/reload', methods=['POST'])
+@bp.route('/plugins/<path:plugin_name>/reload', methods=['POST'])
 @login_required
 @admin_required
 def reload_plugin(plugin_name):
     """重新加载插件"""
     try:
-        # 获取插件记录
-        plugin_record = Plugin.query.filter_by(directory=plugin_name).first_or_404()
+        # 读取插件信息
+        plugin_dir = os.path.join(current_app.root_path, 'plugins', 'installed', plugin_name)
+        with open(os.path.join(plugin_dir, 'plugin.json'), 'r', encoding='utf-8') as f:
+            plugin_info = json.load(f)
         
         # 获取插件实例
-        plugin = plugin_manager.get_plugin(plugin_name)
-        if not plugin:
-            return jsonify({
-                'status': 'error',
-                'message': '插件未加载'
-            }), 404
+        module = import_module(f'app.plugins.installed.{plugin_name}')
+        plugin_class = getattr(module, plugin_info.get('plugin_class', 'Plugin'))
+        plugin = plugin_class()
+        default_config = plugin.default_settings if hasattr(plugin, 'default_settings') else {}
         
-        # 重置插件配置为默认配置
-        if hasattr(plugin, 'default_settings'):
-            plugin_record.config = plugin.default_settings
+        # 获取启用状态
+        enabled = plugin_info.get('enabled', True)
+        
+        # 更新数据库记录
+        db_plugin = Plugin.query.filter_by(directory=plugin_name).first()
+        if db_plugin:
+            db_plugin.name = plugin_info['name']
+            db_plugin.description = plugin_info.get('description', '')
+            db_plugin.version = plugin_info.get('version', '1.0.0')
+            db_plugin.author = plugin_info.get('author', '')
+            db_plugin.author_url = plugin_info.get('author_url', '')
+            db_plugin.enabled = enabled
+            db_plugin.config = default_config
             db.session.commit()
         
         # 重新加载插件
-        if plugin_manager.reload_plugin(plugin_name):
-            return jsonify({
-                'status': 'success',
-                'message': f'插件 {plugin_record.name} 已重新加载',
-                'reload_required': True
-            })
-        else:
-            return jsonify({
-                'status': 'error',
-                'message': '插件重载失败'
-            })
-            
-    except Exception as e:
+        plugin_manager.reload_plugin(plugin_name)
+        
         return jsonify({
-            'status': 'error',
-            'message': f'重载失败：{str(e)}'
+            'status': 'success',
+            'message': f'插件重载成功！(默认状态：{"启用" if enabled else "禁用"})',
+            'reload_required': True
         })
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'重载失败：{str(e)}'})
 
 @bp.route('/files')
 @login_required
