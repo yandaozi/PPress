@@ -264,7 +264,11 @@ def edit(id=None):
     # 如果有id参数，则是编辑文章
     article = None
     if id:
-        article = get_article(id)
+        # 使用 joinedload 预加载 tags 关系
+        article = Article.query.options(
+            db.joinedload(Article.tags)
+        ).get_or_404(id)
+        
         # 检查权限
         if article.author_id != current_user.id and current_user.role != 'admin':
             flash('没有权限编辑此文章')
@@ -288,8 +292,14 @@ def edit(id=None):
             article.sentiment_score = sentiment_score
             article.updated_at = datetime.now()
             
-            # 更新标签
+            # 更新标签 - 确保在同一个会话中操作
             article.tags.clear()
+            for tag_name in tag_names:
+                tag = Tag.query.filter_by(name=tag_name).first()
+                if not tag:
+                    tag = Tag(name=tag_name)
+                    db.session.add(tag)
+                article.tags.append(tag)
         else:
             # 创建新文章
             article = Article(
@@ -300,29 +310,33 @@ def edit(id=None):
                 sentiment_score=sentiment_score
             )
             db.session.add(article)
+            
+            # 处理标签
+            for tag_name in tag_names:
+                tag = Tag.query.filter_by(name=tag_name).first()
+                if not tag:
+                    tag = Tag(name=tag_name)
+                    db.session.add(tag)
+                article.tags.append(tag)
         
-        # 处理标签
-        for tag_name in tag_names:
-            tag = Tag.query.filter_by(name=tag_name).first()
-            if not tag:
-                tag = Tag(name=tag_name)
-                db.session.add(tag)
-            article.tags.append(tag)
-        
-        db.session.commit()
-        flash('文章保存成功！')
-        return redirect(url_for('blog.article', id=article.id))
+        try:
+            db.session.commit()
+            flash('文章保存成功！')
+            return redirect(url_for('blog.article', id=article.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'保存失败：{str(e)}')
+            return redirect(url_for('blog.edit', id=id))
     
     # 获取随机标签和分类
     all_tags = Tag.query.all()
     random_tags = random.sample(all_tags, min(10, len(all_tags)))
-    categories, article_counts = get_categories_data()
+    categories = Category.query.all()
     
     return render_template('blog/edit.html', 
                          article=article,
                          random_tags=random_tags,
-                         categories=categories,
-                         article_counts=article_counts)
+                         categories=categories)
 
 @bp.route('/article/<int:article_id>/comment', methods=['POST'])
 @login_required
