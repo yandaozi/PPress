@@ -268,7 +268,18 @@ class PluginManager:
             
             # 创建新的插件实例
             plugin = plugin_class()
-            plugin.init_app(self.app)  # 初始化插件
+            
+            # 初始化插件配置
+            from app.models import Plugin as PluginModel
+            plugin_record = PluginModel.query.filter_by(directory=plugin_name).first()
+            if plugin_record:
+                # 如果数据库中没有配置，使用默认配置
+                if not plugin_record.config and hasattr(plugin, 'default_settings'):
+                    plugin_record.config = plugin.default_settings
+                    db.session.commit()
+            
+            # 初始化插件
+            plugin.init_app(self.app)
             
             # 保存插件实例
             self.plugins[plugin_name] = plugin

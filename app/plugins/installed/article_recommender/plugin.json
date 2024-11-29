@@ -5,8 +5,5 @@
     "author": "言道子",
     "author_url": "https://gitee.com/fojie",
     "plugin_class": "Plugin",
-    "requires": [],
-    "config": {
-        "recommend_count": 3
-    }
+    "requires": []
 } 
