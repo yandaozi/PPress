@@ -261,15 +261,12 @@ def article(id):
 @bp.route('/article/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit(id=None):
-    # 如果有id参数，则是编辑文章
     article = None
     if id:
-        # 使用 joinedload 预加载 tags 关系
         article = Article.query.options(
             db.joinedload(Article.tags)
         ).get_or_404(id)
         
-        # 检查权限
         if article.author_id != current_user.id and current_user.role != 'admin':
             flash('没有权限编辑此文章')
             return redirect(url_for('blog.article', id=id))
@@ -284,45 +281,67 @@ def edit(id=None):
         blob = TextBlob(content)
         sentiment_score = blob.sentiment.polarity
         
-        if article:
-            # 更新文章
-            article.title = title
-            article.content = content
-            article.category_id = category_id
-            article.sentiment_score = sentiment_score
-            article.updated_at = datetime.now()
-            
-            # 更新标签 - 确保在同一个会话中操作
-            article.tags.clear()
-            for tag_name in tag_names:
-                tag = Tag.query.filter_by(name=tag_name).first()
-                if not tag:
-                    tag = Tag(name=tag_name)
-                    db.session.add(tag)
-                article.tags.append(tag)
-        else:
-            # 创建新文章
-            article = Article(
-                title=title,
-                content=content,
-                author_id=current_user.id,
-                category_id=category_id,
-                sentiment_score=sentiment_score
-            )
-            db.session.add(article)
-            
-            # 处理标签
-            for tag_name in tag_names:
-                tag = Tag.query.filter_by(name=tag_name).first()
-                if not tag:
-                    tag = Tag(name=tag_name)
-                    db.session.add(tag)
-                article.tags.append(tag)
-        
         try:
+            if article:
+                # 更新文章
+                article.title = title
+                article.content = content
+                article.category_id = category_id
+                article.sentiment_score = sentiment_score
+                article.updated_at = datetime.now()
+                
+                # 更新标签
+                article.tags.clear()
+                for tag_name in tag_names:
+                    tag = Tag.query.filter_by(name=tag_name).first()
+                    if not tag:
+                        tag = Tag(name=tag_name)
+                        db.session.add(tag)
+                    article.tags.append(tag)
+                
+                # 清除相关缓存
+                cache.delete_many(
+                    f'article_{article.id}',  # 文章详情缓存
+                    'categories_with_count',  # 分类统计缓存
+                    'hot_articles_today',     # 今日热门缓存
+                    'hot_articles_week',      # 本周热门缓存
+                    'random_articles',        # 随机文章缓存
+                    'random_tags'             # 随机标签缓存
+                )
+            else:
+                # 创建新文章
+                article = Article(
+                    title=title,
+                    content=content,
+                    author_id=current_user.id,
+                    category_id=category_id,
+                    sentiment_score=sentiment_score
+                )
+                db.session.add(article)
+                
+                # 处理标签
+                for tag_name in tag_names:
+                    tag = Tag.query.filter_by(name=tag_name).first()
+                    if not tag:
+                        tag = Tag(name=tag_name)
+                        db.session.add(tag)
+                    article.tags.append(tag)
+            
             db.session.commit()
+            
+            # 如果是新文章，清除首页相关缓存
+            if not id:
+                cache.delete_many(
+                    'categories_with_count',
+                    'hot_articles_today',
+                    'hot_articles_week',
+                    'random_articles',
+                    'random_tags'
+                )
+            
             flash('文章保存成功！')
             return redirect(url_for('blog.article', id=article.id))
+            
         except Exception as e:
             db.session.rollback()
             flash(f'保存失败：{str(e)}')
