@@ -1035,52 +1035,38 @@ def export_plugin(plugin_name):
 @login_required
 @admin_required
 def reload_plugin(plugin_name):
-    """重载插件"""
+    """重新加载插件"""
     try:
-        # 先从数据库获取插件记录
+        # 获取插件记录
         plugin_record = Plugin.query.filter_by(directory=plugin_name).first_or_404()
         
-        # 如果插件已加载，先卸载它
-        if plugin_name in plugin_manager.plugins:
-            plugin_manager.unload_plugin(plugin_name)
+        # 获取插件实例
+        plugin = plugin_manager.get_plugin(plugin_name)
+        if not plugin:
+            return jsonify({
+                'status': 'error',
+                'message': '插件未加载'
+            }), 404
         
-        # 重新加载插件信息
-        plugin_dir = os.path.join(current_app.root_path, 'plugins', 'installed', plugin_name)
-        plugin_json = os.path.join(plugin_dir, 'plugin.json')
-        
-        if os.path.exists(plugin_json):
-            with open(plugin_json, 'r', encoding='utf-8') as f:
-                plugin_info = json.load(f)
-                
-            # 更新数据库记录
-            plugin_record.name = plugin_info.get('name', plugin_record.name)
-            plugin_record.description = plugin_info.get('description', plugin_record.description)
-            plugin_record.version = plugin_info.get('version', plugin_record.version)
-            plugin_record.author = plugin_info.get('author', plugin_record.author)
-            plugin_record.author_url = plugin_info.get('author_url', plugin_record.author_url)
-            plugin_record.config = plugin_info.get('config', plugin_record.config)
+        # 重置插件配置为默认配置
+        if hasattr(plugin, 'default_settings'):
+            plugin_record.config = plugin.default_settings
             db.session.commit()
         
-        # 如果插件是启用状态，重新加载它
-        if plugin_record.enabled:
-            if plugin_manager.load_plugin(plugin_name):
-                return jsonify({
-                    'status': 'success',
-                    'message': f'插件 {plugin_record.name} 重载成功'
-                })
-            else:
-                return jsonify({
-                    'status': 'error',
-                    'message': '插件重载失败'
-                })
-        
-        return jsonify({
-            'status': 'success',
-            'message': f'插件 {plugin_record.name} 配置已更新'
-        })
-        
+        # 重新加载插件
+        if plugin_manager.reload_plugin(plugin_name):
+            return jsonify({
+                'status': 'success',
+                'message': f'插件 {plugin_record.name} 已重新加载',
+                'reload_required': True
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': '插件重载失败'
+            })
+            
     except Exception as e:
-        current_app.logger.error(f'Plugin reload error: {str(e)}')
         return jsonify({
             'status': 'error',
             'message': f'重载失败：{str(e)}'

@@ -251,13 +251,14 @@ class PluginManager:
             if not os.path.exists(plugin_dir):
                 return False
             
-            # 加载插件配置
-            with open(os.path.join(plugin_dir, 'plugin.json'), 'r', encoding='utf-8') as f:
-                config = json.load(f)
-            
             # 导入插件模块
             module = import_module(f'app.plugins.installed.{plugin_name}')
-            plugin_class = getattr(module, config.get('plugin_class', 'Plugin'))
+            
+            # 加载插件配置
+            with open(os.path.join(plugin_dir, 'plugin.json'), 'r', encoding='utf-8') as f:
+                plugin_info = json.load(f)
+            
+            plugin_class = getattr(module, plugin_info.get('plugin_class', 'Plugin'))
             
             # 如果插件已存在，先卸载它
             if plugin_name in self.plugins:
@@ -273,7 +274,7 @@ class PluginManager:
             from app.models import Plugin as PluginModel
             plugin_record = PluginModel.query.filter_by(directory=plugin_name).first()
             if plugin_record:
-                # 如果数据库中没有配置，使用默认配置
+                # 如果数据库中没有配置，使用插件的默认配置
                 if not plugin_record.config and hasattr(plugin, 'default_settings'):
                     plugin_record.config = plugin.default_settings
                     db.session.commit()
@@ -331,8 +332,17 @@ class PluginManager:
             # 如果插件目录存在但未注册，则注册它
             if plugin_name not in registered_dirs:
                 try:
+                    # 导入插件模块以获取默认配置
+                    module = import_module(f'app.plugins.installed.{plugin_name}')
                     with open(plugin_json, 'r', encoding='utf-8') as f:
                         plugin_info = json.load(f)
+                    
+                    # 使用插件的默认配置而不是 plugin.json 中的配置
+                    plugin_class = getattr(module, plugin_info.get('plugin_class', 'Plugin'))
+                    plugin = plugin_class()
+                    if hasattr(plugin, 'default_settings'):
+                        plugin_info['config'] = plugin.default_settings
+                    
                     # 添加到数据库
                     PluginModel.add_plugin(plugin_info, plugin_name)
                     print(f"Auto registered plugin: {plugin_name}")

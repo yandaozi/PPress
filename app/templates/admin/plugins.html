@@ -79,16 +79,16 @@
                         </div>
 
                         <div class="flex flex-wrap gap-2 mt-4">
-                            <form action="{{ url_for('admin.reload_plugin', plugin_name=plugin.directory) }}" 
-                                  method="post" 
-                                  class="inline" 
+                            <form action="{{ url_for('admin.reload_plugin', plugin_name=plugin.directory) }}"
+                                  method="post"
+                                  class="inline"
                                   onsubmit="event.preventDefault(); confirmReload(this); return false;">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" 
+                                <button type="submit"
                                         class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
                                         title="重新加载插件配置">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                               d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
                                         </path>
                                     </svg>
