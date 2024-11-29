@@ -1,4 +1,6 @@
 from flask import jsonify, render_template_string, current_app, url_for, send_from_directory
+
+from app import db
 from app.plugins import PluginBase
 from app.models import Article, Tag
 from sqlalchemy import func
@@ -6,6 +8,11 @@ from markupsafe import Markup
 import os
 
 class Plugin(PluginBase):
+    # 添加默认设置
+    default_settings = {
+        'recommend_count': 3  # 默认推荐3篇文章
+    }
+    
     def __init__(self):
         super().__init__()
         
@@ -28,7 +35,7 @@ class Plugin(PluginBase):
                         (Article.tags.any(Tag.id.in_([tag.id for tag in current_tags]))
                     ))\
                     .order_by(func.random())\
-                    .limit(3)\
+                    .limit(self.settings.get('recommend_count', self.default_settings['recommend_count']))\
                     .all()
                 
                 return jsonify([{
@@ -70,3 +77,42 @@ class Plugin(PluginBase):
         app.jinja_env.globals['render_recommendations'] = render_recommendations
         
         print(f"Plugin initialized with template function: render_recommendations")
+    
+    def get_settings_template(self):
+        """获取设置页面模板"""
+        template_path = os.path.join(os.path.dirname(__file__), 'templates', 'settings.html')
+        if os.path.exists(template_path):
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template = f.read()
+            return render_template_string(template, settings=self.settings)
+        return None
+    
+    def save_settings(self, form_data):
+        """保存插件设置"""
+        try:
+            recommend_count = int(form_data.get('recommend_count', 3))
+            
+            # 验证设置值
+            if recommend_count <= 0:
+                raise ValueError('推荐文章数量必须大于0')
+            if recommend_count > 100:
+                raise ValueError('推荐文章数量不能超过100')
+            
+            settings = {
+                'recommend_count': recommend_count
+            }
+            
+            # 保存到数据库
+            from app.models import Plugin as PluginModel
+            plugin = PluginModel.query.filter_by(name=self.name).first()
+            if plugin:
+                plugin.config = settings
+                db.session.commit()
+                self.settings = settings
+                return True, '设置已保存'
+            return False, '插件不存在'
+            
+        except ValueError as e:
+            return False, str(e)
+        except Exception as e:
+            return False, f'保存设置失败: {str(e)}'
