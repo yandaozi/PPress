@@ -61,29 +61,47 @@
             </div>
 
             <!-- 标签输入 -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     标签
                 </label>
-                <div class="flex flex-wrap gap-2 mb-2">
+                <div class="relative">
+                    <input type="text" 
+                           id="tag-input"
+                           placeholder="输入标签，按空格或回车添加"
+                           class="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
+                    <input type="hidden" name="tag_names" id="tag-names" value="{{ article.tags|map(attribute='name')|join(' ') if article else '' }}">
+                    
+                    <!-- 标签建议下拉框 -->
+                    <div id="tag-suggestions" 
+                         class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 rounded-md shadow-lg border border-gray-200 dark:border-gray-600 hidden">
+                    </div>
+                </div>
+                
+                <!-- 已选标签展示区域 -->
+                <div id="selected-tags" class="flex flex-wrap gap-2">
+                    {% if article %}
+                        {% for tag in article.tags %}
+                        <span class="tag-item px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">
+                            {{ tag.name }}
+                            <button type="button" onclick="removeTag(this)" class="ml-1 text-blue-600 hover:text-blue-800">&times;</button>
+                        </span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <!-- 随机标签建议 -->
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                    建议标签：
                     {% for tag in random_tags %}
-                    <button type="button"
-                            onclick="addTag(this.textContent.trim())"
-                            class="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 
-                                   rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 
-                                   transition-colors duration-200">
+                    <button type="button" 
+                            onclick="addTag('{{ tag.name }}')"
+                            class="text-blue-600 dark:text-blue-400 hover:underline">
                         {{ tag.name }}
                     </button>
+                    {% if not loop.last %} · {% endif %}
                     {% endfor %}
                 </div>
-                <input type="text" name="tag_names" id="tagInput"
-                       value="{{ ' '.join(article.tags|map(attribute='name')) if article else '' }}"
-                       class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
-                              focus:outline-none focus:ring-2 focus:ring-blue-500 
-                              bg-white dark:bg-gray-700 
-                              text-gray-900 dark:text-white 
-                              placeholder-gray-400 dark:placeholder-gray-500"
-                       placeholder="输入标签，用空格分隔">
             </div>
 
             <!-- 操作按钮 -->
@@ -108,14 +126,94 @@
 
 <script>
     function addTag(tagName) {
-        const input = document.getElementById('tagInput');
-        const currentTags = input.value.split(' ').filter(Boolean);
-
-        if (!currentTags.includes(tagName)) {
-            currentTags.push(tagName);
-            input.value = currentTags.join(' ');
-        }
+        const name = tagName.trim();
+        if (!name || currentTags.has(name)) return;
+        
+        currentTags.add(name);
+        const tag = document.createElement('span');
+        tag.className = 'tag-item px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm';
+        tag.innerHTML = `
+            ${name}
+            <button type="button" onclick="removeTag(this)" class="ml-1 text-blue-600 hover:text-blue-800">&times;</button>
+        `;
+        selectedTags.appendChild(tag);
+        updateTagNames();
+        tagInput.value = '';
     }
+
+    function removeTag(button) {
+        const tag = button.parentElement;
+        const name = tag.textContent.trim().slice(0, -1);
+        currentTags.delete(name);
+        tag.remove();
+        updateTagNames();
+    }
+
+    function updateTagNames() {
+        tagNames.value = Array.from(currentTags).join(' ');
+    }
+
+    function selectSuggestion(name) {
+        addTag(name);
+        suggestions.classList.add('hidden');
+    }
+
+    // 初始化变量
+    const tagInput = document.getElementById('tag-input');
+    const tagNames = document.getElementById('tag-names');
+    const selectedTags = document.getElementById('selected-tags');
+    const suggestions = document.getElementById('tag-suggestions');
+    let currentTags = new Set(tagNames.value.split(' ').filter(Boolean));
+
+    // 处理标签输入
+    tagInput.addEventListener('keydown', function(e) {
+        if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            const value = this.value.trim();
+            if (value) {
+                addTag(value);
+            }
+        }
+    });
+
+    // 获取标签建议
+    let debounceTimer;
+    tagInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const query = this.value.trim();
+            if (query.length < 1) {
+                suggestions.classList.add('hidden');
+                return;
+            }
+            
+            fetch(`/tags/suggestions?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        suggestions.classList.add('hidden');
+                        return;
+                    }
+                    
+                    suggestions.innerHTML = data.map(tag => `
+                        <div class="suggestion-item px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                             onclick="selectSuggestion('${tag.name}')">
+                            <span class="font-medium">${tag.name}</span>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">(${tag.count}篇文章)</span>
+                        </div>
+                    `).join('');
+                    
+                    suggestions.classList.remove('hidden');
+                });
+        }, 300);
+    });
+
+    // 点击其他地方时隐藏建议
+    document.addEventListener('click', function(e) {
+        if (!tagInput.contains(e.target) && !suggestions.contains(e.target)) {
+            suggestions.classList.add('hidden');
+        }
+    });
 
     // 在 tinymce.init 之前添加主题检测
     const isDarkMode = document.documentElement.classList.contains('dark');

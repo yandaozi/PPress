@@ -616,3 +616,26 @@ def tag(id):
     return render_template('blog/tag.html', 
                          tag=tag,
                          articles=articles)
+
+@bp.route('/tags/suggestions')
+def tag_suggestions():
+    """获取标签建议"""
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify([])
+    
+    # 使用缓存
+    @cache.memoize(timeout=300)
+    def get_tag_suggestions(q):
+        tags = Tag.query.filter(
+            Tag.name.ilike(f'%{q}%')
+        ).order_by(Tag.article_count.desc()).limit(10).all()
+        return [{
+            'name': tag.name,
+            'count': tag.article_count
+        } for tag in tags]
+    
+    try:
+        return jsonify(get_tag_suggestions(query))
+    except Exception:
+        return jsonify([])
