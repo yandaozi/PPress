@@ -94,7 +94,10 @@
                     
                     <!-- 标签建议下拉框 -->
                     <div id="tag-suggestions" 
-                         class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 hidden overflow-hidden">
+                         class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 hidden overflow-hidden max-h-60 overflow-y-auto
+                         scrollbar-thin scrollbar-thumb-blue-400/50 dark:scrollbar-thumb-blue-500/50
+                         scrollbar-track-gray-100 dark:scrollbar-track-gray-800
+                         hover:scrollbar-thumb-blue-500/70 dark:hover:scrollbar-thumb-blue-400/70">
                     </div>
                 </div>
                 
@@ -461,4 +464,48 @@
         suggestions.classList.remove('hidden');
     }
 </script>
+
+<style>
+    /* 自定义滚动条样式 */
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: currentColor;
+        border-radius: 3px;
+        transition: background-color 0.2s ease;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background-color: currentColor;
+    }
+    
+    /* Firefox 滚动条样式 */
+    .scrollbar-thin {
+        scrollbar-width: thin;
+        scrollbar-color: var(--thumb-color) var(--track-color);
+    }
+
+    /* 设置亮色主题下的颜色变量 */
+    :root {
+        --thumb-color: rgba(96, 165, 250, 0.5);
+        --track-color: rgba(243, 244, 246, 1);
+    }
+
+    /* 设置暗色主题下的颜色变量 */
+    .dark {
+        --thumb-color: rgba(59, 130, 246, 0.5);
+        --track-color: rgba(31, 41, 55, 1);
+    }
+
+    /* 悬停状态 */
+    .scrollbar-thin:hover {
+        --thumb-color: rgba(59, 130, 246, 0.7);
+    }
+</style>
 {% endblock %} 
