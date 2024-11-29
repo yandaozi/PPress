@@ -152,14 +152,12 @@ class PluginBase:
         if plugin and plugin.config:
             self.settings = plugin.config
     
-    def save_settings(self, settings):
-        """保存插件设置"""
-        from app.models import Plugin as PluginModel
-        plugin = PluginModel.query.filter_by(name=self.name).first()
-        if plugin:
-            plugin.config = settings
-            db.session.commit()
-            self.settings = settings
+    def save_settings(self, form_data):
+        """
+        保存插件设置的基类方法
+        子类应该重写这个方法来实现自己的设置保存逻辑
+        """
+        raise NotImplementedError("Plugin must implement save_settings method")
     
     def export_plugin(self):
         """导出插件"""

@@ -7,11 +7,6 @@
     "plugin_class": "Plugin",
     "requires": [],
     "config": {
-        "enabled": true,
-        "show_word_count": true,
-        "show_read_time": true,
-        "show_code_blocks": true,
-        "show_images": true,
         "words_per_minute": {
             "chinese": 300,
             "english": 200

@@ -1,4 +1,6 @@
 from flask import jsonify, render_template_string, current_app, url_for, send_from_directory
+
+from app import db
 from app.plugins import PluginBase
 from bs4 import BeautifulSoup
 from markupsafe import Markup
@@ -6,6 +8,15 @@ import re
 import os
 
 class Plugin(PluginBase):
+    # 添加默认设置
+    default_settings = {
+        'enabled': True,
+        'words_per_minute': {
+            'chinese': 300,  # 中文阅读速度
+            'english': 200   # 英文阅读速度
+        }
+    }
+    
     def __init__(self):
         super().__init__()
         
@@ -46,6 +57,24 @@ class Plugin(PluginBase):
         
         print(f"Plugin initialized with template function: render_article_stats")
     
+    def get_settings_template(self):
+        """获取设置页面模板"""
+        template_path = os.path.join(os.path.dirname(__file__), 'templates', 'settings.html')
+        if os.path.exists(template_path):
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template = f.read()
+            
+            # 从数据库获取插件记录
+            from app.models import Plugin as PluginModel
+            plugin = PluginModel.query.filter_by(name=self.name).first()
+            
+            return render_template_string(
+                template, 
+                settings=self.settings,
+                plugin=plugin
+            )
+        return None
+    
     def calculate_article_stats(self, content):
         """计算文章统计信息"""
         if not content:
@@ -68,7 +97,7 @@ class Plugin(PluginBase):
         
         # 计算阅读时间
         total_words = chinese_chars + words
-        wpm = self.settings.get('words_per_minute', {'chinese': 300, 'english': 200})
+        wpm = self.settings.get('words_per_minute', self.default_settings['words_per_minute'])
         read_time = round((chinese_chars / wpm['chinese'] + words / wpm['english']) * 60)
         
         return {
@@ -77,3 +106,34 @@ class Plugin(PluginBase):
             'code_blocks': code_blocks,
             'images': images
         }
+    
+    def save_settings(self, form_data):
+        """保存插件设置"""
+        try:
+            settings = {
+                'words_per_minute': {
+                    'chinese': int(form_data.get('words_per_minute_chinese', 300)),
+                    'english': int(form_data.get('words_per_minute_english', 200))
+                }
+            }
+            
+            # 验证设置值
+            if settings['words_per_minute']['chinese'] <= 0:
+                raise ValueError('中文阅读速度必须大于0')
+            if settings['words_per_minute']['english'] <= 0:
+                raise ValueError('英文阅读速度必须大于0')
+            
+            # 保存到数据库
+            from app.models import Plugin as PluginModel
+            plugin = PluginModel.query.filter_by(name=self.name).first()
+            if plugin:
+                plugin.config = settings
+                db.session.commit()
+                self.settings = settings
+                return True, '设置已保存'
+            return False, '插件不存在'
+            
+        except ValueError as e:
+            return False, str(e)
+        except Exception as e:
+            return False, f'保存设置失败: {str(e)}'

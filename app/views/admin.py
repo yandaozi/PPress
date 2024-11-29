@@ -112,7 +112,7 @@ def dashboard():
         db.joinedload(Article.author)
     ).order_by(Article.created_at.desc()).limit(5).all()
     
-    # 组装活动据
+    # 组装活动
     recent_activities = []
     for comment in recent_comments:
         recent_activities.append({
@@ -465,7 +465,7 @@ def delete_category(id):
     try:
         category = Category.query.get_or_404(id)
         
-        # 如默分(ID为1)
+        # 如默分(ID1)
         if category.id == 1:
             return jsonify({'error': '不能删除默认分类'}), 400
         
@@ -636,7 +636,7 @@ def edit_user(user_id):
     password = request.form.get('password')
     role = request.form.get('role')
     
-    # 检查用户名和邮箱是否已存在
+    # 查用户名和邮箱是否已存在
     if username != user.username and User.query.filter_by(username=username).first():
         return jsonify({'error': '用户名已存在'}), 400
     if email != user.email and User.query.filter_by(email=email).first():
@@ -846,57 +846,36 @@ def uninstall_plugin(plugin_name):
             'message': f'卸载失败：{str(e)}'
         })
 
-@bp.route('/plugins/<plugin_name>/settings', methods=['GET', 'POST'])
+@bp.route('/plugins/<path:plugin_name>/settings/save', methods=['POST'])
 @login_required
 @admin_required
-def plugin_settings(plugin_name):
-    """插件设置页面"""
+def save_plugin_settings(plugin_name):
+    """保存插件设置"""
     try:
+        # 移除开头和结尾的斜杠
+        plugin_name = plugin_name.strip('/')
+        
+        # 获取插件实例
         plugin = plugin_manager.get_plugin(plugin_name)
         if not plugin:
-            flash('插件不存在', 'error')
-            return redirect(url_for('admin.plugins'))
-            
-        if request.method == 'POST':
-            # 保存设置
-            if hasattr(plugin, 'get_settings'):
-                settings = {}
-                plugin_settings = plugin.get_settings()
-                
-                # 处理每个设置项
-                for key, setting in plugin_settings.items():
-                    if setting['type'] == 'checkbox':
-                        settings[key] = key in request.form
-                    elif setting['type'] == 'number':
-                        settings[key] = int(request.form.get(key, setting['value']))
-                    else:
-                        settings[key] = request.form.get(key, setting['value'])
-                
-                plugin.save_settings(settings)
-                flash('设置已保存', 'success')
-                return redirect(url_for('admin.plugin_settings', plugin_name=plugin_name))
-            
-            flash('该插件不支持设置', 'error')
-            return redirect(url_for('admin.plugins'))
-            
-        # GET 请显示设置页面
-        if hasattr(plugin, 'get_settings'):
-            settings = plugin.get_settings()
-            # 渲染插件自定义模板或使用默认模板
-            custom_template = plugin.render_settings_template(settings)
-            return render_template(
-                'admin/plugin_settings.html',
-                plugin=plugin,
-                settings=settings,
-                custom_template=custom_template
-            )
-            
-        flash('该插件没有设置项', 'info')
-        return redirect(url_for('admin.plugins'))
+            return jsonify({
+                'status': 'error',
+                'message': '插件未加载或不存在'
+            }), 404
+        
+        # 调用插件的保存设置方法
+        success, message = plugin.save_settings(request.form)
+        
+        return jsonify({
+            'status': 'success' if success else 'error',
+            'message': message
+        })
         
     except Exception as e:
-        flash(f'加载插件设置失败: {str(e)}', 'error')
-        return redirect(url_for('admin.plugins'))
+        return jsonify({
+            'status': 'error',
+            'message': f'保存设置失败：{str(e)}'
+        }), 500
 
 @bp.route('/plugins/upload', methods=['POST'])
 @login_required
@@ -1347,3 +1326,72 @@ def clear_cache_by_category(category):
         }), 200
     except Exception as e:
         return jsonify({'error': f'清除缓存失败：{str(e)}'}), 500 
+
+@bp.route('/plugins/<path:plugin_name>/settings/check')
+@login_required
+@admin_required
+def check_plugin_settings(plugin_name):
+    """检查插件是否有设置页面"""
+    try:
+        # 移除开头和结尾的斜杠
+        plugin_name = plugin_name.strip('/')
+        
+        # 获取插件实例
+        plugin = plugin_manager.get_plugin(plugin_name)
+        if not plugin:
+            return jsonify({
+                'status': 'error',
+                'message': '插件未加载或不存在'
+            }), 404
+        
+        # 检查是否有设置模板
+        settings_html = plugin.get_settings_template()
+        if not settings_html:
+            return jsonify({
+                'status': 'error',
+                'message': '该插件没有设置页面'
+            }), 404
+        
+        return jsonify({
+            'status': 'success',
+            'message': '插件有设置页面'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'检查设置页面失败：{str(e)}'
+        }), 500 
+
+@bp.route('/plugins/<path:plugin_name>/settings')
+@login_required
+@admin_required
+def plugin_settings(plugin_name):
+    """插件设置页面"""
+    try:
+        # 移除开头和结尾的斜杠
+        plugin_name = plugin_name.strip('/')
+        
+        # 获取插件实例
+        plugin = plugin_manager.get_plugin(plugin_name)
+        if not plugin:
+            flash('插件未加载或不存在', 'error')
+            return redirect(url_for('admin.plugins'))
+        
+        # 获取插件的设置模板
+        settings_html = plugin.get_settings_template()
+        if not settings_html:
+            flash('该插件没有设置页面', 'error')
+            return redirect(url_for('admin.plugins'))
+        
+        # 从数据库获取插件记录
+        plugin_record = Plugin.query.filter_by(directory=plugin_name).first_or_404()
+        
+        # 渲染设置页面
+        return render_template('admin/plugin_settings.html',
+                             plugin=plugin_record,
+                             settings_html=settings_html)
+        
+    except Exception as e:
+        flash(f'加载设置页面失败：{str(e)}', 'error')
+        return redirect(url_for('admin.plugins')) 
