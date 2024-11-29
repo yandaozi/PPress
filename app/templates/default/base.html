@@ -45,6 +45,35 @@
             flex: 1 0 auto;
             width: 100%;
         }
+        /* Logo 样式 */
+        .logo-circle {
+            position: relative;
+            overflow: hidden;
+            transform: translateZ(0);  /* 启用硬件加速 */
+            background: linear-gradient(135deg, #0180FF, #0178FF);  /* 亮色模式下的渐变 */
+        }
+        
+        .logo-circle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 60%);
+            z-index: 1;
+            border-radius: 9999px;
+        }
+        
+        .dark .logo-circle {
+            background: linear-gradient(135deg, #0180FF, #0178FF);  /* 暗色模式下的渐变 */
+        }
+        
+        /* Logo 悬停效果 */
+        .logo-circle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(1, 128, 255, 0.6);
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
@@ -54,17 +83,16 @@
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <a href="{{ url_for('blog.index') }}" class="flex-shrink-0">
-                            <span class="text-xl font-bold text-gray-800 dark:text-white flex items-center space-x-2">
-                                <div class="relative w-[50px] h-[50px]">
-                                    <img src="{{ url_for('static', filename='logo_dark.png') }}" 
-                                         class="absolute top-0 left-0 w-full h-full object-contain block dark:hidden" alt="logo">
-                                    <img src="{{ url_for('static', filename='logo_white.png') }}"
-                                         class="absolute top-0 left-0 w-full h-full object-contain hidden dark:block" alt="logo">
+                        <span class="text-xl font-bold text-gray-800 dark:text-white flex items-center space-x-2">
+                            <div class="relative w-[50px] h-[50px] flex items-center justify-center">
+                                <div class="logo-circle w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xl transition-all duration-300">
+                                    P
                                 </div>
-                                <span>
-                                    {{ site_config.get_config('site_name', 'PPress') }}
-                                </span>
+                            </div>
+                            <span>
+                                {{ site_config.get_config('site_name', 'PPress') }}
                             </span>
+                        </span>
                     </a>
                 </div>
                 <div class="hidden md:flex flex-1 items-center justify-center px-8 max-w-3xl">
@@ -133,7 +161,7 @@
                                 我的文章
                             </a>
                             {% if current_user.role == 'admin' %}
-                            <a href="{{ url_for('admin.dashboard') }}"
+                            <a href="{{ url_for('admin.dashboard') }}" target="_blank"
                                class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>

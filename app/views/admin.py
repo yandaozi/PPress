@@ -47,7 +47,7 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return super(NumpyEncoder, self).default(obj)
 
-@bp.route('/dashboard')
+@bp.route('/')
 @login_required
 @admin_required
 def dashboard():
