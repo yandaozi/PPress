@@ -20,7 +20,7 @@ class Plugin(db.Model):
         return f'<Plugin {self.name}>'
 
     @staticmethod
-    def add_plugin(plugin_info, directory):
+    def add_plugin(plugin_info, directory, enabled=True, config=None):
         """添加插件记录"""
         plugin = Plugin(
             name=plugin_info['name'],
@@ -29,7 +29,8 @@ class Plugin(db.Model):
             version=plugin_info.get('version', '1.0.0'),
             author=plugin_info.get('author', ''),
             author_url=plugin_info.get('author_url', ''),
-            config={}
+            enabled=enabled,  # 使用传入的 enabled 参数
+            config=config or {}
         )
         db.session.add(plugin)
         db.session.commit()

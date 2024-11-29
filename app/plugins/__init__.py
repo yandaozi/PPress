@@ -340,12 +340,15 @@ class PluginManager:
                     # 使用插件的默认配置而不是 plugin.json 中的配置
                     plugin_class = getattr(module, plugin_info.get('plugin_class', 'Plugin'))
                     plugin = plugin_class()
-                    if hasattr(plugin, 'default_settings'):
-                        plugin_info['config'] = plugin.default_settings
                     
-                    # 添加到数据库
-                    PluginModel.add_plugin(plugin_info, plugin_name)
-                    print(f"Auto registered plugin: {plugin_name}")
+                    # 获取插件默认配置
+                    default_config = plugin.default_settings if hasattr(plugin, 'default_settings') else {}
+                    
+                    # 添加到数据库，使用 plugin.json 中的 enabled 字段决定是否默认启用
+                    enabled = plugin_info.get('enabled', True)  # 如果未指定，默认为启用
+                    PluginModel.add_plugin(plugin_info, plugin_name, enabled=enabled, config=default_config)
+                    print(f"Auto registered plugin: {plugin_name} (enabled: {enabled})")
+                    
                 except Exception as e:
                     print(f"Failed to register plugin {plugin_name}: {str(e)}")
     
