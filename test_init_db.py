@@ -1,3 +1,4 @@
+import base64
 import os
 import click
 from app import create_app, db
@@ -9,15 +10,13 @@ import pymysql
 from config.database import MYSQL_CONFIG
 
 LOCK_FILE = 'ppress_db.lock'
-COPYRIGHT_INFO = '''
-PPress - Flask Blog System
-版权所有 (c) 2024 言道子
-作者QQ：575732022
-项目地址：https://gitee.com/fojie/PPress
-
-警告：数据库初始化会清空所有数据！
-如果确定要重新初始化数据库，请删除此文件后重试。
-'''
+COPYRIGHT_INFO = base64.b64decode(
+    'UFByZXNzIC0gRmxhc2sgQmxvZyBTeXN0ZW0K54mI5p2D5omA5pyJIChjKSAyMDI0IOiogOmBk+'+
+    'WtkArkvZzogIVRUe+8mjU3NTczMjAyMgrpobnnm67lnLDlnYDvvJpodHRwczovL2dpdGVlLmNvb'+
+    'S9mb2ppZS9QUHJlc3MKCuitpuWRiu+8muaVsOaNruW6k+WIneWni+WMluS8mua4heepuuaJgOac'+
+    'ieaVsOaNru+8gQrlpoLmnpznoa7lrpropoHph43mlrDliJ3lp4vljJbmlbDmja7lupPvvIzor7fl'+
+    'iKDpmaTmraTmlofku7blkI7ph43or5XjgII='
+).decode('utf-8') # MIT Info pls do not delete. :)
 
 def check_db_lock():
     """检查数据库锁"""

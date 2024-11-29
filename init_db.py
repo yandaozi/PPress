@@ -1,3 +1,4 @@
+import base64
 import os
 import click
 from app import create_app, db
@@ -9,15 +10,13 @@ import pymysql
 from config.database import MYSQL_CONFIG
 
 LOCK_FILE = 'ppress_db.lock'
-COPYRIGHT_INFO = '''
-PPress - Flask Blog System
-版权所有 (c) 2024 言道子
-作者QQ：575732022
-项目地址：https://gitee.com/fojie/PPress
-
-警告：数据库初始化会清空所有数据！
-如果确定要重新初始化数据库，请删除此文件后重试。
-'''
+COPYRIGHT_INFO = base64.b64decode(
+    'UFByZXNzIC0gRmxhc2sgQmxvZyBTeXN0ZW0K54mI5p2D5omA5pyJIChjKSAyMDI0IOiogOmBk+'+
+    'WtkArkvZzogIVRUe+8mjU3NTczMjAyMgrpobnnm67lnLDlnYDvvJpodHRwczovL2dpdGVlLmNvb'+
+    'S9mb2ppZS9QUHJlc3MKCuitpuWRiu+8muaVsOaNruW6k+WIneWni+WMluS8mua4heepuuaJgOac'+
+    'ieaVsOaNru+8gQrlpoLmnpznoa7lrpropoHph43mlrDliJ3lp4vljJbmlbDmja7lupPvvIzor7fl'+
+    'iKDpmaTmraTmlofku7blkI7ph43or5XjgII='
+).decode('utf-8') # MIT Info pls do not delete. :)
 
 def check_db_lock():
     """检查数据库锁"""
@@ -106,24 +105,13 @@ def init_db(db_type='mysql'):
         # 创建一篇示例文章
         article = Article(
             title='欢迎使用 PPress',
-            content='''欢迎使用 PPress 博客系统！
-
-PPress 是一个基于 Flask 的轻量级博客系统，由言道子(QQ:575732022)开发。
-
-主要特点：
-1. 简洁优雅的界面设计
-2. 支持插件扩展
-3. 支持主题切换
-4. 完善的后台管理
-
-项目地址：https://gitee.com/fojie/PPress
-
-开始使用：
-1. 使用管理员账号登录(admin/123456)
-2. 在后台进行相关配置
-3. 开始创作你的第一篇文章
-
-如有问题或建议，欢迎联系作者！''',
+            content='''<p>欢迎使用 PPress 博客系统！&nbsp;PPress 是一个基于 Flask 的轻量级博客系统，由言道子(QQ:575732022)开发。</p>
+<p>主要特点： 简洁优雅的界面设计、支持插件扩展、支持主题切换、完善的后台管理&nbsp;</p>
+<p>项目地址：<a href="https://gitee.com/fojie/PPress">https://gitee.com/fojie/PPress </a></p>
+<p>开始使用：</p>
+<p>1. 使用管理员账号登录(admin/123456)</p>
+<p>2. 在后台进行相关配置</p>
+<p>3. 开始创作你的第一篇文章 如有问题或建议，欢迎联系作者！</p>''',
             author_id=admin.id,
             category_id=category.id,
             created_at=datetime.now(),

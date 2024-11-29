@@ -7,6 +7,24 @@
 <meta name="author" content="{{ article.author.username }}">
 <meta name="keywords" content="{% for tag in article.tags %}{{ tag.name }}{% if not loop.last %},{% endif %}{% endfor %}">
 <meta name="description" content="{{ article.content[:200]|striptags }}">
+<style>
+    /* 增加文章段落的行距 */
+    .article-content p {
+        margin-top: 1.5em;    /* 段落上方间距 */
+        margin-bottom: 1.5em;  /* 段落下方间距 */
+        line-height: 1.8;      /* 行高 */
+    }
+
+    /* 第一个段落不需要上边距 */
+    .article-content p:first-child {
+        margin-top: 0;
+    }
+
+    /* 最后一个段落不需要下边距 */
+    .article-content p:last-child {
+        margin-bottom: 0;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
