@@ -50,25 +50,48 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for plugin in pagination.items %}
             <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
-                <div class="p-4">
-                    <div class="flex justify-between items-start mb-2">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ plugin.name }}</h3>
-                        <div class="flex items-center space-x-2">
+                <div class="p-6">
+                    <div class="flex flex-col space-y-4">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate" title="{{ plugin.name }}">
+                                {{ plugin.name }}
+                            </h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-2" title="{{ plugin.description }}">
+                                {{ plugin.description }}
+                            </p>
+                        </div>
+
+                        <div class="flex flex-col space-y-2 text-sm text-gray-500 dark:text-gray-400">
+                            <div class="flex items-center justify-between">
+                                <span>版本: {{ plugin.version }}</span>
+                                <span>
+                                    作者: 
+                                    {% if plugin.author_url %}
+                                    <a href="{{ plugin.author_url }}" target="_blank" class="text-blue-600 hover:underline">{{ plugin.author }}</a>
+                                    {% else %}
+                                    {{ plugin.author }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div>
+                                安装时间: {{ plugin.installed_at.strftime('%Y-%m-%d %H:%M') }}
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 mt-4">
                             <form action="{{ url_for('admin.reload_plugin', plugin_name=plugin.directory) }}" 
                                   method="post" 
                                   class="inline" 
                                   onsubmit="event.preventDefault(); confirmReload(this); return false;">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" 
-                                        class="px-3 py-1 bg-indigo-100 dark:bg-indigo-700 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-600 transition-colors duration-200"
+                                        class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
                                         title="重新加载插件配置">
-                                    <div class="flex items-center">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                                            </path>
-                                        </svg>
-                                    </div>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                        </path>
+                                    </svg>
                                 </button>
                             </form>
 
@@ -78,48 +101,42 @@
                                   onsubmit="event.preventDefault(); handleFormSubmit(this); return false;">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" 
-                                        class="px-3 py-1 rounded-lg text-sm {% if plugin.enabled %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-700{% endif %}">
+                                        class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md {% if plugin.enabled %}bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-700 dark:text-green-100 dark:hover:bg-green-600{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600{% endif %} transition-colors duration-200">
                                     {{ '已启用' if plugin.enabled else '已禁用' }}
                                 </button>
                             </form>
-                        </div>
-                    </div>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">{{ plugin.description }}</p>
-                    <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        <span>版本: {{ plugin.version }}</span>
-                        <span class="mx-2">•</span>
-                        <span>
-                            作者: 
-                            {% if plugin.author_url %}
-                            <a href="{{ plugin.author_url }}" target="_blank" class="text-blue-600 hover:underline">{{ plugin.author }}</a>
-                            {% else %}
-                            {{ plugin.author }}
-                            {% endif %}
-                        </span>
-                    </div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        安装时间: {{ plugin.installed_at.strftime('%Y-%m-%d %H:%M') }}
-                    </div>
-                    <div class="flex space-x-2">
-                        <form action="{{ url_for('admin.uninstall_plugin', plugin_name=plugin.name) }}" 
-                              method="post" 
-                              class="inline" 
-                              onsubmit="event.preventDefault(); confirmUninstall(this); return false;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
-                                卸载
+
+                            <button onclick="openPluginSettings('{{ plugin.directory }}')" 
+                                    class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors duration-200">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                设置
                             </button>
-                        </form>
-                        
-                        <button onclick="openPluginSettings('{{ plugin.directory }}')" 
-                                class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600">
-                            设置
-                        </button>
-                        
-                        <a href="{{ url_for('admin.export_plugin', plugin_name=plugin.name) }}" 
-                           class="px-3 py-1 bg-blue-100 dark:bg-blue-700 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-600">
-                            导出
-                        </a>
+
+                            <a href="{{ url_for('admin.export_plugin', plugin_name=plugin.name) }}" 
+                               class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-700 dark:text-blue-100 dark:hover:bg-blue-600 transition-colors duration-200">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                导出
+                            </a>
+
+                            <form action="{{ url_for('admin.uninstall_plugin', plugin_name=plugin.name) }}" 
+                                  method="post" 
+                                  class="inline" 
+                                  onsubmit="event.preventDefault(); confirmUninstall(this); return false;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" 
+                                        class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-700 dark:text-red-100 dark:hover:bg-red-600 transition-colors duration-200">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    卸载
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
