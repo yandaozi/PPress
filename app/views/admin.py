@@ -933,6 +933,11 @@ def upload_plugin():
             # 复制文件到插件目录
             shutil.copytree(temp_dir, plugin_dir)
             
+            # 删除插件目录下的zip文件
+            plugin_zip = os.path.join(plugin_dir, file.filename)
+            if os.path.exists(plugin_zip):
+                os.remove(plugin_zip)
+            
             # 添加插件记录到数据库
             Plugin.add_plugin(plugin_info, directory)
             
