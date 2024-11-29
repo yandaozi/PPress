@@ -445,10 +445,11 @@ def search():
         # 分页
         articles = base_query.paginate(page=page, per_page=10, error_out=False)
         
-        # 获取相关标签 - 只获取搜索结果中的标签
+        # 获取相关标签 - 直接使用 Tag 模型的 article_count
         tags = Tag.query.join(Article.tags)\
             .filter(Article.title.ilike(f'%{query}%'))\
             .distinct()\
+            .order_by(Tag.article_count.desc())\
             .all()
         
         # 获取分类数据
