@@ -4,7 +4,7 @@ from .extensions import db, login_manager, csrf
 from .utils.theme_manager import ThemeManager
 from app.plugins import get_plugin_manager
 from flask_caching import Cache
-from config.database import get_db_url
+from config.database import get_db_url, DB_TYPE
 
 cache = Cache()
 
@@ -13,7 +13,8 @@ def init_plugins(app):
     plugin_manager = get_plugin_manager()
     plugin_manager.init_app(app)
 
-def create_app(config_name='default', db_type='mysql'):
+
+def create_app(config_name='default', db_type=DB_TYPE):
     app = Flask(__name__)
 
     # 配置

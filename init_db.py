@@ -235,21 +235,23 @@ Flask的主要优点包括：
         print("\n测试账号：")
         print("管理员 - 用户名：admin，密码：123456")
         print("普通用户 - 用户名：user0-4，密码：user0-4123")
+        if db_type == "mysql":
+            print("请修改 config/database.py 文件中的 DB_TYPE = \"sqlite\" 为 DB_TYPE = \"mysql\"")
 
 def get_db_type():
     """交互式获取数据库类型"""
     while True:
-        choice = input("\n请选择数据库类型 [1/2]:\n1. MySQL (默认)\n2. SQLite\n请输入(直接回车使用MySQL): ").strip()
+        choice = input("\n请选择数据库类型 [1/2]:\n1. SQLite (默认)\n2. MySQL\n请输入(直接回车使用SQLite，请输入1或者2): ").strip()
         
         if choice == '':
-            print("\n已选择: MySQL")
-            return 'mysql'
-        elif choice == '1':
-            print("\n已选择: MySQL")
-            return 'mysql'
-        elif choice == '2':
             print("\n已选择: SQLite")
             return 'sqlite'
+        elif choice == '1':
+            print("\n已选择: SQLite")
+            return 'sqlite'
+        elif choice == '2':
+            print("\n已选择: MySQL")
+            return 'mysql'
         else:
             print("\n输入无效,请重新选择")
 

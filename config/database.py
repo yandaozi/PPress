@@ -1,5 +1,7 @@
 import os
 
+DB_TYPE = "sqlite"      #修改 DB_TYPE 为数据库类型 支持：mysql、sqlite
+
 # MySQL 配置
 MYSQL_CONFIG = {
     'host': 'localhost',
