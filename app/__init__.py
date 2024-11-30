@@ -63,10 +63,16 @@ def create_app(config_name='default', db_type=DB_TYPE):
                 init_plugins(app)
             app._plugins_initialized = True
 
-    # 注册404错误处理器
+    # 注册错误处理器
     @app.errorhandler(404)
     def page_not_found(e):
-        return render_template(ThemeManager.get_template_path('errors/404.html')), 404
+        from app.utils.common import get_categories_data
+        return render_template('errors/404.html', **get_categories_data()), 404
+
+    @app.errorhandler(500)
+    def internal_server_error(e):
+        from app.utils.common import get_categories_data
+        return render_template('errors/500.html', **get_categories_data()), 500
 
     # 添加user_loader回调
     from .models import User
@@ -82,8 +88,8 @@ def create_app(config_name='default', db_type=DB_TYPE):
 
     @app.context_processor
     def inject_categories():
-        from .models import Category
-        return {'categories': Category.query.all()}
+        from app.utils.common import get_categories_data
+        return get_categories_data()
 
     # 添加全局函数到模板
     @app.context_processor
