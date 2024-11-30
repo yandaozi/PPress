@@ -14,6 +14,21 @@ def init_plugins(app):
         plugin_manager = get_plugin_manager()
         plugin_manager.init_app(app)
 
+def init_cache(app):
+    """初始化缓存"""
+    with app.app_context():
+        from app.services.blog_service import BlogService
+        BlogService.warmup_cache()
+        app.logger.info("Cache warmed up successfully")
+
+def init_app_components(app):
+    """初始化应用组件"""
+    if not hasattr(app, '_components_initialized'):
+        with app.app_context():
+            init_plugins(app)
+            init_cache(app)
+        app._components_initialized = True
+
 def create_app(config_name='default', db_type=DB_TYPE):
     app = Flask(__name__)
 
@@ -54,14 +69,8 @@ def create_app(config_name='default', db_type=DB_TYPE):
     app.register_blueprint(admin.bp)
     app.register_blueprint(user.bp)
 
-    # 初始化插件 - 移到这里，确保在所有蓝图注册之后
-    # 注册一个请求钩子来延迟初始化插件
-    @app.before_request
-    def lazy_init_plugins():
-        if not hasattr(app, '_plugins_initialized'):
-            with app.app_context():
-                init_plugins(app)
-            app._plugins_initialized = True
+    # 直接初始化组件
+    init_app_components(app)
 
     # 注册错误处理器
     @app.errorhandler(404)
@@ -69,10 +78,10 @@ def create_app(config_name='default', db_type=DB_TYPE):
         from app.utils.common import get_categories_data
         return render_template('errors/404.html', **get_categories_data()), 404
 
-    @app.errorhandler(500)
-    def internal_server_error(e):
-        from app.utils.common import get_categories_data
-        return render_template('errors/500.html', **get_categories_data()), 500
+    # @app.errorhandler(500)
+    # def internal_server_error(e):
+    #     from app.utils.common import get_categories_data
+    #     return render_template('errors/500.html', **get_categories_data()), 500
 
     # 添加user_loader回调
     from .models import User

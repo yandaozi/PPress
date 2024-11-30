@@ -10,38 +10,47 @@ import random
 
 
 class BlogService:
+    # 定义缓存过期时间常量
+    CACHE_TIMES = {
+        'INDEX': 3600,        # 首页缓存1小时
+        'ARTICLE': 43200,     # 文章详情缓存12小时
+        'HOT_TODAY': 600,     # 今日热门缓存10分钟
+        'HOT_WEEK': 1800,     # 本周热门缓存30分钟
+        'RANDOM': 300,        # 随机推荐缓存5分钟
+        'TAGS': 3600,         # 标签缓存1小时
+        'COMMENTS': 300,      # 评论缓存5分钟
+        'SEARCH': 1800,       # 搜索结果缓存30分钟
+        'CATEGORY': 3600      # 分类缓存1小时
+    }
+
     @staticmethod
     def get_index_articles(page=1, category_id=None):
         """获取首页文章列表"""
         def query_articles():
-            query = Article.query.options(
-                db.joinedload(Article.author),
-                db.joinedload(Article.category)
-            )
-            # if category_id:
-            #     query = query.filter(Article.category_id == category_id)
-            return query.order_by(Article.id.desc(), Article.created_at.desc())\
-                       .paginate(page=page, per_page=10, error_out=False)
+            with db.session.no_autoflush:
+                query = Article.query.options(
+                    db.joinedload(Article.author),
+                    db.joinedload(Article.category),
+                    db.joinedload(Article.tags)
+                )
+                return query.order_by(Article.id.desc(), Article.created_at.desc())\
+                           .paginate(page=page, per_page=10, error_out=False)
                        
-        return cache_manager.get(f'index:articles:{page}:{category_id}', query_articles)
+        return cache_manager.get(f'index:articles:{page}:{category_id}', 
+                               query_articles, 
+                               ttl=BlogService.CACHE_TIMES['INDEX'])
 
     @staticmethod
     def get_category_articles(category_id, page=1):
         """获取分类下的文章列表"""
-        cache_key = f'category:{category_id}:page:{page}'
-        
         def query_articles():
-            # 获取分类
             category = Category.query.get_or_404(category_id)
-            
-            # 构建查询
             query = Article.query.options(
                 db.joinedload(Article.author),
                 db.joinedload(Article.category),
                 db.joinedload(Article.tags)
             ).filter_by(category_id=category_id)
             
-            # 分页
             pagination = query.order_by(Article.id.desc(),Article.created_at.desc())\
                             .paginate(page=page, per_page=10, error_out=False)
             
@@ -50,12 +59,13 @@ class BlogService:
                 'current_category': category
             }
         
-        # 使用 default_factory 参数
-        return cache_manager.get(cache_key, default_factory=query_articles)
+        return cache_manager.get(f'category:{category_id}:page:{page}', 
+                               query_articles,
+                               ttl=BlogService.CACHE_TIMES['CATEGORY'])
 
     @staticmethod
     def get_article_detail(article_id):
-        """获取文章详情(带关联数据)"""
+        """获取文章详情"""
         def query_article():
             return Article.query.options(
                 db.joinedload(Article.author),
@@ -64,7 +74,104 @@ class BlogService:
                 db.joinedload(Article.comments).joinedload(Comment.user)
             ).get_or_404(article_id)
             
-        return cache_manager.get(f'article:{article_id}', query_article)
+        return cache_manager.get(f'article:{article_id}', 
+                               query_article,
+                               ttl=BlogService.CACHE_TIMES['ARTICLE'])
+
+    @staticmethod
+    def get_hot_articles_today():
+        """获取今日热门文章"""
+        def query_hot():
+            today = datetime.now().date()
+            views_subquery = db.session.query(
+                ViewHistory.article_id,
+                func.count(ViewHistory.id).label('views')
+            ).filter(
+                func.date(ViewHistory.viewed_at) == today
+            ).group_by(ViewHistory.article_id)\
+             .subquery()
+            
+            return db.session.query(Article, views_subquery.c.views)\
+                .join(views_subquery, Article.id == views_subquery.c.article_id)\
+                .options(db.joinedload(Article.author))\
+                .order_by(views_subquery.c.views.desc())\
+                .limit(5)\
+                .all()
+                
+        return cache_manager.get('hot_articles:today', 
+                               query_hot,
+                               ttl=BlogService.CACHE_TIMES['HOT_TODAY'])
+
+    @staticmethod
+    def get_hot_articles_week():
+        """获取本周热门文章"""
+        def query_hot():
+            today = datetime.now().date()
+            week_start = today - timedelta(days=today.weekday())
+            views_subquery = db.session.query(
+                ViewHistory.article_id,
+                func.count(ViewHistory.id).label('views')
+            ).filter(
+                func.date(ViewHistory.viewed_at) >= week_start
+            ).group_by(ViewHistory.article_id)\
+             .subquery()
+            
+            return db.session.query(Article, views_subquery.c.views)\
+                .join(views_subquery, Article.id == views_subquery.c.article_id)\
+                .options(db.joinedload(Article.author))\
+                .order_by(views_subquery.c.views.desc())\
+                .limit(5)\
+                .all()
+                
+        return cache_manager.get('hot_articles:week', 
+                               query_hot,
+                               ttl=BlogService.CACHE_TIMES['HOT_WEEK'])
+
+    @staticmethod
+    def get_random_articles():
+        """获取随机推荐文章"""
+        def query_random():
+            count = Article.query.count()
+            if count < 5:
+                return Article.query.all()
+            ids = random.sample(range(1, count + 1), min(5, count))
+            return Article.query\
+                .options(db.joinedload(Article.author))\
+                .filter(Article.id.in_(ids))\
+                .all()
+                
+        return cache_manager.get('random_articles', 
+                               query_random,
+                               ttl=BlogService.CACHE_TIMES['RANDOM'])
+
+    @staticmethod
+    def get_random_tags():
+        """获取随机标签"""
+        def query_tags():
+            count = Tag.query.count()
+            if count < 10:
+                return Tag.query.all()
+            ids = random.sample(range(1, count + 1), min(10, count))
+            return Tag.query.filter(Tag.id.in_(ids)).all()
+                
+        return cache_manager.get('random_tags', 
+                               query_tags,
+                               ttl=BlogService.CACHE_TIMES['TAGS'])
+
+    @staticmethod
+    def get_latest_comments():
+        """获取最新评论"""
+        def query_comments():
+            return db.session.query(Comment, User, Article)\
+                .join(User, Comment.user_id == User.id)\
+                .join(Article, Comment.article_id == Article.id)\
+                .order_by(Comment.created_at.desc())\
+                .limit(10)\
+                .all()
+                
+        return cache_manager.get('latest_comments', 
+                               query_comments,
+                               ttl=BlogService.CACHE_TIMES['COMMENTS'])
     
     @staticmethod
     def record_view(user_id, article_id):
@@ -87,7 +194,7 @@ class BlogService:
                 db.joinedload(Article.category)
             )
             
-            # 搜索标题和���容
+            # 搜索标题
             base_query = base_query.filter(Article.title.ilike(f'%{query}%'))
             
             # 标签过滤
@@ -119,11 +226,11 @@ class BlogService:
                 base_query = base_query.order_by(Article.created_at.desc())
             
             return base_query.paginate(page=page, per_page=10, error_out=False)
-        
-        # 生成缓存键
-        cache_key = f'search:{query}:{page}:{",".join(sorted(selected_tags or []))}:{sort}'
-        return cache_manager.get(cache_key, do_search)
-    
+            
+        # 生成缓存键，包含所有搜索参数
+        cache_key = f'search:{query}:tags:{"-".join(sorted(selected_tags or []))}:sort:{sort}:page:{page}'
+        return cache_manager.get(cache_key, do_search, ttl=BlogService.CACHE_TIMES['SEARCH'])
+
     @staticmethod
     def get_tag_articles(tag_id, page=1):
         """获取标签下的文章"""
@@ -359,13 +466,22 @@ class BlogService:
     @staticmethod
     def clear_article_related_cache(article_id):
         """清除文章相关的所有缓存"""
-        cache_manager.delete(f'article:{article_id}')  # 文章详���缓存
-        cache_manager.delete('index:articles:*')       # 首页文章列表缓存
-        cache_manager.delete('category:*')             # 分类文章列表缓存
-        cache_manager.delete('hot_articles:*')         # 热门文章缓存
-        cache_manager.delete('random_articles')        # 随机章缓存
-        cache_manager.delete('search:*')               # 搜索结果缓存
-        cache_manager.delete('tag:*')                  # 标签相关缓存
+        # 使用列表管理需要清除的缓存键模式
+        cache_patterns = [
+            f'article:{article_id}',    # 文章详情缓存
+            'index:articles:*',         # 首页文章列表缓存
+            'category:*',               # 分类文章列表缓存
+            'hot_articles:*',           # 热门文章缓存
+            'random_articles',          # 随机文章缓存
+            'search:*',                 # 搜索结果缓存
+            'tag:*',                    # 标签相关缓存
+            'search_suggestions:*',     # 搜索建议缓存
+            'search_tags:*'             # 搜索标签缓存
+        ]
+        
+        # 批量清除缓存
+        for pattern in cache_patterns:
+            cache_manager.delete(pattern)
     
     @staticmethod
     def get_search_suggestions(query):
@@ -377,92 +493,9 @@ class BlogService:
                 .limit(5)\
                 .all()
             
-        return cache_manager.get(f'search_suggestions:{query}', query_suggestions)
-    
-    @staticmethod
-    def get_hot_articles_today():
-        """获取今日热门文章"""
-        def query_hot():
-            today = datetime.now().date()
-            views_subquery = db.session.query(
-                ViewHistory.article_id,
-                func.count(ViewHistory.id).label('views')
-            ).filter(
-                func.date(ViewHistory.viewed_at) == today
-            ).group_by(ViewHistory.article_id)\
-             .subquery()
-            
-            return db.session.query(Article, views_subquery.c.views)\
-                .join(views_subquery, Article.id == views_subquery.c.article_id)\
-                .options(db.joinedload(Article.author))\
-                .order_by(views_subquery.c.views.desc())\
-                .limit(5)\
-                .all()
-                
-        return cache_manager.get('hot_articles:today', query_hot)
-    
-    @staticmethod
-    def get_hot_articles_week():
-        """获取本周热门文章"""
-        def query_hot():
-            today = datetime.now().date()
-            week_start = today - timedelta(days=today.weekday())
-            views_subquery = db.session.query(
-                ViewHistory.article_id,
-                func.count(ViewHistory.id).label('views')
-            ).filter(
-                func.date(ViewHistory.viewed_at) >= week_start
-            ).group_by(ViewHistory.article_id)\
-             .subquery()
-            
-            return db.session.query(Article, views_subquery.c.views)\
-                .join(views_subquery, Article.id == views_subquery.c.article_id)\
-                .options(db.joinedload(Article.author))\
-                .order_by(views_subquery.c.views.desc())\
-                .limit(5)\
-                .all()
-                
-        return cache_manager.get('hot_articles:week', query_hot)
-    
-    @staticmethod
-    def get_random_articles():
-        """获取随机推荐文章"""
-        def query_random():
-            count = Article.query.count()
-            if count < 5:
-                return Article.query.all()
-            ids = random.sample(range(1, count + 1), min(5, count))
-            return Article.query\
-                .options(db.joinedload(Article.author))\
-                .filter(Article.id.in_(ids))\
-                .all()
-                
-        return cache_manager.get('random_articles', query_random)
-    
-    @staticmethod
-    def get_random_tags():
-        """获取机标签"""
-        def query_tags():
-            count = Tag.query.count()
-            if count < 10:
-                return Tag.query.all()
-            ids = random.sample(range(1, count + 1), min(10, count))
-            return Tag.query.filter(Tag.id.in_(ids)).all()
-                
-        return cache_manager.get('random_tags', query_tags)
-    
-    @staticmethod
-    def get_latest_comments():
-        """获取最新评论"""
-        def query_comments():
-            return db.session.query(Comment, User, Article)\
-                .join(User, Comment.user_id == User.id)\
-                .join(Article, Comment.article_id == Article.id)\
-                .order_by(Comment.created_at.desc())\
-                .limit(10)\
-                .all()
-                
-        return cache_manager.get('latest_comments', query_comments)
+        return cache_manager.get(f'search_suggestions:{query}', 
+                               query_suggestions,
+                               ttl=BlogService.CACHE_TIMES['SEARCH'])
     
     @staticmethod
     def get_search_tags(query):
@@ -474,5 +507,20 @@ class BlogService:
                 .order_by(Tag.article_count.desc())\
                 .all()
                 
-        return cache_manager.get(f'search_tags:{query}', query_tags)
+        return cache_manager.get(f'search_tags:{query}', 
+                               query_tags,
+                               ttl=BlogService.CACHE_TIMES['SEARCH'])
+    
+    @staticmethod
+    def warmup_cache():
+        """预热常用缓存"""
+        warmup_keys = {
+            'index:articles:1': lambda: BlogService.get_index_articles(1),
+            'hot_articles:today': lambda: BlogService.get_hot_articles_today(),
+            'hot_articles:week': lambda: BlogService.get_hot_articles_week(),
+            'random_articles': lambda: BlogService.get_random_articles(),
+            'random_tags': lambda: BlogService.get_random_tags(),
+            'latest_comments': lambda: BlogService.get_latest_comments()
+        }
+        cache_manager.warmup(warmup_keys)
 
