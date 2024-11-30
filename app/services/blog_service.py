@@ -27,19 +27,31 @@ class BlogService:
 
     @staticmethod
     def get_category_articles(category_id, page=1):
-        """获取首页文章列表"""
+        """获取分类下的文章列表"""
+        cache_key = f'category:{category_id}:page:{page}'
+        
         def query_articles():
+            # 获取分类
+            category = Category.query.get_or_404(category_id)
+            
+            # 构建查询
             query = Article.query.options(
                 db.joinedload(Article.author),
-                db.joinedload(Article.category)
-            )
-
-            query = query.filter(Article.category_id == category_id)
-
-            return query.order_by(Article.id.desc(), Article.created_at.desc()) \
-                .paginate(page=page, per_page=10, error_out=False)
-
-        return cache_manager.get(f'category:{category_id}:page:{page}', query_articles)
+                db.joinedload(Article.category),
+                db.joinedload(Article.tags)
+            ).filter_by(category_id=category_id)
+            
+            # 分页
+            pagination = query.order_by(Article.created_at.desc())\
+                            .paginate(page=page, per_page=10, error_out=False)
+            
+            return {
+                'pagination': pagination,
+                'current_category': category
+            }
+        
+        # 使用 default_factory 参数
+        return cache_manager.get(cache_key, default_factory=query_articles)
 
     @staticmethod
     def get_article_detail(article_id):
@@ -75,7 +87,7 @@ class BlogService:
                 db.joinedload(Article.category)
             )
             
-            # 搜索标题和内容
+            # 搜索标题和���容
             base_query = base_query.filter(Article.title.ilike(f'%{query}%'))
             
             # 标签过滤
@@ -347,7 +359,7 @@ class BlogService:
     @staticmethod
     def clear_article_related_cache(article_id):
         """清除文章相关的所有缓存"""
-        cache_manager.delete(f'article:{article_id}')  # 文章详情缓存
+        cache_manager.delete(f'article:{article_id}')  # 文章详���缓存
         cache_manager.delete('index:articles:*')       # 首页文章列表缓存
         cache_manager.delete('category:*')             # 分类文章列表缓存
         cache_manager.delete('hot_articles:*')         # 热门文章缓存
