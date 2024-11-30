@@ -16,6 +16,8 @@ class CacheManager:
     def __init__(self):
         self._cache = OrderedDict()
         self._capacity = 10000
+        self._hits = 0
+        self._misses = 0
     
     @lru_cache(maxsize=1000)
     def get(self, key, query_func):
@@ -51,5 +53,17 @@ class CacheManager:
                 self._cache.pop(key, None)
             # 清除lru_cache
             self.get.cache_clear()
+    
+    def get(self, key, default_factory=None):
+        """获取缓存,如果不存在则使用 default_factory 生成"""
+        if key in self._cache:
+            self._hits += 1
+            return self._cache[key]
+        self._misses += 1
+        if default_factory is not None:
+            value = default_factory()
+            self._cache[key] = value
+            return value
+        return None
 
 cache_manager = CacheManager() 

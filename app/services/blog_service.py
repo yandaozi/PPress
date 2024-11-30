@@ -8,6 +8,7 @@ import hashlib
 from flask import current_app
 import random
 
+
 class BlogService:
     @staticmethod
     def get_index_articles(page=1, category_id=None):
@@ -17,13 +18,29 @@ class BlogService:
                 db.joinedload(Article.author),
                 db.joinedload(Article.category)
             )
-            if category_id:
-                query = query.filter(Article.category_id == category_id)
+            # if category_id:
+            #     query = query.filter(Article.category_id == category_id)
             return query.order_by(Article.id.desc(), Article.created_at.desc())\
                        .paginate(page=page, per_page=10, error_out=False)
                        
         return cache_manager.get(f'index:articles:{page}:{category_id}', query_articles)
-    
+
+    @staticmethod
+    def get_category_articles(category_id, page=1):
+        """获取首页文章列表"""
+        def query_articles():
+            query = Article.query.options(
+                db.joinedload(Article.author),
+                db.joinedload(Article.category)
+            )
+
+            query = query.filter(Article.category_id == category_id)
+
+            return query.order_by(Article.id.desc(), Article.created_at.desc()) \
+                .paginate(page=page, per_page=10, error_out=False)
+
+        return cache_manager.get(f'category:{category_id}:page:{page}', query_articles)
+
     @staticmethod
     def get_article_detail(article_id):
         """获取文章详情(带关联数据)"""
@@ -332,8 +349,9 @@ class BlogService:
         """清除文章相关的所有缓存"""
         cache_manager.delete(f'article:{article_id}')  # 文章详情缓存
         cache_manager.delete('index:articles:*')       # 首页文章列表缓存
+        cache_manager.delete('category:*')             # 分类文章列表缓存
         cache_manager.delete('hot_articles:*')         # 热门文章缓存
-        cache_manager.delete('random_articles')        # 随机文章缓存
+        cache_manager.delete('random_articles')        # 随机章缓存
         cache_manager.delete('search:*')               # 搜索结果缓存
         cache_manager.delete('tag:*')                  # 标签相关缓存
     
@@ -411,7 +429,7 @@ class BlogService:
     
     @staticmethod
     def get_random_tags():
-        """获取随机标签"""
+        """获取机标签"""
         def query_tags():
             count = Tag.query.count()
             if count < 10:
@@ -445,4 +463,4 @@ class BlogService:
                 .all()
                 
         return cache_manager.get(f'search_tags:{query}', query_tags)
-    
+

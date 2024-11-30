@@ -140,9 +140,9 @@
                 
                 <!-- 使用通用分页组件 -->
                 {% if pagination.pages > 1 %}
-                <div class="mt-4">
-                    {% with endpoint='admin.cache_manage' %}
-                    {% include theme_path('components/pagination.html') %}
+                <div class="px-6 py-4 mt-4 border-t">
+                    {% with endpoint='admin.cache_stats', kwargs={'q': search_query, 'search_type': search_type} %}
+                    {% include 'components/pagination.html' %}
                     {% endwith %}
                 </div>
                 {% endif %}

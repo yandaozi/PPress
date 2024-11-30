@@ -1,4 +1,6 @@
 from flask import Blueprint, render_template, request, abort, current_app, url_for, flash, redirect, jsonify
+from werkzeug.exceptions import NotFound
+
 from app.services.blog_service import BlogService
 from app.utils.common import get_categories_data
 from flask_login import current_user, login_required
@@ -14,9 +16,10 @@ def handle_view_errors(f):
             return f(*args, **kwargs)
         except Exception as e:
             current_app.logger.error(f"{f.__name__} error: {str(e)}")
-            if request.is_xhr:  # AJAX请求
+            # 检查是否是 AJAX 请求
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'error': str(e)}), 500
-            flash(str(e))
+            #flash(str(e))
             return abort(404 if isinstance(e, NotFound) else 500)
     return decorated_function
 
@@ -35,6 +38,23 @@ def index():
                          random_tags=BlogService.get_random_tags(),
                          latest_comments=BlogService.get_latest_comments(),
                          **get_categories_data())
+
+
+@bp.route('/category/<int:id>')
+@handle_view_errors
+def category(id):
+    """分类文章列表"""
+    return render_template('blog/index.html',
+                           articles=BlogService.get_category_articles(
+                               id,
+                               request.args.get('page', 1, type=int),
+                           ),
+                           hot_articles_today=BlogService.get_hot_articles_today(),
+                           hot_articles_week=BlogService.get_hot_articles_week(),
+                           random_articles=BlogService.get_random_articles(),
+                           random_tags=BlogService.get_random_tags(),
+                           latest_comments=BlogService.get_latest_comments(),
+                           **get_categories_data())
 
 @bp.route('/article/<int:id>')
 @handle_view_errors
