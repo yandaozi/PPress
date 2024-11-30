@@ -121,13 +121,13 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            {% for key, info in cache_keys.items() %}
+                            {% for item in cache_keys %}
                             <tr>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ key }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-500">{{ info.type }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-500">{{ info.size }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ item.key }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">{{ item.type }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">{{ item.size }}</td>
                                 <td class="px-6 py-4 text-sm">
-                                    <button onclick="clearCache('{{ key }}')"
+                                    <button onclick="clearCache('{{ item.key }}')"
                                             class="text-red-600 hover:text-red-900">
                                         删除
                                     </button>
@@ -141,7 +141,7 @@
                 <!-- 使用通用分页组件 -->
                 {% if pagination.pages > 1 %}
                 <div class="px-6 py-4 mt-4 border-t">
-                    {% with endpoint='admin.cache_stats', kwargs={'q': search_query, 'search_type': search_type} %}
+                    {% with endpoint='admin.cache_stats' %}
                     {% include 'components/pagination.html' %}
                     {% endwith %}
                 </div>
@@ -152,6 +152,27 @@
 </div>
 
 <script>
+// 添加 clearCache 函数
+function clearCache(key) {
+    showAlert(`确定要删除此缓存吗？`, 'warning', '确认删除', function() {
+        fetch(`/admin/cache/clear/${key}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert(data.error, 'error', '错误');
+            } else {
+                showAlert('缓存已删除', 'success', '成功');
+                setTimeout(() => location.reload(), 300);
+            }
+        });
+    });
+}
+
 function clearCacheCategory(category) {
     const categoryNames = {
         'index': '首页',

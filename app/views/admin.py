@@ -568,7 +568,8 @@ def utility_processor():
 def cache_stats():
     """缓存统计"""
     try:
-        data, error = AdminService.get_cache_stats()
+        page = request.args.get('page', 1, type=int)
+        data, error = AdminService.get_cache_stats(page=page)
         if error:
             flash(error)
             return redirect(url_for('admin.dashboard'))
@@ -646,4 +647,14 @@ def save_plugin_settings(plugin_name):
     return jsonify({
         'status': 'success' if success else 'error',
         'message': message
-    }) 
+    })
+
+@bp.route('/cache/clear/<path:key>', methods=['POST'])
+@login_required
+@admin_required
+def clear_cache(key):
+    """清除指定的缓存"""
+    success, message = AdminService.clear_single_cache(key)
+    if not success:
+        return jsonify({'error': f'清除缓存失败：{message}'}), 500
+    return jsonify({'message': message}), 200 

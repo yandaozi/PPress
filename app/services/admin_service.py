@@ -12,6 +12,15 @@ import zipfile
 from importlib import import_module
 import shutil
 
+def format_size(size):
+    """格式化文件大小显示"""
+    if size >= 1024 * 1024:  # MB
+        return f"{size / (1024 * 1024):.2f} MB"
+    elif size >= 1024:  # KB
+        return f"{size / 1024:.2f} KB"
+    else:  # B
+        return f"{size} B"
+
 class AdminService:
     @staticmethod
     def get_dashboard_data():
@@ -747,7 +756,7 @@ class AdminService:
             # 清除主题相关缓存
             cache_manager.delete('site_config:*')
             
-            return True, '主题更新成功'
+            return True, '主题更新��功'
             
         except Exception as e:
             db.session.rollback()
@@ -1095,7 +1104,7 @@ class AdminService:
             return False, str(e)
 
     @staticmethod
-    def get_cache_stats():
+    def get_cache_stats(page=1):
         """获取缓存统计信息"""
         try:
             from app.utils.cache_manager import cache_manager
@@ -1104,9 +1113,9 @@ class AdminService:
             cache_keys = list(cache_manager._cache.keys())
             total_cache_count = len(cache_keys)
             
-            # 计算内存占用
+            # 计算总内存占用
             total_size = sum(len(str(cache_manager._cache.get(key))) for key in cache_keys)
-            memory_usage = f"{total_size / 1024:.2f} KB" if total_size > 1024 else f"{total_size} B"
+            memory_usage = format_size(total_size)
             
             # 计算命中率 (这里需要从 cache_manager 获取命中和未命中的次数)
             hits = getattr(cache_manager, '_hits', 0)
@@ -1125,22 +1134,23 @@ class AdminService:
             }
             
             # 获取缓存键的详细信息
-            cache_keys_info = {}
+            cache_keys_info = []  # 改为列表
             for key in sorted(cache_keys):
                 value = cache_manager._cache.get(key)
                 size = len(str(value)) if value else 0
-                # 格式化大小显示
-                if size > 1024 * 1024:
-                    size_str = f"{size / (1024 * 1024):.2f} MB"
-                elif size > 1024:
-                    size_str = f"{size / 1024:.2f} KB"
-                else:
-                    size_str = f"{size} B"
-                
-                cache_keys_info[key] = {
+                cache_keys_info.append({
+                    'key': key,
                     'type': type(value).__name__,
-                    'size': size_str
-                }
+                    'size': format_size(size)
+                })
+            
+            # 使用传入的页码
+            per_page = 15
+            total = len(cache_keys_info)
+            total_pages = (total + per_page - 1) // per_page
+            page = min(max(page, 1), total_pages if total_pages > 0 else 1)
+            start = (page - 1) * per_page
+            end = start + per_page
             
             # 创建分页对象
             class Pagination:
@@ -1179,17 +1189,9 @@ class AdminService:
                             yield num
                             last = num
             
-            # 手动分页
-            per_page = 15
-            total = len(cache_keys_info)
-            total_pages = (total + per_page - 1) // per_page
-            page = 1  # 这里可以从请求参数获取
-            start = (page - 1) * per_page
-            end = start + per_page
-            
             # 创建分页对象
             pagination = Pagination(
-                items=list(cache_keys_info.items())[start:end],
+                items=cache_keys_info[start:end],  # 直接使用切片的列表
                 total=total,
                 page=page,
                 per_page=per_page,
@@ -1203,12 +1205,10 @@ class AdminService:
                     'hit_rate': hit_rate,
                     'by_category': cache_categories
                 },
-                'cache_keys': cache_keys_info,
+                'cache_keys': cache_keys_info[start:end],  # 只返回当前页的数据
                 'cache_categories': cache_categories,
                 'total_cache_count': total_cache_count,
-                'pagination': pagination,
-                'search_query': '',
-                'search_type': ''
+                'pagination': pagination
             }, None
             
         except Exception as e:
@@ -1290,4 +1290,14 @@ class AdminService:
             
         except Exception as e:
             db.session.rollback()
+            return False, str(e)
+
+    @staticmethod
+    def clear_single_cache(key):
+        """清除指定的缓存"""
+        try:
+            cache_manager.delete(key)
+            return True, f'缓存 {key} 已删除'
+        except Exception as e:
+            current_app.logger.error(f"Clear single cache error: {str(e)}")
             return False, str(e)
