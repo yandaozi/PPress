@@ -1,4 +1,5 @@
 beautifulsoup4
+click
 Flask
 Flask_Caching
 Flask_Login
@@ -6,10 +7,12 @@ flask_paginate
 flask_sqlalchemy
 flask_wtf
 Jinja2
+MarkupSafe
 numpy
 pandas
 Pillow
 plotly
-Requests
+PyMySQL
+SQLAlchemy
 textblob
 Werkzeug

@@ -1,4 +1,5 @@
 beautifulsoup4==4.12.3
+click==8.1.7
 Flask==3.1.0
 Flask_Caching==2.3.0
 Flask_Login==0.6.3
@@ -6,10 +7,13 @@ flask_paginate==2024.4.12
 flask_sqlalchemy==3.1.1
 flask_wtf==1.2.2
 Jinja2==3.1.4
+MarkupSafe==2.1.5
+MarkupSafe==3.0.1
 numpy==1.23.5
 pandas==1.5.3
 Pillow==11.0.0
 plotly==5.24.1
-Requests==2.32.3
+PyMySQL==1.1.1
+SQLAlchemy==2.0.36
 textblob==0.18.0.post0
 Werkzeug==3.1.3
