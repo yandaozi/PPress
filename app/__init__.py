@@ -96,10 +96,11 @@ def create_app(config_name='default', db_type=DB_TYPE):
             'reject': lambda items, key: {k: v for k, v in items if k != key}
         }
 
-    # 添加用户信息处理函
+    # 修改用户信息处理函数
     @app.context_processor
     def user_info_processor():
         def get_user_info(user):
+            """获取用户信息"""
             if user:
                 return {
                     'id': user.id,
@@ -111,7 +112,21 @@ def create_app(config_name='default', db_type=DB_TYPE):
                 'username': '已注销用户',
                 'avatar': url_for('static', filename='default_avatar.png')
             }
-        return dict(get_user_info=get_user_info)
+        
+        def get_author_info(article_or_author):
+            """获取作者信息，支持从文章或作者对象获取"""
+            # 如果传入的是文章对象，获取其作者
+            if hasattr(article_or_author, 'author'):
+                author = article_or_author.author
+            else:
+                author = article_or_author
+            
+            return get_user_info(author)
+        
+        return dict(
+            get_user_info=get_user_info,
+            get_author_info=get_author_info
+        )
 
     # 添加模板全局函数
     @app.context_processor

@@ -15,9 +15,15 @@ def get_categories_with_count():
         result.append((category, count))
     return result
 
+@cache.cached(timeout=3600, key_prefix=make_cache_key)
 def get_categories_data():
-    """获取分类数据，返回分类列表和计数字典"""
-    categories_with_count = get_categories_with_count()
-    categories = [cat for cat, _ in categories_with_count]
-    article_counts = dict((cat.id, count) for cat, count in categories_with_count)
-    return categories, article_counts 
+    """获取分类数据，返回字典格式"""
+    categories = Category.query.all()
+    article_counts = {}
+    for category in categories:
+        article_counts[category.id] = category.article_count
+        
+    return {
+        'categories': categories,
+        'article_counts': article_counts
+    } 
