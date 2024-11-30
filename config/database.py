@@ -23,7 +23,7 @@ SQLITE_CONFIG = {
 def get_db_url(db_type='mysql'):
     """获取数据库 URL"""
     if db_type == 'mysql':
-        return (f"mysql://{MYSQL_CONFIG['user']}:{MYSQL_CONFIG['password']}"
+        return (f"mysql+pymysql://{MYSQL_CONFIG['user']}:{MYSQL_CONFIG['password']}"
                 f"@{MYSQL_CONFIG['host']}/{MYSQL_CONFIG['database']}?"
                 f"charset={MYSQL_CONFIG['charset']}")
     else:
