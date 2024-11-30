@@ -12,6 +12,9 @@ import zipfile
 from importlib import import_module
 import shutil
 
+from app.utils.pagination import Pagination
+
+
 def format_size(size):
     """格式化文件大小显示"""
     if size >= 1024 * 1024:  # MB
@@ -361,44 +364,8 @@ class AdminService:
             page = min(max(page, 1), total_pages if total_pages > 0 else 1)
             start = (page - 1) * per_page
             end = start + per_page
-            
-            # 创建分页对象
-            class Pagination:
-                def __init__(self, items, total, page, per_page, total_pages):
-                    self.items = items
-                    self.total = total
-                    self.page = page
-                    self.per_page = per_page
-                    self.pages = total_pages
-                    
-                @property
-                def has_prev(self):
-                    return self.page > 1
-                    
-                @property
-                def has_next(self):
-                    return self.page < self.pages
-                    
-                @property
-                def prev_num(self):
-                    return self.page - 1 if self.has_prev else None
-                    
-                @property
-                def next_num(self):
-                    return self.page + 1 if self.has_next else None
-                
-                def iter_pages(self, left_edge=2, left_current=2, right_current=5, right_edge=2):
-                    last = 0
-                    for num in range(1, self.pages + 1):
-                        if (num <= left_edge or
-                            (num > self.page - left_current - 1 and
-                             num < self.page + right_current) or
-                            num > self.pages - right_edge):
-                            if last + 1 != num:
-                                yield None
-                            yield num
-                            last = num
-            
+
+            # 使用通用分页类
             pagination = Pagination(
                 items=categories[start:end],
                 total=total,
@@ -1151,44 +1118,7 @@ class AdminService:
             page = min(max(page, 1), total_pages if total_pages > 0 else 1)
             start = (page - 1) * per_page
             end = start + per_page
-            
-            # 创建分页对象
-            class Pagination:
-                def __init__(self, items, total, page, per_page, total_pages):
-                    self.items = items
-                    self.total = total
-                    self.page = page
-                    self.per_page = per_page
-                    self.pages = total_pages
-                    
-                @property
-                def has_prev(self):
-                    return self.page > 1
-                    
-                @property
-                def has_next(self):
-                    return self.page < self.pages
-                    
-                @property
-                def prev_num(self):
-                    return self.page - 1 if self.has_prev else None
-                    
-                @property
-                def next_num(self):
-                    return self.page + 1 if self.has_next else None
-                
-                def iter_pages(self, left_edge=2, left_current=2, right_current=5, right_edge=2):
-                    last = 0
-                    for num in range(1, self.pages + 1):
-                        if (num <= left_edge or
-                            (num > self.page - left_current - 1 and
-                             num < self.page + right_current) or
-                            num > self.pages - right_edge):
-                            if last + 1 != num:
-                                yield None
-                            yield num
-                            last = num
-            
+
             # 创建分页对象
             pagination = Pagination(
                 items=cache_keys_info[start:end],  # 直接使用切片的列表
