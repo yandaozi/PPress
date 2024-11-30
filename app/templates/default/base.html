@@ -273,7 +273,7 @@
                 </a>
                 {% for category in categories %}
                 {% if category.name %}
-                <a href="{{ url_for('blog.category', id=category.id) }}" 
+                <a href="{{ url_for('blog.category', id=category.id) }}"
                    class="py-4 px-1 border-b-2 {% if request.endpoint == 'blog.category' and request.view_args.id == category.id %}border-blue-500 text-blue-600{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300{% endif %} whitespace-nowrap transition-colors duration-200">
                     {{ category.name }}
                     <span class="text-xs text-gray-400 dark:text-gray-500">({{ article_counts[category.id] }})</span>

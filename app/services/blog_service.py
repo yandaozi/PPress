@@ -42,7 +42,7 @@ class BlogService:
             ).filter_by(category_id=category_id)
             
             # 分页
-            pagination = query.order_by(Article.created_at.desc())\
+            pagination = query.order_by(Article.id.desc(),Article.created_at.desc())\
                             .paginate(page=page, per_page=10, error_out=False)
             
             return {

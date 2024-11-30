@@ -78,7 +78,7 @@
         <!-- 分页 -->
         {% if articles.pages > 1 %}
         <div class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-            {% with endpoint='blog.index' %}
+            {% with endpoint=endpoint|default('blog.index'), kwargs={'id': current_category.id} if current_category else {} %}
             {% include theme_path('components/pagination.html') %}
             {% endwith %}
         </div>
