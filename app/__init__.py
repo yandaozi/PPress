@@ -18,7 +18,11 @@ def init_cache(app):
     """初始化缓存"""
     with app.app_context():
         from app.services.blog_service import BlogService
+        from app.services.user_service import UserService
+        
         BlogService.warmup_cache()
+        UserService.warmup_cache()
+        
         app.logger.info("Cache warmed up successfully")
 
 def init_app_components(app):

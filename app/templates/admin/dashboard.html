@@ -72,16 +72,45 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- 访问量统计图表 -->
         <div class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-medium mb-4">访问量统计</h3>
-            {% if views_chart %}
-            <div id="viewsChart"></div>
-            <script>
-                var chartData = {{ views_chart | safe }};
-                Plotly.newPlot('viewsChart', chartData.data, chartData.layout);
-            </script>
-            {% else %}
-            <p class="text-gray-500 text-center py-8">暂无数据</p>
-            {% endif %}
+            <h3 class="text-lg font-medium mb-4">系统信息</h3>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="text-gray-600">系统版本</span>
+                    <span class="text-gray-900">{{ system_info.app_version }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="text-gray-600">操作系统</span>
+                    <span class="text-gray-900">{{ system_info.operating_system }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="text-gray-600">Python版本</span>
+                    <span class="text-gray-900">{{ system_info.python_version }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="text-gray-600">Flask版本</span>
+                    <span class="text-gray-900">{{ system_info.flask_version }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="text-gray-600">SQLAlchemy版本</span>
+                    <span class="text-gray-900">{{ system_info.sqlalchemy_version }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="text-gray-600">数据库类型</span>
+                    <span class="text-gray-900">{{ system_info.database }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="text-gray-600">缓存类型</span>
+                    <span class="text-gray-900">{{ system_info.cache_type }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="text-gray-600">运行环境</span>
+                    <span class="text-gray-900">{{ system_info.environment }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-gray-600">调试模式</span>
+                    <span class="text-gray-900">{{ '开启' if system_info.debug_mode else '关闭' }}</span>
+                </div>
+            </div>
         </div>
 
         <!-- 最近活动 -->

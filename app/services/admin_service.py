@@ -11,6 +11,9 @@ import tempfile
 import zipfile
 from importlib import import_module
 import shutil
+import platform
+import flask
+import sqlalchemy
 
 from app.utils.pagination import Pagination
 
@@ -34,6 +37,22 @@ class AdminService:
             total_articles = Article.query.count()
             total_comments = Comment.query.count()
             total_views = ViewHistory.query.count()
+            
+            # 获取系统信息
+            system_info = {
+                'python_version': platform.python_version(),
+                'flask_version': flask.__version__,
+                'sqlalchemy_version': sqlalchemy.__version__,
+                'database': current_app.config['SQLALCHEMY_DATABASE_URI'].split('://')[0],
+                'cache_type': current_app.config.get('CACHE_TYPE', 'simple'),
+                'upload_folder': current_app.config.get('UPLOAD_FOLDER', 'uploads'),
+                'static_folder': os.path.basename(current_app.static_folder),
+                'template_folder': os.path.basename(current_app.template_folder),
+                'debug_mode': current_app.debug,
+                'environment': 'Development' if current_app.debug else 'Production',
+                'app_version': current_app.config.get('VERSION', '0.0.1'),
+                'operating_system': f"{platform.system()} {platform.release()}"
+            }
             
             # 获取分类数据
             categories = [{
@@ -100,7 +119,8 @@ class AdminService:
                 'total_views': total_views,
                 'categories': categories,
                 'tags': selected_tags,
-                'recent_activities': recent_activities
+                'recent_activities': recent_activities,
+                'system_info': system_info
             }
             
         except Exception as e:

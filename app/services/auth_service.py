@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.models import User
 from flask_login import login_user
 from flask import session, current_app
@@ -28,6 +30,8 @@ class AuthService:
             
             # 登录用户
             login_user(user)
+            user.last_login = datetime.now()  # 更新最后登录时间
+            db.session.commit()
             return True, '登录成功'
             
         except Exception as e:

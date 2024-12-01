@@ -8,6 +8,14 @@ import hashlib
 from flask import current_app
 
 class UserService:
+    # 定义缓存过期时间常量
+    CACHE_TIMES = {
+        'ARTICLES': 1800,      # 用户文章列表缓存30分钟
+        'HISTORY': 300,        # 浏览历史缓存5分钟
+        'STATS': 600,         # 用户统计信息缓存10分钟
+        'SENTIMENT': 3600,    # 情感分析缓存1小时
+    }
+
     @staticmethod
     def get_user_articles(user_id, page=1):
         """获取用户的文章列表"""
@@ -17,13 +25,15 @@ class UserService:
                     db.joinedload(Article.author),
                     db.joinedload(Article.category),
                     db.joinedload(Article.tags),
-                    db.joinedload(Article.comments).joinedload(Comment.user)  # 预加载评论及其用户
+                    db.joinedload(Article.comments).joinedload(Comment.user)
                 )\
                 .filter_by(author_id=user_id)\
                 .order_by(Article.id.desc(), Article.created_at.desc())\
                 .paginate(page=page, per_page=10, error_out=False)
                 
-        return cache_manager.get(f'user:{user_id}:articles:{page}', query_articles)
+        return cache_manager.get(f'user:{user_id}:articles:{page}', 
+                               query_articles,
+                               ttl=UserService.CACHE_TIMES['ARTICLES'])
     
     @staticmethod
     def get_view_history(user_id, page=1):
@@ -34,7 +44,9 @@ class UserService:
                 .order_by(ViewHistory.viewed_at.desc())\
                 .paginate(page=page, per_page=10, error_out=False)
                 
-        return cache_manager.get(f'user:{user_id}:history:{page}', query_history)
+        return cache_manager.get(f'user:{user_id}:history:{page}', 
+                               query_history,
+                               ttl=UserService.CACHE_TIMES['HISTORY'])
     
     @staticmethod
     def get_user_stats(user_id):
@@ -59,7 +71,25 @@ class UserService:
                  .limit(5).all()
             }
             
-        return cache_manager.get(f'user:{user_id}:stats', query_stats)
+        return cache_manager.get(f'user:{user_id}:stats', 
+                               query_stats,
+                               ttl=UserService.CACHE_TIMES['STATS'])
+    
+    @staticmethod
+    def get_user_sentiment_stats(user_id):
+        """获取用户的情感倾向统计"""
+        def query_sentiment():
+            sentiment_data = db.session.query(
+                db.func.avg(Article.sentiment_score).label('avg_sentiment')
+            ).join(ViewHistory)\
+             .filter(ViewHistory.user_id == user_id)\
+             .first()
+            
+            return sentiment_data.avg_sentiment if sentiment_data.avg_sentiment else 0
+            
+        return cache_manager.get(f'user:{user_id}:sentiment', 
+                               query_sentiment,
+                               ttl=UserService.CACHE_TIMES['SENTIMENT'])
     
     @staticmethod
     def update_profile(user_id, data, avatar_file=None):
@@ -152,15 +182,26 @@ class UserService:
             return False, f'删除失败: {str(e)}'
     
     @staticmethod
-    def get_user_sentiment_stats(user_id):
-        """获取用户的情感倾向统计"""
-        def query_sentiment():
-            sentiment_data = db.session.query(
-                db.func.avg(Article.sentiment_score).label('avg_sentiment')
-            ).join(ViewHistory)\
-             .filter(ViewHistory.user_id == user_id)\
-             .first()
+    def warmup_cache():
+        """预热用户相关缓存"""
+        try:
+            # 获取活跃用户列表(比如最近登录的前10个用户)
+            active_users = User.query.order_by(User.last_login.desc()).limit(10).all()
             
-            return sentiment_data.avg_sentiment if sentiment_data.avg_sentiment else 0
+            for user in active_users:
+                # 预热每个活跃用户的基础数据
+                warmup_keys = {
+                    f'user:{user.id}:articles:1': lambda: UserService.get_user_articles(user.id, 1),
+                    f'user:{user.id}:stats': lambda: UserService.get_user_stats(user.id),
+                    f'user:{user.id}:history:1': lambda: UserService.get_view_history(user.id, 1),
+                    f'user:{user.id}:sentiment': lambda: UserService.get_user_sentiment_stats(user.id)
+                }
+                
+                cache_manager.warmup(warmup_keys)
+                
+            current_app.logger.info(f"User cache warmed up for {len(active_users)} active users")
+            return True
             
-        return cache_manager.get(f'user:{user_id}:sentiment', query_sentiment)
+        except Exception as e:
+            current_app.logger.error(f"User cache warmup error: {str(e)}")
+            return False

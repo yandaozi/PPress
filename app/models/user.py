@@ -17,6 +17,7 @@ class User(UserMixin, db.Model):
     avatar = db.Column(db.String(255), default='/static/default_avatar.png')
     role = db.Column(db.Enum('user', 'admin'), default='user')
     created_at = db.Column(db.DateTime, default=datetime.now)
+    last_login = db.Column(db.DateTime, default=datetime.now)
     
     articles = db.relationship('Article', 
                              backref=db.backref('author', lazy='select'),
