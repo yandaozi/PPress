@@ -83,10 +83,10 @@ def create_app(db_type=DB_TYPE, init_components=True):
         from app.utils.common import get_categories_data
         return render_template('errors/404.html', **get_categories_data()), 404
 
-    # @app.errorhandler(500)
-    # def internal_server_error(e):
-    #     from app.utils.common import get_categories_data
-    #     return render_template('errors/500.html', **get_categories_data()), 500
+    @app.errorhandler(500)
+    def internal_server_error(e):
+        from app.utils.common import get_categories_data
+        return render_template('errors/500.html', **get_categories_data()), 500
 
     # 添加user_loader回调
     from .models import User

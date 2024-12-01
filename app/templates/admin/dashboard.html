@@ -68,9 +68,45 @@
         </div>
     </div>
 
-    <!-- 图表区域 -->
+    <!-- 区域 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- 访问量统计图表 -->
+        <!-- 最近活动 -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h3 class="text-lg font-medium mb-4">最近活动</h3>
+            <div class="space-y-4">
+                {% for activity in recent_activities %}
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <img src="{{ activity.user.avatar }}" alt="avatar" class="w-8 h-8 rounded-full">
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm">
+                            {% if activity.user.id %}
+                            <a href="{{ url_for('user.author', id=activity.user.id) }}"
+                               class="font-medium text-gray-900 hover:text-blue-600">
+                                {{ activity.user.username }}
+                            </a>
+                            {% else %}
+                            <span class="text-gray-500">{{ activity.user.username }}</span>
+                            {% endif %}
+                            {{ activity.action }}
+                            {% if activity.type == 'comment' %}
+                            评论了文章
+                            {% elif activity.type == 'article' %}
+                            发布了文章
+                            {% endif %}
+                            <a href="{{ url_for('blog.article', id=activity.article.id) }}"
+                               class="text-blue-600 hover:text-blue-700">
+                                {{ activity.article.title }}
+                            </a>
+                        </p>
+                        <p class="text-xs text-gray-500">{{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- 系统信息 -->
         <div class="bg-white rounded-lg shadow-sm p-6">
             <h3 class="text-lg font-medium mb-4">系统信息</h3>
             <div class="space-y-3">
@@ -113,42 +149,7 @@
             </div>
         </div>
 
-        <!-- 最近活动 -->
-        <div class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-medium mb-4">最近活动</h3>
-            <div class="space-y-4">
-                {% for activity in recent_activities %}
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <img src="{{ activity.user.avatar }}" alt="avatar" class="w-8 h-8 rounded-full">
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm">
-                            {% if activity.user.id %}
-                            <a href="{{ url_for('user.author', id=activity.user.id) }}"
-                               class="font-medium text-gray-900 hover:text-blue-600">
-                                {{ activity.user.username }}
-                            </a>
-                            {% else %}
-                            <span class="text-gray-500">{{ activity.user.username }}</span>
-                            {% endif %}
-                            {{ activity.action }}
-                            {% if activity.type == 'comment' %}
-                            评论了文章
-                            {% elif activity.type == 'article' %}
-                            发布了文章
-                            {% endif %}
-                            <a href="{{ url_for('blog.article', id=activity.article.id) }}"
-                               class="text-blue-600 hover:text-blue-700">
-                                {{ activity.article.title }}
-                            </a>
-                        </p>
-                        <p class="text-xs text-gray-500">{{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
+
 
         <!-- 分类统计 -->
         <div class="bg-white rounded-lg shadow-sm p-6">
