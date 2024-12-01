@@ -1,11 +1,8 @@
 from collections import OrderedDict
 from time import time
 from threading import Lock
-import threading
 from flask import current_app
 from app import db
-from sqlalchemy.orm.session import make_transient
-from sqlalchemy import inspect
 
 class CacheManager:
     """增强版缓存管理器"""

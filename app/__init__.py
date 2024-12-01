@@ -1,9 +1,10 @@
-from flask import Flask, url_for, render_template, g
+from flask import Flask, url_for, render_template, g, current_app
 import os
 
 from werkzeug.routing import BuildError
 
 from .extensions import db, login_manager, csrf
+from app.utils.cache_manager import cache_manager
 from .utils.theme_manager import ThemeManager
 from app.plugins import get_plugin_manager
 from flask_caching import Cache
@@ -46,11 +47,11 @@ def init_routes(app):
         """刷新路由"""
         with app.app_context():
             AdminService.refresh_custom_routes()
-    
+
     # 初始化路由
     with app.app_context():
         AdminService.refresh_custom_routes()
-    
+
     # 监听会话事件
     @event.listens_for(db.session, 'after_commit')
     def after_commit(session):
@@ -77,18 +78,35 @@ def init_routes(app):
         
         # 检查是否有活动的重写规则
         try:
-            route = Route.query.filter_by(
-                original_endpoint=endpoint, 
-                is_active=True
-            ).first()
+            # 使用缓存检查路由状态
+            route_key = f'route_status:{endpoint}'
+            route_status = cache_manager.get(route_key)
             
-            if route:
-                custom_endpoint = f'custom_{route.id}'
-                # 刷新路由以确保端点存在
-                AdminService.refresh_custom_routes()
-                return url_for(custom_endpoint, **values)
-        except:
-            pass
+            if route_status is None:
+                route = Route.query.filter_by(
+                    original_endpoint=endpoint, 
+                    is_active=True
+                ).first()
+                
+                if route:
+                    route_status = {'id': route.id, 'active': True}
+                else:
+                    route_status = {'active': False}
+                    
+                # 缓存路由状态，使用 cache_manager 的 set 方法
+                cache_manager.set(route_key, route_status)  # 移除 timeout 参数
+            
+            if route_status.get('active'):
+                custom_endpoint = f'custom_{route_status["id"]}'
+                try:
+                    return url_for(custom_endpoint, **values)
+                except BuildError:
+                    # 如果构建失败，刷新路由并重试
+                    AdminService.refresh_custom_routes()
+                    return url_for(custom_endpoint, **values)
+                    
+        except Exception as e:
+            current_app.logger.error(f"Error in custom_url_for: {str(e)}")
             
         # 如果没有匹配的重写规则，使用原始端点
         return url_for(endpoint, **values)
@@ -136,7 +154,7 @@ def create_app(db_type=DB_TYPE, init_components=True):
     app.register_blueprint(admin.bp)
     app.register_blueprint(user.bp)
 
-    # 初始化化路由（确保在注册蓝图之后）
+    # 初始化路由（确保在注册蓝图之后）
     if init_components:
         init_app_components(app)
         init_routes(app)

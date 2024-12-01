@@ -17,6 +17,7 @@ import sqlalchemy
 
 from app.utils.pagination import Pagination
 from threading import Lock
+import time
 
 
 def format_size(size):
@@ -656,7 +657,7 @@ class AdminService:
         try:
             # 构建基础查询
             query = ViewHistory.query.join(ViewHistory.article).join(ViewHistory.user)
-            
+
             if search_query:
                 if search_type == 'id':
                     try:
@@ -668,15 +669,15 @@ class AdminService:
                     query = query.filter(User.username.like(f'%{search_query}%'))
                 elif search_type == 'article':
                     query = query.filter(Article.title.like(f'%{search_query}%'))
-            
+
             # 分页
             pagination = query.order_by(
                 ViewHistory.id.desc(),
                 ViewHistory.viewed_at.desc()
             ).paginate(page=page, per_page=10, error_out=False)
-            
+
             return pagination, None
-            
+
         except Exception as e:
             current_app.logger.error(f"Get histories error: {str(e)}")
             return None, str(e)
@@ -689,7 +690,7 @@ class AdminService:
             db.session.delete(history)
             db.session.commit()
             return True, None
-            
+
         except Exception as e:
             db.session.rollback()
             return False, str(e)
@@ -701,7 +702,7 @@ class AdminService:
             ViewHistory.query.filter_by(user_id=user_id).delete()
             db.session.commit()
             return True, None
-            
+
         except Exception as e:
             db.session.rollback()
             return False, str(e)
@@ -712,15 +713,15 @@ class AdminService:
         try:
             from app.models.site_config import SiteConfig
             from app.utils.theme_manager import ThemeManager
-            
+
             themes = ThemeManager.get_available_themes()
             current_theme = SiteConfig.get_config('site_theme', 'default')
-            
+
             return {
                 'themes': themes,
                 'current_theme': current_theme
             }, None
-            
+
         except Exception as e:
             current_app.logger.error(f"Get themes error: {str(e)}")
             return None, str(e)
@@ -730,24 +731,24 @@ class AdminService:
         """更改主题"""
         try:
             from app.models.site_config import SiteConfig
-            
+
             if not theme_name:
                 return False, '主题名称不能为空'
-            
+
             config = SiteConfig.query.filter_by(key='site_theme').first()
             if config:
                 config.value = theme_name
             else:
                 config = SiteConfig(key='site_theme', value=theme_name)
                 db.session.add(config)
-            
+
             db.session.commit()
-            
+
             # 清除主题相关缓存
             cache_manager.delete('site_config:*')
-            
+
             return True, '主题更新成功'
-            
+
         except Exception as e:
             db.session.rollback()
             return False, str(e)
@@ -758,7 +759,7 @@ class AdminService:
         try:
             # 构建查询
             query = Plugin.query
-            
+
             # 搜索
             if search_query:
                 query = query.filter(
@@ -768,15 +769,15 @@ class AdminService:
                         Plugin.author.ilike(f'%{search_query}%')
                     )
                 )
-            
+
             # 分页
             pagination = query.order_by(Plugin.installed_at.desc()).paginate(
                 page=page, per_page=9, error_out=False
             )
-            
+
             # 获取已加载的插件实例
             loaded_plugins = plugin_manager.plugins
-            
+
             # 处理插件信息
             plugin_info = []
             for plugin in pagination.items:
@@ -793,13 +794,13 @@ class AdminService:
                     'config': plugin.config
                 }
                 plugin_info.append(info)
-            
+
             return {
                 'plugins': plugin_info,
                 'pagination': pagination,
                 'search_query': search_query
             }, None
-            
+
         except Exception as e:
             current_app.logger.error(f"Get plugins error: {str(e)}")
             return None, str(e)
@@ -811,26 +812,26 @@ class AdminService:
             # 从数据库中获取插件记录
             plugin_record = Plugin.query.filter_by(name=plugin_name).first_or_404()
             plugin_dir = plugin_record.directory
-            
+
             # 获取插件的实际目录路径
             installed_dir = os.path.join(current_app.root_path, 'plugins', 'installed')
             plugin_path = os.path.join(installed_dir, plugin_dir)
-            
+
             # 如果插件已加载，先卸载它
             if plugin_dir in plugin_manager.plugins:
                 plugin_manager.unload_plugin(plugin_dir)
-            
+
             # 删除插件目录
             if os.path.exists(plugin_path):
                 import shutil
                 shutil.rmtree(plugin_path)
-            
+
             # 从数据库中删除插件记录
             db.session.delete(plugin_record)
             db.session.commit()
-            
+
             return True, f'插件 {plugin_name} 卸载成功'
-            
+
         except Exception as e:
             db.session.rollback()
             return False, str(e)
@@ -842,7 +843,7 @@ class AdminService:
             plugin = Plugin.query.filter_by(directory=plugin_name).first_or_404()
             plugin.enabled = not plugin.enabled
             db.session.commit()
-            
+
             if plugin.enabled:
                 # 启用插件 - 重新加载
                 if plugin_manager.reload_plugin(plugin_name):
@@ -856,9 +857,9 @@ class AdminService:
                 # 禁用插件
                 plugin_manager.unload_plugin(plugin_name)
                 status = '禁用'
-            
+
             return True, f'插件已{status}'
-            
+
         except Exception as e:
             db.session.rollback()
             return False, str(e)
@@ -869,17 +870,17 @@ class AdminService:
         try:
             # 移除开头和结尾的斜杠
             plugin_name = plugin_name.strip('/')
-            
+
             # 获取插件实例
             plugin = plugin_manager.get_plugin(plugin_name)
             if not plugin:
                 return False, '插件未加载或不存在'
-            
+
             # 调用插件的保存设置方法
             success, message = plugin.save_settings(form_data)
-            
+
             return success, message
-            
+
         except Exception as e:
             current_app.logger.error(f"Save plugin settings error: {str(e)}")
             return False, str(e)
@@ -890,78 +891,78 @@ class AdminService:
         try:
             if not file:
                 return False, '没有上传文件'
-            
+
             if file.filename == '':
                 return False, '没有选择文件'
-            
+
             if not file.filename.endswith('.zip'):
                 return False, '只支持 zip 式的插件包'
-            
+
             # 创建时目录
             temp_dir = tempfile.mkdtemp()
             zip_path = os.path.join(temp_dir, file.filename)
-            
+
             try:
                 # 保存上传的文件
                 file.save(zip_path)
-                
+
                 # 解压文件
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(temp_dir)
-                
+
                 # 检查插件格式是否正确
                 if not os.path.exists(os.path.join(temp_dir, 'plugin.json')):
                     return False, '无效的插件格式'
-                
+
                 # 读取插件信
                 with open(os.path.join(temp_dir, 'plugin.json'), 'r', encoding='utf-8') as f:
                     plugin_info = json.load(f)
-                
+
                 plugin_name = plugin_info.get('name')
                 if not plugin_name:
                     return False, '插件信息不完整'
-                
+
                 # 检查插件是否已存在
                 if Plugin.query.filter_by(name=plugin_name).first():
                     return False, '插件已存在'
-                
+
                 # 生成目录名
                 directory = plugin_info.get('directory', plugin_name.lower().replace(' ', '_'))
                 plugin_dir = os.path.join(current_app.root_path, 'plugins', 'installed', directory)
-                
+
                 if os.path.exists(plugin_dir):
                     return False, '插件目录已存在'
-                
+
                 # 复制文件到插件目录
                 shutil.copytree(temp_dir, plugin_dir)
-                
+
                 # 删除插件目录下的zip文件
                 plugin_zip = os.path.join(plugin_dir, file.filename)
                 if os.path.exists(plugin_zip):
                     os.remove(plugin_zip)
-                
+
                 # 导入插件模块获取默认配置
                 module = import_module(f'app.plugins.installed.{directory}')
                 plugin_class = getattr(module, plugin_info.get('plugin_class', 'Plugin'))
                 plugin = plugin_class()
                 default_config = plugin.default_settings if hasattr(plugin, 'default_settings') else {}
-                
+
                 # 获取启用状态
                 enabled = plugin_info.get('enabled', True)  # 如果未指定，默认为启用
-                
+
                 # 添加到数据库
                 Plugin.add_plugin(plugin_info, directory, enabled=enabled, config=default_config)
-                
+
                 # 如果插件默认启用，则立即加载它
                 if enabled:
                     plugin_manager.load_plugin(directory)
-                
+
                 return True, f'插件 {plugin_name} 安装成功！(默认状态：{"启用" if enabled else "禁用"})'
-                
+
             finally:
                 # 清理临时目录
                 shutil.rmtree(temp_dir)
-                
+
         except Exception as e:
             return False, str(e)
 
@@ -971,7 +972,7 @@ class AdminService:
         try:
             # 构建查询
             query = File.query
-            
+
             # 搜索
             if search_query:
                 if search_type == 'filename':
@@ -980,18 +981,18 @@ class AdminService:
                     query = query.filter(File.file_type.ilike(f'%{search_query}%'))
                 elif search_type == 'uploader':
                     query = query.join(File.uploader).filter(User.username.ilike(f'%{search_query}%'))
-            
+
             # 分页
             pagination = query.order_by(File.upload_time.desc()).paginate(
                 page=page, per_page=20, error_out=False
             )
-            
+
             return {
                 'files': pagination,
                 'search_query': search_query,
                 'search_type': search_type
             }, None
-            
+
         except Exception as e:
             current_app.logger.error(f"Get files error: {str(e)}")
             return None, str(e)
@@ -1001,25 +1002,25 @@ class AdminService:
         """删除文件"""
         try:
             file = File.query.get_or_404(file_id)
-            
+
             # 获取文件的物理路径
             file_path = os.path.join(current_app.root_path, file.file_path.lstrip('/'))
-            
+
             # 删除物理文件
             if os.path.exists(file_path):
                 os.remove(file_path)
-                
+
                 # 如果文件所在目录为空，删除目录
                 directory = os.path.dirname(file_path)
                 if not os.listdir(directory):
                     os.rmdir(directory)
-            
+
             # 从数据库中删除记录
             db.session.delete(file)
             db.session.commit()
-            
+
             return True, None
-            
+
         except Exception as e:
             db.session.rollback()
             return False, str(e)
@@ -1031,16 +1032,16 @@ class AdminService:
             # 从数据库获取插件记录
             plugin_record = Plugin.query.filter_by(name=plugin_name).first_or_404()
             plugin_dir = plugin_record.directory
-            
+
             # 获取插件实例
             plugin = plugin_manager.get_plugin(plugin_dir)
             if not plugin:
                 return False, '插件未加载', None, None
-            
+
             content, filename = plugin.export_plugin()
-            
+
             return True, None, content, filename
-            
+
         except Exception as e:
             current_app.logger.error(f'Export plugin error: {str(e)}')
             return False, str(e), None, None
@@ -1051,22 +1052,22 @@ class AdminService:
         try:
             # 移除开头和结尾的斜杠
             plugin_name = plugin_name.strip('/')
-            
+
             # 获取插件实例
             plugin = plugin_manager.get_plugin(plugin_name)
             if not plugin:
                 return False, '插件未加载或不存在', None, None
-            
+
             # 获取插件的设置模板
             settings_html = plugin.get_settings_template()
             if not settings_html:
                 return False, '该插件没有设置页面', None, None
-            
+
             # 从数据库获取插件记录
             plugin_record = Plugin.query.filter_by(directory=plugin_name).first_or_404()
-            
+
             return True, None, plugin_record, settings_html
-            
+
         except Exception as e:
             current_app.logger.error(f"Get plugin settings error: {str(e)}")
             return False, str(e), None, None
@@ -1077,19 +1078,19 @@ class AdminService:
         try:
             # 移除开头和结尾的斜杠
             plugin_name = plugin_name.strip('/')
-            
+
             # 获取插件实例
             plugin = plugin_manager.get_plugin(plugin_name)
             if not plugin:
                 return False, '插件未加载或不存在'
-            
+
             # 检查是否有设置模板
             settings_html = plugin.get_settings_template()
             if not settings_html:
                 return False, '该插件没有设置页面'
-            
+
             return True, '插件有设置页面'
-            
+
         except Exception as e:
             return False, str(e)
 
@@ -1098,20 +1099,20 @@ class AdminService:
         """获取缓存统计信息"""
         try:
             from app.utils.cache_manager import cache_manager
-            
+
             # 获取所有缓存键
             cache_keys = list(cache_manager._cache.keys())
             total_cache_count = len(cache_keys)
-            
+
             # 计算总内存占用
             total_size = sum(len(str(cache_manager._cache.get(key))) for key in cache_keys)
             memory_usage = format_size(total_size)
-            
+
             # 计算命中率 (这里需要从 cache_manager 获取命中和未命中的次数)
             hits = getattr(cache_manager, '_hits', 0)
             misses = getattr(cache_manager, '_misses', 0)
             hit_rate = f"{(hits / (hits + misses) * 100):.1f}%" if hits + misses > 0 else "0%"
-            
+
             # 按类别统计缓存
             cache_categories = {
                 'index': len([k for k in cache_keys if 'index' in k]),
@@ -1120,9 +1121,10 @@ class AdminService:
                 'tag': len([k for k in cache_keys if 'tag' in k or 'tags' in k]),
                 'search': len([k for k in cache_keys if 'search' in k]),
                 'user': len([k for k in cache_keys if 'user' in k]),
-                'other': len([k for k in cache_keys if not any(x in k for x in ['index', 'article', 'category', 'tag', 'search', 'user'])])
+                'route': len([k for k in cache_keys if 'route' in k or 'routes' in k]),
+                'other': len([k for k in cache_keys if not any(x in k for x in ['index', 'article', 'category', 'tag', 'search', 'user', 'route'])])
             }
-            
+
             # 获取缓存键的详细信息
             cache_keys_info = []  # 改为列表
             for key in sorted(cache_keys):
@@ -1133,7 +1135,7 @@ class AdminService:
                     'type': type(value).__name__,
                     'size': format_size(size)
                 })
-            
+
             # 使用传入的页码
             per_page = 15
             total = len(cache_keys_info)
@@ -1150,7 +1152,7 @@ class AdminService:
                 per_page=per_page,
                 total_pages=total_pages
             )
-            
+
             return {
                 'cache_stats': {
                     'total_keys': total_cache_count,
@@ -1163,7 +1165,7 @@ class AdminService:
                 'total_cache_count': total_cache_count,
                 'pagination': pagination
             }, None
-            
+
         except Exception as e:
             current_app.logger.error(f"Get cache stats error: {str(e)}")
             return None, str(e)
@@ -1174,13 +1176,13 @@ class AdminService:
         try:
             from app.utils.cache_manager import cache_manager
             deleted_count = 0
-            
+
             # 获取所有缓存键
             cache_keys = list(cache_manager._cache.keys())
-            
+
             for key in cache_keys:
                 should_delete = False
-                
+
                 if category == 'all':
                     should_delete = True
                 elif category == 'index' and 'index' in key:
@@ -1195,13 +1197,18 @@ class AdminService:
                     should_delete = True
                 elif category == 'user' and 'user' in key:
                     should_delete = True
-                
+                elif category == 'route' and ('route' in key or 'routes' in key):  # 添加路由缓存处理
+                    should_delete = True
+                    # 如果清除路由缓存，需要刷新路由
+                    if key == 'routes_last_refresh':
+                        AdminService.refresh_custom_routes()
+
                 if should_delete:
                     cache_manager.delete(key)
                     deleted_count += 1
-            
+
             return True, deleted_count
-            
+
         except Exception as e:
             current_app.logger.error(f"Clear cache error: {str(e)}")
             return False, str(e)
@@ -1214,16 +1221,16 @@ class AdminService:
             plugin_dir = os.path.join(current_app.root_path, 'plugins', 'installed', plugin_name)
             with open(os.path.join(plugin_dir, 'plugin.json'), 'r', encoding='utf-8') as f:
                 plugin_info = json.load(f)
-            
+
             # 获取插件实例
             module = import_module(f'app.plugins.installed.{plugin_name}')
             plugin_class = getattr(module, plugin_info.get('plugin_class', 'Plugin'))
             plugin = plugin_class()
             default_config = plugin.default_settings if hasattr(plugin, 'default_settings') else {}
-            
+
             # 获取启用状态
             enabled = plugin_info.get('enabled', True)
-            
+
             # 更新数据库记录
             db_plugin = Plugin.query.filter_by(directory=plugin_name).first()
             if db_plugin:
@@ -1235,12 +1242,12 @@ class AdminService:
                 db_plugin.enabled = enabled
                 db_plugin.config = default_config
                 db.session.commit()
-            
+
             # 重新加载插件
             plugin_manager.reload_plugin(plugin_name)
-            
+
             return True, f'插件重载成功！(默认状态：{"启用" if enabled else "禁用"})'
-            
+
         except Exception as e:
             db.session.rollback()
             return False, str(e)
@@ -1263,9 +1270,9 @@ class AdminService:
             inspector = db.inspect(db.engine)
             if 'routes' not in inspector.get_table_names():
                 db.create_all()
-            
+
             query = Route.query
-            
+
             if search_query:
                 query = query.filter(
                     db.or_(
@@ -1274,12 +1281,12 @@ class AdminService:
                         Route.title.like(f'%{search_query}%')
                     )
                 )
-            
+
             # 使用通用分页类
             items = query.order_by(Route.id.desc()).all()
             if items is None:
                 items = []
-            
+
             per_page = 10
             total = len(items)
             total_pages = (total + per_page - 1) // per_page if total > 0 else 1
@@ -1294,9 +1301,9 @@ class AdminService:
                 per_page=per_page,
                 total_pages=total_pages
             )
-            
+
             return pagination, None
-        
+
         except Exception as e:
             current_app.logger.error(f"Get routes error: {str(e)}")
             return Pagination(
@@ -1313,18 +1320,25 @@ class AdminService:
         try:
             if Route.query.filter_by(path=data['path']).first():
                 return False, '路由路径已存在'
-            
+
             route = Route(
                 path=data['path'],
                 original_endpoint=data['endpoint'],
                 description=data.get('description'),
                 is_active=bool(data.get('is_active', True))
             )
-            
+
             db.session.add(route)
             db.session.commit()
+
+            # 清除路由缓存
+            cache_manager.delete('routes_last_refresh')
+            cache_manager.delete(f'route_status:{data["endpoint"]}')
+            # 刷新路由
+            AdminService.refresh_custom_routes()
+
             return True, '路由映射添加成功'
-            
+
         except Exception as e:
             db.session.rollback()
             return False, str(e)
@@ -1334,17 +1348,79 @@ class AdminService:
         """更新路由"""
         try:
             route = Route.query.get_or_404(route_id)
-            
+
             if data['path'] != route.path and Route.query.filter_by(path=data['path']).first():
                 return False, '路由路径已存在'
-            
+
+            # 保存旧的信息用于清理
+            old_endpoint = route.original_endpoint
+            old_custom_endpoint = f'custom_{route.id}'
+            old_path = route.path
+
+            # 更新路由信息
             route.path = data['path']
             route.description = data.get('description', '')
             route.is_active = data.get('is_active', '').lower() in ('true', 'on', '1', 'yes')
-            
+
             db.session.commit()
+
+            # 清除路由缓存
+            cache_manager.delete('routes_last_refresh')
+            cache_manager.delete(f'route_status:{old_endpoint}')
+
+            # 手动清理旧路由规则
+            with AdminService._route_lock:
+                rules_to_remove = []
+                for rule in current_app.url_map.iter_rules():
+                    # 检查是否是要清理的旧路由
+                    if (hasattr(rule, 'is_custom_route') and
+                        (rule.endpoint == old_custom_endpoint or
+                         rule.rule == old_path or
+                         rule.rule == ('/' + old_path.lstrip('/')) or
+                         # 添加对旧路径的更严格检查
+                         rule.rule.rstrip('/') == old_path.rstrip('/'))):
+                        rules_to_remove.append(rule)
+
+                # 移除旧路由规则
+                for rule in rules_to_remove:
+                    try:
+                        # 从 url_map 中移除规则
+                        current_app.url_map._rules.remove(rule)
+
+                        # 从 _rules_by_endpoint 中移除规则
+                        if rule.endpoint in current_app.url_map._rules_by_endpoint:
+                            current_app.url_map._rules_by_endpoint[rule.endpoint].remove(rule)
+                            if not current_app.url_map._rules_by_endpoint[rule.endpoint]:
+                                del current_app.url_map._rules_by_endpoint[rule.endpoint]
+
+                        # 恢复原始视图函数
+                        original_endpoint = rule.endpoint.replace('custom_', '')
+                        route = Route.query.get(int(original_endpoint))
+                        if route and route.original_endpoint in current_app.view_functions:
+                            original_view = current_app.view_functions.get(route.original_endpoint)
+                            if original_view and original_view.__name__ == '<lambda>':
+                                # 如果是 404 处理函数，恢复原始视图
+                                original_view = current_app.view_functions.get(rule.endpoint)
+                                if original_view:
+                                    current_app.view_functions[route.original_endpoint] = original_view
+
+                        # 清理自定义视图函数
+                        if rule.endpoint in current_app.view_functions:
+                            del current_app.view_functions[rule.endpoint]
+
+                        print(f"[Route System] 已清理路由: {rule.rule} -> {rule.endpoint}")
+                    except Exception as e:
+                        print(f"[Route System] 清理路由时出错: {rule.rule} -> {str(e)}")
+
+            # 强制更新路由表
+            current_app.url_map.update()
+            current_app.url_map._remap = True
+
+            # 刷新路由以添加新路由
+            AdminService.refresh_custom_routes()
+
             return True, '路由更新成功'
-            
+
         except Exception as e:
             db.session.rollback()
             return False, str(e)
@@ -1354,9 +1430,42 @@ class AdminService:
         """删除路由"""
         try:
             route = Route.query.get_or_404(route_id)
+            
+            # 保存端点用于清除缓存
+            endpoint = route.original_endpoint
+            
             db.session.delete(route)
             db.session.commit()
+            
+            # 清除路由缓存
+            cache_manager.delete('routes_last_refresh')
+            cache_manager.delete(f'route_status:{endpoint}')
+            # 刷新路由
+            AdminService.refresh_custom_routes()
+            
             return True, '路由删除成功'
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, str(e)
+
+    @staticmethod
+    def toggle_route(route_id):
+        """启用/禁用路由"""
+        try:
+            route = Route.query.get_or_404(route_id)
+            route.is_active = not route.is_active
+            
+            # 清除路由缓存
+            cache_manager.delete('routes_last_refresh')
+            cache_manager.delete(f'route_status:{route.original_endpoint}')
+            
+            db.session.commit()
+            
+            # 刷新路由
+            AdminService.refresh_custom_routes()
+            
+            return True, f'路由已{"启用" if route.is_active else "禁用"}'
             
         except Exception as e:
             db.session.rollback()
@@ -1368,8 +1477,27 @@ class AdminService:
         from flask import current_app, abort, url_for
         from werkzeug.routing import Rule
         
+        # 使用缓存检查是否需要刷新
+        cache_key = 'routes_last_refresh'
+        last_refresh = cache_manager.get(cache_key)
+        current_time = time.time()
+        
+        # 如果距离上次刷新不到1秒，跳过
+        if last_refresh and current_time - last_refresh < 1:
+            return True
+        
         with AdminService._route_lock:
             try:
+                print("\n[Route System] 开始刷新路由...")
+                
+                # 更新刷新时间
+                cache_manager.set(cache_key, current_time)
+                
+                # 清除路由状态缓存
+                route_keys = [k for k in cache_manager._cache.keys() if k.startswith('route_status:')]
+                for key in route_keys:
+                    cache_manager.delete(key)
+                
                 # 1. 清理所有自定义路由
                 rules_to_remove = []
                 endpoints_to_remove = set()
@@ -1379,68 +1507,89 @@ class AdminService:
                         rules_to_remove.append(rule)
                         endpoints_to_remove.add(rule.endpoint)
                 
+                print(f"[Route System] 找到 {len(rules_to_remove)} 个需要清理的自定义路由")
+                
                 # 移除旧路由规则和视图函数
                 for rule in rules_to_remove:
-                    current_app.url_map._rules.remove(rule)
-                    if rule.endpoint in current_app.url_map._rules_by_endpoint:
-                        current_app.url_map._rules_by_endpoint[rule.endpoint].remove(rule)
-                        if not current_app.url_map._rules_by_endpoint[rule.endpoint]:
-                            del current_app.url_map._rules_by_endpoint[rule.endpoint]
-                    # 恢复原始视图函数
-                    original_endpoint = rule.endpoint.replace('custom_', '')
-                    route = Route.query.get(int(original_endpoint))
-                    if route and route.original_endpoint in current_app.view_functions:
-                        current_app.view_functions[route.original_endpoint] = current_app.view_functions.get(rule.endpoint)
-                    # 清理自定义视图函数
-                    if rule.endpoint in current_app.view_functions:
-                        del current_app.view_functions[rule.endpoint]
+                    try:
+                        current_app.url_map._rules.remove(rule)
+                        if rule.endpoint in current_app.url_map._rules_by_endpoint:
+                            current_app.url_map._rules_by_endpoint[rule.endpoint].remove(rule)
+                            if not current_app.url_map._rules_by_endpoint[rule.endpoint]:
+                                del current_app.url_map._rules_by_endpoint[rule.endpoint]
+                        
+                        # 恢复原始视图函数
+                        original_endpoint = rule.endpoint.replace('custom_', '')
+                        route = Route.query.get(int(original_endpoint))
+                        if route and route.original_endpoint in current_app.view_functions:
+                            original_view = current_app.view_functions.get(route.original_endpoint)
+                            if original_view and original_view.__name__ == '<lambda>':
+                                # 如果是 404 处理函数，恢复原始视图
+                                original_view = current_app.view_functions.get(rule.endpoint)
+                                if original_view:
+                                    current_app.view_functions[route.original_endpoint] = original_view
+                        
+                        # 清理自定义视图函数
+                        if rule.endpoint in current_app.view_functions:
+                            del current_app.view_functions[rule.endpoint]
+                        
+                        print(f"[Route System] 已清理路由: {rule.rule} -> {rule.endpoint}")
+                    except Exception as e:
+                        print(f"[Route System] 清理路由时出错: {rule.rule} -> {str(e)}")
                 
                 # 2. 获取所有活动路由
                 active_routes = Route.query.filter_by(is_active=True).all()
+                print(f"[Route System] 找到 {len(active_routes)} 个活动路由需要注册")
                 
                 # 3. 处理每个活动路由
                 for route in active_routes:
-                    original_endpoint = route.original_endpoint
-                    original_view = None
-                    original_rule = None
-                    
-                    # 查找原始路由规则
-                    for rule in current_app.url_map.iter_rules():
-                        if rule.endpoint == original_endpoint:
-                            original_rule = rule
-                            original_view = current_app.view_functions.get(original_endpoint)
-                            break
-                    
-                    if not original_rule or not original_view:
-                        continue
-                    
-                    # 创建新的路由规则
-                    new_path = route.path if route.path.startswith('/') else '/' + route.path
-                    custom_endpoint = f'custom_{route.id}'
-                    
-                    # 保存原始视图函数的副本
-                    if original_endpoint in current_app.view_functions:
-                        original_view = current_app.view_functions[original_endpoint]
-                    
-                    # 添加新路由规则
-                    new_rule = Rule(
-                        new_path,
-                        endpoint=custom_endpoint,
-                        methods=original_rule.methods,
-                        defaults=original_rule.defaults,
-                        subdomain=original_rule.subdomain,
-                        strict_slashes=original_rule.strict_slashes,
-                        build_only=original_rule.build_only,
-                        redirect_to=original_rule.redirect_to
-                    )
-                    new_rule.is_custom_route = True
-                    current_app.url_map.add(new_rule)
-                    
-                    # 注册新的视图函数
-                    current_app.view_functions[custom_endpoint] = original_view
-                    
-                    # 让原始路由返回404
-                    current_app.view_functions[original_endpoint] = lambda *args, **kwargs: abort(404)
+                    try:
+                        original_endpoint = route.original_endpoint
+                        original_view = None
+                        original_rule = None
+                        
+                        # 查找原始路由规则
+                        for rule in current_app.url_map.iter_rules():
+                            if rule.endpoint == original_endpoint:
+                                original_rule = rule
+                                original_view = current_app.view_functions.get(original_endpoint)
+                                break
+                        
+                        if not original_rule or not original_view:
+                            print(f"[Route System] 跳过无效路由: {original_endpoint}")
+                            continue
+                        
+                        # 创建新的路由规则
+                        new_path = route.path if route.path.startswith('/') else '/' + route.path
+                        custom_endpoint = f'custom_{route.id}'
+                        
+                        # 保存原始视图函数的副本
+                        if original_endpoint in current_app.view_functions:
+                            original_view = current_app.view_functions[original_endpoint]
+                        
+                        # 添加新路由规则
+                        new_rule = Rule(
+                            new_path,
+                            endpoint=custom_endpoint,
+                            methods=original_rule.methods,
+                            defaults=original_rule.defaults,
+                            subdomain=original_rule.subdomain,
+                            strict_slashes=original_rule.strict_slashes,
+                            build_only=original_rule.build_only,
+                            redirect_to=original_rule.redirect_to
+                        )
+                        new_rule.is_custom_route = True
+                        current_app.url_map.add(new_rule)
+                        
+                        # 注册新的视图函数
+                        current_app.view_functions[custom_endpoint] = original_view
+                        
+                        # 让原始路由返回404
+                        current_app.view_functions[original_endpoint] = lambda *args, **kwargs: abort(404)
+                        
+                        print(f"[Route System] 已注册路由: {new_path} -> {custom_endpoint}")
+                    except Exception as e:
+                        print(f"[Route System] 注册路由时出错: {route.path} -> {str(e)}")
                 
                 # 4. 更新路由表
                 current_app.url_map.update()
@@ -1449,10 +1598,12 @@ class AdminService:
                 current_app.url_map._remap = True
                 current_app.url_map.update()
                 
+                print("[Route System] 路由刷新完成!\n")
                 return True
                 
             except Exception as e:
                 current_app.logger.error(f"Error refreshing routes: {str(e)}")
+                print(f"[Route System] 路由刷新失败: {str(e)}\n")
                 return False
 
     @staticmethod
