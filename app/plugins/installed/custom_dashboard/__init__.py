@@ -1,7 +1,7 @@
 from flask import render_template_string, current_app
 from flask_login import login_required
 from app.plugins import PluginBase
-from app.views.admin import admin_required
+from app.controller.admin import admin_required
 import os
 
 class Plugin(PluginBase):

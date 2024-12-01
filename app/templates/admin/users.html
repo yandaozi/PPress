@@ -39,6 +39,7 @@
                             <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">邮箱</th>
                             <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">角色</th>
                             <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">注册时间</th>
+                            <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最后登录</th>
                             <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                         </tr>
                     </thead>
@@ -79,6 +80,9 @@
                             <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ user.created_at.strftime('%Y-%m-%d %H:%M') }}
                             </td>
+                            <!--<td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                            </td>-->
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
                                 <div class="flex items-center space-x-4">
                                     <button onclick="showEditUserModal({{ user.id }}, '{{ user.username }}', '{{ user.email }}', '{{ user.role }}')"

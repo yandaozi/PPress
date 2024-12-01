@@ -67,7 +67,7 @@ def create_app(db_type=DB_TYPE, init_components=True):
     cache.init_app(app)
 
     # 注册蓝图
-    from .views import auth, blog, admin, user
+    from .controller import auth, blog, admin, user
     app.register_blueprint(auth.bp)
     app.register_blueprint(blog.bp)
     app.register_blueprint(admin.bp)
