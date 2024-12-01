@@ -124,7 +124,7 @@ app/
 
 1. git clone 克隆代码
 2. 安装依赖 pip install -r requirements.txt
-3. 配置数据库 数据库，用户，密码都是flaskiosblog
+3. 配置数据库 数据库，用户:config/database的MYSQL_CONFIG中
 4. 运行 init_db_purity.py(init_db.py为初始化测试数据库) 文件 初始化数据库，代码中有初始测试数据需要自行删除更改
 5. 运行 run.py
 
