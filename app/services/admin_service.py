@@ -723,7 +723,7 @@ class AdminService:
             # 清除主题相关缓存
             cache_manager.delete('site_config:*')
             
-            return True, '主题更新��功'
+            return True, '主题更新成功'
             
         except Exception as e:
             db.session.rollback()

@@ -5,7 +5,6 @@
 {% block head %}
 {{ super() }}
 <!-- 确保在页面头部加载必要的脚本 -->
-<script src="{{ url_for('static', filename='default/vendor/plotly.min.js') }}"></script>
 <script src="{{ url_for('static', filename='default/js/profile.js') }}"></script>
 {% endblock %}
 
