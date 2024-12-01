@@ -658,3 +658,58 @@ def clear_cache(key):
     if not success:
         return jsonify({'error': f'清除缓存失败：{message}'}), 500
     return jsonify({'message': message}), 200 
+
+@bp.route('/routes')
+@login_required
+@admin_required
+def routes():
+    """路由管理"""
+    try:
+        pagination, error = AdminService.get_routes(
+            page=request.args.get('page', 1, type=int),
+            search_query=request.args.get('q', '').strip()
+        )
+        
+        if error:
+            flash(error)
+            return redirect(url_for('admin.dashboard'))
+            
+        # 获取可用端点
+        available_endpoints = AdminService.get_available_endpoints()
+            
+        return render_template('admin/routes.html',
+                             pagination=pagination,
+                             search_query=request.args.get('q', ''),
+                             available_endpoints=available_endpoints)
+                             
+    except Exception as e:
+        current_app.logger.error(f"Routes error: {str(e)}")
+        flash('路由管理加载失败')
+        return redirect(url_for('admin.dashboard'))
+
+@bp.route('/routes/add', methods=['POST'])
+@login_required
+@admin_required
+def add_route():
+    """添加路由"""
+    success, message = AdminService.add_route(request.form)
+    flash(message)
+    return redirect(url_for('admin.routes'))
+
+@bp.route('/routes/<int:id>/edit', methods=['POST'])
+@login_required
+@admin_required
+def edit_route(id):
+    """编辑路由"""
+    success, message = AdminService.update_route(id, request.form)
+    flash(message)
+    return redirect(url_for('admin.routes'))
+
+@bp.route('/routes/<int:id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_route(id):
+    """删除路由"""
+    success, message = AdminService.delete_route(id)
+    flash(message)
+    return redirect(url_for('admin.routes')) 

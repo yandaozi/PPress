@@ -7,6 +7,7 @@ from .view_history import ViewHistory
 from .site_config import SiteConfig
 from .plugin import Plugin
 from .file import File
+from .route import Route
 
 __all__ = [
     'User',
@@ -17,5 +18,6 @@ __all__ = [
     'ViewHistory',
     'SiteConfig',
     'Plugin',
-    'File'
+    'File',
+    'Route'
 ] 

@@ -1,10 +1,14 @@
-from flask import Flask, url_for, render_template
+from flask import Flask, url_for, render_template, g
 import os
+
+from werkzeug.routing import BuildError
+
 from .extensions import db, login_manager, csrf
 from .utils.theme_manager import ThemeManager
 from app.plugins import get_plugin_manager
 from flask_caching import Cache
 from config.database import get_db_url, DB_TYPE
+from sqlalchemy import event
 
 cache = Cache()
 
@@ -32,6 +36,65 @@ def init_app_components(app):
             init_plugins(app)
             init_cache(app)
         app._components_initialized = True
+
+def init_routes(app):
+    """初始化自定义路由"""
+    from app.services.admin_service import AdminService
+    from app.models import Route
+    
+    def refresh_routes():
+        """刷新路由"""
+        with app.app_context():
+            AdminService.refresh_custom_routes()
+    
+    # 初始化路由
+    with app.app_context():
+        AdminService.refresh_custom_routes()
+    
+    # 监听会话事件
+    @event.listens_for(db.session, 'after_commit')
+    def after_commit(session):
+        for obj in session.new | session.dirty | session.deleted:
+            if isinstance(obj, Route):
+                refresh_routes()
+                break
+    
+    # 自定义 url_for 函数
+    def custom_url_for(endpoint, **values):
+        # 如果是自定义路由端点，直接使用
+        if endpoint.startswith('custom_'):
+            try:
+                return url_for(endpoint, **values)
+            except BuildError:
+                # 如果构建失败，尝试使用原始端点
+                route_id = endpoint.replace('custom_', '')
+                try:
+                    route = Route.query.get(int(route_id))
+                    if route:
+                        return url_for(route.original_endpoint, **values)
+                except:
+                    pass
+        
+        # 检查是否有活动的重写规则
+        try:
+            route = Route.query.filter_by(
+                original_endpoint=endpoint, 
+                is_active=True
+            ).first()
+            
+            if route:
+                custom_endpoint = f'custom_{route.id}'
+                # 刷新路由以确保端点存在
+                AdminService.refresh_custom_routes()
+                return url_for(custom_endpoint, **values)
+        except:
+            pass
+            
+        # 如果没有匹配的重写规则，使用原始端点
+        return url_for(endpoint, **values)
+    
+    # 替换全局 url_for
+    app.jinja_env.globals['url_for'] = custom_url_for
 
 def create_app(db_type=DB_TYPE, init_components=True):
     app = Flask(__name__)
@@ -73,9 +136,10 @@ def create_app(db_type=DB_TYPE, init_components=True):
     app.register_blueprint(admin.bp)
     app.register_blueprint(user.bp)
 
-    # 只在需要时初始化组件
+    # 初始化化路由（确保在注册蓝图之后）
     if init_components:
         init_app_components(app)
+        init_routes(app)
 
     # 注册错误处理器
     @app.errorhandler(404)

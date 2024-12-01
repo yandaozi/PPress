@@ -1,0 +1,285 @@
+{% extends theme_path('admin/base.html') %}
+
+{% block title %}路由管理{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b">
+            <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center space-y-4 lg:space-y-0">
+                <h2 class="text-xl font-bold">路由管理</h2>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full lg:w-auto">
+                    <form method="get" class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 flex-1">
+                        <div class="relative flex-1">
+                            <input type="text" name="q" value="{{ search_query }}" 
+                                   placeholder="搜索路由..." 
+                                   class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                            搜索
+                        </button>
+                    </form>
+                    <button onclick="showAddRouteModal()" 
+                            class="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                        添加路由映射
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 路由列表 -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">新路径</th>
+                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">原始路由</th>
+                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">描述</th>
+                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for route in pagination.items %}
+                    <tr>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ route.id }}</td>
+                        <td class="px-4 sm:px-6 py-4">
+                            <div class="text-sm text-blue-600">{{ route.path }}</div>
+                            <!-- 移动端显示的额外信息 -->
+                            <div class="sm:hidden mt-1 text-xs text-gray-500 space-y-1">
+                                <div>原始路由: {{ route.original_endpoint }}</div>
+                                <div>描述: {{ route.description or '无' }}</div>
+                            </div>
+                        </td>
+                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ route.original_endpoint }}
+                            {% set original_path = available_endpoints|selectattr('endpoint', 'equalto', route.original_endpoint)|map(attribute='path')|first %}
+                            {% if original_path %}
+                            <div class="text-xs text-gray-400">
+                                ({{ original_path }})
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-500">
+                            {{ route.description or '无' }}
+                        </td>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if route.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ '启用' if route.is_active else '禁用' }}
+                            </span>
+                        </td>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex items-center space-x-4">
+                                <button onclick="showEditRouteModal({{ route.id }}, '{{ route.path }}', '{{ route.original_endpoint }}', '{{ route.description or '' }}', {{ route.is_active|tojson }})" 
+                                        class="text-blue-600 hover:text-blue-900">编辑</button>
+                                <button onclick="deleteRoute({{ route.id }})" 
+                                        class="text-red-600 hover:text-red-900">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if pagination.pages > 1 %}
+        <div class="px-6 py-4 mt-4 border-t">
+            {% with endpoint='admin.routes', kwargs={'q': search_query} %}
+            {% include 'components/pagination.html' %}
+            {% endwith %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 添加路由模态框 -->
+<div id="addRouteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div class="px-6 py-4 border-b">
+            <h3 class="text-lg font-medium">添加路由映射</h3>
+        </div>
+        <form id="addRouteForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">选择原始路由</label>
+                <select name="endpoint" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-0">
+                    {% for endpoint in available_endpoints %}
+                    <option value="{{ endpoint.endpoint }}">
+                        {{ endpoint.endpoint }} ({{ endpoint.path }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">新路径</label>
+                <input type="text" name="path" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-0"
+                       placeholder="/new-path">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">描述</label>
+                <textarea name="description" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-0"></textarea>
+            </div>
+            <div class="flex items-center mt-4">
+                <input type="checkbox" name="is_active" id="add_is_active" checked
+                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <label for="add_is_active" class="ml-2 text-sm text-gray-700">启用路由</label>
+            </div>
+        </form>
+        <div class="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
+            <button onclick="hideAddRouteModal()"
+                    class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200">取消</button>
+            <button onclick="addRoute()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">添加</button>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑路由模态框 -->
+<div id="editRouteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div class="px-6 py-4 border-b">
+            <h3 class="text-lg font-medium">编辑路由映射</h3>
+        </div>
+        <form id="editRouteForm" class="p-6 space-y-4">
+            <input type="hidden" name="route_id">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">原始端点</label>
+                <input type="text" name="original_endpoint" readonly
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">新路径</label>
+                <input type="text" name="path" required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-0"
+                       placeholder="/new-path">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">描述</label>
+                <textarea name="description" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-0"></textarea>
+            </div>
+            <div class="flex items-center mt-4">
+                <input type="checkbox" name="is_active" id="is_active"
+                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                <label for="is_active" class="ml-2 text-sm text-gray-700">启用路由</label>
+            </div>
+        </form>
+        <div class="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
+            <button onclick="hideEditRouteModal()"
+                    class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200">取消</button>
+            <button onclick="updateRoute()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function showAddRouteModal() {
+    document.getElementById('addRouteModal').classList.remove('hidden');
+    document.getElementById('addRouteModal').classList.add('flex');
+}
+
+function hideAddRouteModal() {
+    document.getElementById('addRouteModal').classList.add('hidden');
+    document.getElementById('addRouteModal').classList.remove('flex');
+    document.getElementById('addRouteForm').reset();
+}
+
+function addRoute() {
+    const form = document.getElementById('addRouteForm');
+    const formData = new FormData(form);
+    
+    fetch('{{ url_for("admin.add_route") }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            showAlert('路由添加成功', 'success', '成功');
+            setTimeout(() => location.reload(), 300);
+        } else {
+            response.text().then(text => {
+                showAlert(text, 'error', '错误');
+            });
+        }
+    });
+}
+
+function deleteRoute(routeId) {
+    showAlert('确定要删除此路由吗？', 'warning', '确认删除', function() {
+        fetch(`/admin/routes/${routeId}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                showAlert('路由删除成功', 'success', '成功');
+                setTimeout(() => location.reload(), 300);
+            } else {
+                response.text().then(text => {
+                    showAlert(text, 'error', '错误');
+                });
+            }
+        });
+    });
+}
+
+function showEditRouteModal(id, path, endpoint, description, isActive) {
+    const form = document.getElementById('editRouteForm');
+    form.route_id.value = id;
+    form.original_endpoint.value = endpoint;
+    form.path.value = path;
+    form.description.value = description || '';
+    form.is_active.checked = Boolean(isActive);
+    
+    document.getElementById('editRouteModal').classList.remove('hidden');
+    document.getElementById('editRouteModal').classList.add('flex');
+}
+
+function hideEditRouteModal() {
+    document.getElementById('editRouteModal').classList.add('hidden');
+    document.getElementById('editRouteModal').classList.remove('flex');
+    document.getElementById('editRouteForm').reset();
+}
+
+function updateRoute() {
+    const form = document.getElementById('editRouteForm');
+    const routeId = form.route_id.value;
+    const formData = new FormData(form);
+    
+    formData.set('is_active', form.is_active.checked);
+    
+    fetch(`/admin/routes/${routeId}/edit`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            showAlert('路由更新成功', 'success', '成功');
+            setTimeout(() => location.reload(), 300);
+        } else {
+            response.text().then(text => {
+                showAlert(text, 'error', '错误');
+            });
+        }
+    });
+}
+</script>
+{% endblock %} 

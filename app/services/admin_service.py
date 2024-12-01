@@ -1,6 +1,6 @@
-from flask import current_app
+from flask import current_app, url_for, abort, g, request
 
-from app.models import User, Article, Comment, ViewHistory, Category, Tag, Plugin, File, SiteConfig
+from app.models import User, Article, Comment, ViewHistory, Category, Tag, Plugin, File, SiteConfig, Route
 from app.utils.cache_manager import cache_manager
 from app.plugins import plugin_manager
 
@@ -16,6 +16,7 @@ import flask
 import sqlalchemy
 
 from app.utils.pagination import Pagination
+from threading import Lock
 
 
 def format_size(size):
@@ -28,6 +29,8 @@ def format_size(size):
         return f"{size} B"
 
 class AdminService:
+    _route_lock = Lock()
+    
     @staticmethod
     def get_dashboard_data():
         """获取仪表盘数据"""
@@ -425,7 +428,7 @@ class AdminService:
 
     @staticmethod
     def delete_category(category_id):
-        """删除分类"""
+        """除分类"""
         try:
             category = Category.query.get_or_404(category_id)
             
@@ -446,7 +449,7 @@ class AdminService:
                 'category_id': default_category.id
             })
             
-            # 更新默认分类文章计数
+            # 更新默认分文章计数
             default_category.article_count += articles_count
             
             # 删除分类
@@ -845,7 +848,7 @@ class AdminService:
                 if plugin_manager.reload_plugin(plugin_name):
                     status = '启用'
                 else:
-                    # 加载失败时回滚状态
+                    # 加载失败时回滚
                     plugin.enabled = False
                     db.session.commit()
                     return False, '插件加载失败'
@@ -892,9 +895,9 @@ class AdminService:
                 return False, '没有选择文件'
             
             if not file.filename.endswith('.zip'):
-                return False, '只支持 zip 格式的插件包'
+                return False, '只支持 zip 式的插件包'
             
-            # 创建临时目录
+            # 创建时目录
             temp_dir = tempfile.mkdtemp()
             zip_path = os.path.join(temp_dir, file.filename)
             
@@ -910,7 +913,7 @@ class AdminService:
                 if not os.path.exists(os.path.join(temp_dir, 'plugin.json')):
                     return False, '无效的插件格式'
                 
-                # 读取插件信息
+                # 读取插件信
                 with open(os.path.join(temp_dir, 'plugin.json'), 'r', encoding='utf-8') as f:
                     plugin_info = json.load(f)
                 
@@ -1251,3 +1254,222 @@ class AdminService:
         except Exception as e:
             current_app.logger.error(f"Clear single cache error: {str(e)}")
             return False, str(e)
+
+    @staticmethod
+    def get_routes(page=1, search_query=''):
+        """获取路由列表"""
+        try:
+            # 检查表是否存在的正确方式
+            inspector = db.inspect(db.engine)
+            if 'routes' not in inspector.get_table_names():
+                db.create_all()
+            
+            query = Route.query
+            
+            if search_query:
+                query = query.filter(
+                    db.or_(
+                        Route.path.like(f'%{search_query}%'),
+                        Route.original_endpoint.like(f'%{search_query}%'),
+                        Route.title.like(f'%{search_query}%')
+                    )
+                )
+            
+            # 使用通用分页类
+            items = query.order_by(Route.id.desc()).all()
+            if items is None:
+                items = []
+            
+            per_page = 10
+            total = len(items)
+            total_pages = (total + per_page - 1) // per_page if total > 0 else 1
+            page = min(max(page, 1), total_pages)
+            start = (page - 1) * per_page
+            end = start + per_page
+
+            pagination = Pagination(
+                items=items[start:end],
+                total=total,
+                page=page,
+                per_page=per_page,
+                total_pages=total_pages
+            )
+            
+            return pagination, None
+        
+        except Exception as e:
+            current_app.logger.error(f"Get routes error: {str(e)}")
+            return Pagination(
+                items=[],
+                total=0,
+                page=1,
+                per_page=10,
+                total_pages=1
+            ), str(e)
+
+    @staticmethod
+    def add_route(data):
+        """添加路由映射"""
+        try:
+            if Route.query.filter_by(path=data['path']).first():
+                return False, '路由路径已存在'
+            
+            route = Route(
+                path=data['path'],
+                original_endpoint=data['endpoint'],
+                description=data.get('description'),
+                is_active=bool(data.get('is_active', True))
+            )
+            
+            db.session.add(route)
+            db.session.commit()
+            return True, '路由映射添加成功'
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, str(e)
+
+    @staticmethod
+    def update_route(route_id, data):
+        """更新路由"""
+        try:
+            route = Route.query.get_or_404(route_id)
+            
+            if data['path'] != route.path and Route.query.filter_by(path=data['path']).first():
+                return False, '路由路径已存在'
+            
+            route.path = data['path']
+            route.description = data.get('description', '')
+            route.is_active = data.get('is_active', '').lower() in ('true', 'on', '1', 'yes')
+            
+            db.session.commit()
+            return True, '路由更新成功'
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, str(e)
+
+    @staticmethod
+    def delete_route(route_id):
+        """删除路由"""
+        try:
+            route = Route.query.get_or_404(route_id)
+            db.session.delete(route)
+            db.session.commit()
+            return True, '路由删除成功'
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, str(e)
+
+    @staticmethod
+    def refresh_custom_routes():
+        """刷新自定义路由"""
+        from flask import current_app, abort, url_for
+        from werkzeug.routing import Rule
+        
+        with AdminService._route_lock:
+            try:
+                # 1. 清理所有自定义路由
+                rules_to_remove = []
+                endpoints_to_remove = set()
+                
+                for rule in current_app.url_map.iter_rules():
+                    if hasattr(rule, 'is_custom_route'):
+                        rules_to_remove.append(rule)
+                        endpoints_to_remove.add(rule.endpoint)
+                
+                # 移除旧路由规则和视图函数
+                for rule in rules_to_remove:
+                    current_app.url_map._rules.remove(rule)
+                    if rule.endpoint in current_app.url_map._rules_by_endpoint:
+                        current_app.url_map._rules_by_endpoint[rule.endpoint].remove(rule)
+                        if not current_app.url_map._rules_by_endpoint[rule.endpoint]:
+                            del current_app.url_map._rules_by_endpoint[rule.endpoint]
+                    # 恢复原始视图函数
+                    original_endpoint = rule.endpoint.replace('custom_', '')
+                    route = Route.query.get(int(original_endpoint))
+                    if route and route.original_endpoint in current_app.view_functions:
+                        current_app.view_functions[route.original_endpoint] = current_app.view_functions.get(rule.endpoint)
+                    # 清理自定义视图函数
+                    if rule.endpoint in current_app.view_functions:
+                        del current_app.view_functions[rule.endpoint]
+                
+                # 2. 获取所有活动路由
+                active_routes = Route.query.filter_by(is_active=True).all()
+                
+                # 3. 处理每个活动路由
+                for route in active_routes:
+                    original_endpoint = route.original_endpoint
+                    original_view = None
+                    original_rule = None
+                    
+                    # 查找原始路由规则
+                    for rule in current_app.url_map.iter_rules():
+                        if rule.endpoint == original_endpoint:
+                            original_rule = rule
+                            original_view = current_app.view_functions.get(original_endpoint)
+                            break
+                    
+                    if not original_rule or not original_view:
+                        continue
+                    
+                    # 创建新的路由规则
+                    new_path = route.path if route.path.startswith('/') else '/' + route.path
+                    custom_endpoint = f'custom_{route.id}'
+                    
+                    # 保存原始视图函数的副本
+                    if original_endpoint in current_app.view_functions:
+                        original_view = current_app.view_functions[original_endpoint]
+                    
+                    # 添加新路由规则
+                    new_rule = Rule(
+                        new_path,
+                        endpoint=custom_endpoint,
+                        methods=original_rule.methods,
+                        defaults=original_rule.defaults,
+                        subdomain=original_rule.subdomain,
+                        strict_slashes=original_rule.strict_slashes,
+                        build_only=original_rule.build_only,
+                        redirect_to=original_rule.redirect_to
+                    )
+                    new_rule.is_custom_route = True
+                    current_app.url_map.add(new_rule)
+                    
+                    # 注册新的视图函数
+                    current_app.view_functions[custom_endpoint] = original_view
+                    
+                    # 让原始路由返回404
+                    current_app.view_functions[original_endpoint] = lambda *args, **kwargs: abort(404)
+                
+                # 4. 更新路由表
+                current_app.url_map.update()
+                
+                # 5. 强制更新路由缓存
+                current_app.url_map._remap = True
+                current_app.url_map.update()
+                
+                return True
+                
+            except Exception as e:
+                current_app.logger.error(f"Error refreshing routes: {str(e)}")
+                return False
+
+    @staticmethod
+    def get_available_endpoints():
+        """获取所有可用的端点"""
+        from flask import current_app
+        
+        endpoints = []
+        for rule in current_app.url_map.iter_rules():
+            # 排除静态文件路由和自定义路由
+            if not rule.endpoint.startswith('static') and not hasattr(rule, 'is_custom_route'):
+                # 检查是否已经被重写
+                route = Route.query.filter_by(original_endpoint=rule.endpoint, is_active=True).first()
+                if not route:
+                    endpoints.append({
+                        'endpoint': rule.endpoint,
+                        'path': rule.rule,
+                        'methods': list(rule.methods)
+                    })
+        return endpoints
