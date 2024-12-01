@@ -83,7 +83,7 @@ def init_db(db_type='mysql'):
             conn.close()
     
     # 创建应用实例
-    app = create_app(db_type=db_type)
+    app = create_app(db_type=db_type,init_components=False)
     
     with app.app_context():
         print(f"\n开始初始化1000条测试数据到 {db_type} 数据库...")

@@ -33,7 +33,7 @@ def init_app_components(app):
             init_cache(app)
         app._components_initialized = True
 
-def create_app(config_name='default', db_type=DB_TYPE):
+def create_app(db_type=DB_TYPE, init_components=True):
     app = Flask(__name__)
 
     # 配置
@@ -73,8 +73,9 @@ def create_app(config_name='default', db_type=DB_TYPE):
     app.register_blueprint(admin.bp)
     app.register_blueprint(user.bp)
 
-    # 直接初始化组件
-    init_app_components(app)
+    # 只在需要时初始化组件
+    if init_components:
+        init_app_components(app)
 
     # 注册错误处理器
     @app.errorhandler(404)

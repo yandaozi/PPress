@@ -187,21 +187,24 @@ class UserService:
         try:
             # 获取活跃用户列表(比如最近登录的前10个用户)
             active_users = User.query.order_by(User.last_login.desc()).limit(10).all()
-            
-            for user in active_users:
-                # 预热每个活跃用户的基础数据
-                warmup_keys = {
-                    f'user:{user.id}:articles:1': lambda: UserService.get_user_articles(user.id, 1),
-                    f'user:{user.id}:stats': lambda: UserService.get_user_stats(user.id),
-                    f'user:{user.id}:history:1': lambda: UserService.get_view_history(user.id, 1),
-                    f'user:{user.id}:sentiment': lambda: UserService.get_user_sentiment_stats(user.id)
-                }
-                
-                cache_manager.warmup(warmup_keys)
-                
+
+            with db.session.no_autoflush:  # 使用 no_autoflush 上下文
+                for user in active_users:
+                    # 预热每个活跃用户的基础数据
+                    warmup_keys = {
+                        f'user:{user.id}:articles:1': lambda: UserService.get_user_articles(user.id, 1),
+                        f'user:{user.id}:stats': lambda: UserService.get_user_stats(user.id)
+                    }
+
+                    # 移除可能导致问题的预热项
+                    # f'user:{user.id}:history:1': lambda: UserService.get_view_history(user.id, 1),
+                    # f'user:{user.id}:sentiment': lambda: UserService.get_user_sentiment_stats(user.id)
+
+                    cache_manager.warmup(warmup_keys)
+
             current_app.logger.info(f"User cache warmed up for {len(active_users)} active users")
             return True
-            
+
         except Exception as e:
             current_app.logger.error(f"User cache warmup error: {str(e)}")
             return False
