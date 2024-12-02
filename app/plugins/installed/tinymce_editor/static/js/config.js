@@ -1,3 +1,4 @@
+
 // TinyMCE 默认配置
 window.TINYMCE_CONFIG = {
     // 基础配置
@@ -5,7 +6,7 @@ window.TINYMCE_CONFIG = {
     branding: false,
     
     // 插件配置
-    plugins: [
+    /*plugins: [
         'advlist',
         'anchor',
         'autolink',
@@ -33,7 +34,7 @@ window.TINYMCE_CONFIG = {
         'visualblocks',
         'visualchars',
         'wordcount'
-    ],
+    ],*/
     
     // 工具栏配置
     toolbar: [
@@ -109,43 +110,9 @@ window.TINYMCE_CONFIG = {
         { text: 'C', value: 'c' },
         { text: 'C++', value: 'cpp' }
     ],
-    // 根据当前主题设置皮肤
-    skin: isDarkMode ? 'oxide-dark' : 'oxide',
-    content_css: isDarkMode ? 'dark' : 'default',
-    // 设置编辑器内容的样式
-    content_style: `
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            font-size: 16px;
-            line-height: 1.6;
-            padding: 1rem;
-            background-color: ${isDarkMode ? '#1f2937' : '#ffffff'};
-            color: ${isDarkMode ? '#e5e7eb' : '#000000'};
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 0.375rem;
-        }
-        pre {
-            background: ${isDarkMode ? '#374151' : '#f4f4f4'};
-            padding: 1rem;
-            border-radius: 0.375rem;
-            color: ${isDarkMode ? '#e5e7eb' : '#1f2937'};
-        }
-        blockquote {
-            border-left: 4px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'};
-            padding-left: 1rem;
-            margin-left: 0;
-            color: ${isDarkMode ? '#9ca3af' : '#6b7280'};
-        }
-        .dark-theme {
-            background-color: #1f2937;
-            color: #e5e7eb;
-        }
-    `,
+
     // 监听主题变化
-    setup: function(editor) {
+    /*setup: function(editor) {
         // 等待编辑器初始化完成后再设置初始主题
         editor.on('init', function() {
             // 设置初始主题
@@ -186,5 +153,5 @@ window.TINYMCE_CONFIG = {
             attributeFilter: ['class']
         });
     }
-
+*/
 }; 

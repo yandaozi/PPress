@@ -3,10 +3,7 @@
 {% block title %}{{ '编辑文章' if article else '创建文章' }}{% endblock %}
 
 {% block head %}
-<script>
-    // 在 tinymce.init 之前添加主题检测
-    const isDarkMode = document.documentElement.classList.contains('dark');
-</script>
+
 {% endblock %}
 
 {% block content %}

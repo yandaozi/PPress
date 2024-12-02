@@ -23,10 +23,29 @@
             
             <!-- 插件设置 -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    启用的插件
-                </label>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="flex justify-between items-center mb-4">
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        启用的插件
+                    </label>
+                    <div class="space-x-2">
+                        <button type="button" 
+                                onclick="toggleAllPlugins(true)"
+                                class="px-2 py-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                            全选
+                        </button>
+                        <button type="button" 
+                                onclick="toggleAllPlugins(false)"
+                                class="px-2 py-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                            取消全选
+                        </button>
+                        <button type="button" 
+                                onclick="invertPluginSelection()"
+                                class="px-2 py-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                            反选
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="plugins-container">
                     {% set available_plugins = [
                         'advlist', 'anchor', 'autolink', 'autoresize', 'autosave',
                         'charmap', 'code', 'codesample', 'directionality', 'emoticons',
@@ -47,17 +66,6 @@
                     {% endfor %}
                 </div>
             </div>
-            
-            <!-- 图片上传设置 -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    上传URL
-                </label>
-                <input type="text" 
-                       name="image_upload_url" 
-                       value="{{ settings.get('image_upload_url') }}"
-                       class="mt-2 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
-            </div>
         </div>
     </div>
     
@@ -67,4 +75,68 @@
             保存设置
         </button>
     </div>
-</form> 
+</form>
+
+<script>
+// 全选/取消全选插件
+function toggleAllPlugins(checked) {
+    const checkboxes = document.querySelectorAll('#plugins-container input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = checked;
+    });
+}
+
+// 反选插件
+function invertPluginSelection() {
+    const checkboxes = document.querySelectorAll('#plugins-container input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = !checkbox.checked;
+    });
+}
+
+// 处理表单提交
+function handleSettingsSubmit(form) {
+    const formData = new FormData(form);
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 显示成功消息
+            showToast('success', data.message);
+            // 延迟刷新页面
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            // 显示错误消息
+            showToast('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', '保存设置失败');
+    });
+}
+
+// 显示提示消息
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ${
+        type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    } text-white`;
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+    
+    // 2秒后移除提示
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+}
+</script> 

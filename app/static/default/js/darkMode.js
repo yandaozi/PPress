@@ -12,7 +12,7 @@ function getThemePreference() {
 
 // 设置主题
 function setTheme(isDark) {
-    console.log('Setting theme:', isDark ? 'dark' : 'light');
+    //console.log('Setting theme:', isDark ? 'dark' : 'light');
     const html = document.documentElement;
     
     if (isDark) {
@@ -47,20 +47,20 @@ function setTheme(isDark) {
         darkIcon.classList.remove('hidden');
     }
     
-    console.log('Theme updated:', isDark ? 'dark' : 'light');
-    console.log('Dark class present:', html.classList.contains('dark'));
+    //console.log('Theme updated:', isDark ? 'dark' : 'light');
+    //console.log('Dark class present:', html.classList.contains('dark'));
 }
 
 // 初始化主题
 function initTheme() {
-    console.log('Initializing theme...');
+    //console.log('Initializing theme...');
     const isDark = getThemePreference();
     setTheme(isDark);
 }
 
 // 在全局作用域定义 toggleTheme 函数
 window.toggleTheme = function() {
-    console.log('Toggle theme clicked!');
+    //console.log('Toggle theme clicked!');
     const isDark = document.documentElement.classList.contains('dark');
     setTheme(!isDark);
 };
