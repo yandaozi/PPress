@@ -137,9 +137,46 @@
 </div>
 
 <script>
+    // 初始化变量
+    const tagInput = document.getElementById('tag-input');
+    const tagNames = document.getElementById('tag-names');
+    const selectedTags = document.getElementById('selected-tags');
+    const suggestions = document.getElementById('tag-suggestions');
+    let currentTags = new Set(tagNames.value.split(' ').filter(Boolean));
+
+    // 处理标签输入
+    tagInput.addEventListener('keydown', function(e) {
+        if ((e.key === ' ' || e.key === 'Enter') && this.value.trim()) {
+            e.preventDefault();
+            addTag(this.value);
+        } else if (e.key === 'Backspace' && !this.value) {
+            // 当输入框为空时，按退格键删除最后一个标签
+            e.preventDefault();
+            const tags = Array.from(currentTags);
+            if (tags.length > 0) {
+                const lastTag = selectedTags.lastElementChild;
+                if (lastTag) {
+                    const tagName = lastTag.textContent.trim().slice(0, -1);
+                    removeTag(lastTag.querySelector('button'));
+                }
+            }
+        }
+    });
+
+    // 处理失去焦点事件
+    tagInput.addEventListener('blur', function() {
+        const value = this.value.trim();
+        if (value) {
+            addTag(value);
+        }
+    });
+
     function addTag(tagName) {
         const name = tagName.trim();
-        if (!name || currentTags.has(name)) return;
+        if (!name || currentTags.has(name)) {
+            tagInput.value = '';
+            return;
+        }
         
         currentTags.add(name);
         const tag = document.createElement('span');
@@ -155,11 +192,14 @@
         selectedTags.appendChild(tag);
         updateTagNames();
         tagInput.value = '';
+        
+        // 隐藏建议框
+        suggestions.classList.add('hidden');
     }
 
     function removeTag(button) {
         const tag = button.parentElement;
-        const name = tag.textContent.trim().slice(0, -1);
+        const name = tag.childNodes[0].textContent.trim();
         currentTags.delete(name);
         tag.remove();
         updateTagNames();
@@ -173,24 +213,6 @@
         addTag(name);
         suggestions.classList.add('hidden');
     }
-
-    // 初始化变量
-    const tagInput = document.getElementById('tag-input');
-    const tagNames = document.getElementById('tag-names');
-    const selectedTags = document.getElementById('selected-tags');
-    const suggestions = document.getElementById('tag-suggestions');
-    let currentTags = new Set(tagNames.value.split(' ').filter(Boolean));
-
-    // 处理标签输入
-    tagInput.addEventListener('keydown', function(e) {
-        if (e.key === ' ' || e.key === 'Enter') {
-            e.preventDefault();
-            const value = this.value.trim();
-            if (value) {
-                addTag(value);
-            }
-        }
-    });
 
     // 获取标签建议
     let debounceTimer;
