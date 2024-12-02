@@ -1,0 +1,9 @@
+{
+    "name": "TinyMCE Editor",
+    "description": "集成TinyMCE富文本编辑器，支持自定义配置",
+    "version": "1.0.0",
+    "author": "言道子",
+    "author_url": "https://gitee.com/fojie",
+    "plugin_class": "Plugin",
+    "enabled": true
+} 

@@ -1,0 +1,70 @@
+<form class="space-y-8" method="post" action="/admin/plugins/tinymce_editor/settings/save"
+      onsubmit="event.preventDefault(); handleSettingsSubmit(this);">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="space-y-6">
+        <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">编辑器设置</h3>
+            <p class="mt-1 text-sm text-gray-500">配置TinyMCE编辑器的功能和外观</p>
+        </div>
+        
+        <div class="space-y-6">
+            <!-- 基础设置 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    编辑器高度 (px)
+                </label>
+                <input type="number" 
+                       name="height" 
+                       value="{{ settings.height }}"
+                       min="200"
+                       class="mt-2 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+            </div>
+            
+            <!-- 插件设置 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    启用的插件
+                </label>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {% set available_plugins = [
+                        'advlist', 'anchor', 'autolink', 'autoresize', 'autosave',
+                        'charmap', 'code', 'codesample', 'directionality', 'emoticons',
+                        'fullscreen', 'help', 'image', 'importcss', 'insertdatetime',
+                        'link', 'lists', 'media', 'nonbreaking', 'pagebreak', 'preview',
+                        'quickbars', 'save', 'searchreplace', 'visualblocks', 'visualchars',
+                        'wordcount'
+                    ] %}
+                    {% for plugin in available_plugins %}
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" 
+                               name="plugins[]" 
+                               value="{{ plugin }}"
+                               {% if plugin in settings.plugins %}checked{% endif %}
+                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ plugin }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- 图片上传设置 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    上传URL
+                </label>
+                <input type="text" 
+                       name="image_upload_url" 
+                       value="{{ settings.get('image_upload_url') }}"
+                       class="mt-2 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md">
+            </div>
+        </div>
+    </div>
+    
+    <div class="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button type="submit" 
+                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none transition-colors duration-200">
+            保存设置
+        </button>
+    </div>
+</form> 

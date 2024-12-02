@@ -1,0 +1,64 @@
+<!-- 引入编辑器样式 -->
+<link rel="stylesheet" type="text/css" href="{{ static_url }}/css/edit.css" />
+
+<!-- 引入编辑器核心文件 -->
+<script src="{{ static_url }}/js/tinymce.min.js"></script>
+
+<!-- 引入语言包 -->
+<script src="{{ static_url }}/js/langs/zh_CN.js"></script>
+
+<!-- 引入配置文件 -->
+<script src="{{ static_url }}/js/config.js"></script>
+
+<script>
+window.addEventListener('load', function() {
+    // 从meta标签获取csrf token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    // 获取基础配置
+    const editorConfig = Object.assign({}, window.TINYMCE_CONFIG, {
+        selector: '{{ config.selector }}',
+        base_url: '{{ static_url }}/js',
+        
+        // 自动保存设置
+        autosave_ask_before_unload: true,
+        autosave_interval: '30s',
+        autosave_prefix: '{{ autosave_prefix }}',
+        autosave_restore_when_empty: false,
+        autosave_retention: '2m',
+        
+        // 图片上传设置
+        images_upload_handler: function (blobInfo, progress) {
+            return new Promise((resolve, reject) => {
+                const formData = new FormData();
+                formData.append('upload', blobInfo.blob(), blobInfo.filename());
+                formData.append('csrf_token', csrfToken);
+
+                fetch('{{ url_for("blog.upload_image") }}', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin'
+                })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.location) {
+                            resolve(result.location);
+                        } else {
+                            reject('上传失败：' + (result.error || '未知错误'));
+                        }
+                    })
+                    .catch(error => {
+                        reject('上传失败：' + error);
+                    });
+            });
+        },
+        image_dimensions: false,
+        image_class_list: [
+            { title: '响应式', value: 'img-fluid' }
+        ],
+    });
+
+    // 初始化编辑器
+    tinymce.init(editorConfig);
+});
+</script> 
