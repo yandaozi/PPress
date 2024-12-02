@@ -19,6 +19,8 @@ from app.utils.pagination import Pagination
 from threading import Lock
 import time
 
+from app.utils.route_manager import route_manager
+
 
 def format_size(size):
     """格式化文件大小显示"""
@@ -1263,10 +1265,40 @@ class AdminService:
             return False, str(e)
 
     @staticmethod
+    def add_route(data):
+        """添加路由映射"""
+        return route_manager.add_route(data)
+
+    @staticmethod
+    def update_route(route_id, data):
+        """更新路由"""
+        return route_manager.update_route(route_id, data)
+
+    @staticmethod
+    def delete_route(route_id):
+        """删除路由"""
+        return route_manager.delete_route(route_id)
+
+    @staticmethod
+    def toggle_route(route_id):
+        """启用/禁用路由"""
+        return route_manager.toggle_route(route_id)
+
+    @staticmethod
+    def refresh_custom_routes():
+        """刷新自定义路由"""
+        return route_manager.refresh_routes()
+
+    @staticmethod
+    def get_available_endpoints():
+        """获取可用端点"""
+        return route_manager.get_available_endpoints()
+
+    @staticmethod
     def get_routes(page=1, search_query=''):
         """获取路由列表"""
         try:
-            # 检查表是否存在的正确方式
+            # 检查表是否存在
             inspector = db.inspect(db.engine)
             if 'routes' not in inspector.get_table_names():
                 db.create_all()
@@ -1278,7 +1310,7 @@ class AdminService:
                     db.or_(
                         Route.path.like(f'%{search_query}%'),
                         Route.original_endpoint.like(f'%{search_query}%'),
-                        Route.title.like(f'%{search_query}%')
+                        Route.description.like(f'%{search_query}%')
                     )
                 )
 
@@ -1318,29 +1350,28 @@ class AdminService:
     def add_route(data):
         """添加路由映射"""
         try:
+            # 检查路径是否已存在
             if Route.query.filter_by(path=data['path']).first():
                 return False, '路由路径已存在'
 
+            # 创建新路由
             route = Route(
                 path=data['path'],
                 original_endpoint=data['endpoint'],
-                description=data.get('description'),
-                is_active=bool(data.get('is_active', True))
+                description=data.get('description', ''),
+                is_active=True
             )
 
             db.session.add(route)
             db.session.commit()
 
-            # 清除路由缓存
-            cache_manager.delete('routes_last_refresh')
-            cache_manager.delete(f'route_status:{data["endpoint"]}')
             # 刷新路由
-            AdminService.refresh_custom_routes()
-
-            return True, '路由映射添加成功'
+            route_manager.refresh_routes()
+            return True, '路由添加成功'
 
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(f"Add route error: {str(e)}")
             return False, str(e)
 
     @staticmethod
@@ -1348,79 +1379,17 @@ class AdminService:
         """更新路由"""
         try:
             route = Route.query.get_or_404(route_id)
-
             if data['path'] != route.path and Route.query.filter_by(path=data['path']).first():
                 return False, '路由路径已存在'
 
-            # 保存旧的信息用于清理
-            old_endpoint = route.original_endpoint
-            old_custom_endpoint = f'custom_{route.id}'
-            old_path = route.path
-
-            # 更新路由信息
             route.path = data['path']
             route.description = data.get('description', '')
             route.is_active = data.get('is_active', '').lower() in ('true', 'on', '1', 'yes')
-
             db.session.commit()
 
-            # 清除路由缓存
-            cache_manager.delete('routes_last_refresh')
-            cache_manager.delete(f'route_status:{old_endpoint}')
-
-            # 手动清理旧路由规则
-            with AdminService._route_lock:
-                rules_to_remove = []
-                for rule in current_app.url_map.iter_rules():
-                    # 检查是否是要清理的旧路由
-                    if (hasattr(rule, 'is_custom_route') and
-                        (rule.endpoint == old_custom_endpoint or
-                         rule.rule == old_path or
-                         rule.rule == ('/' + old_path.lstrip('/')) or
-                         # 添加对旧路径的更严格检查
-                         rule.rule.rstrip('/') == old_path.rstrip('/'))):
-                        rules_to_remove.append(rule)
-
-                # 移除旧路由规则
-                for rule in rules_to_remove:
-                    try:
-                        # 从 url_map 中移除规则
-                        current_app.url_map._rules.remove(rule)
-
-                        # 从 _rules_by_endpoint 中移除规则
-                        if rule.endpoint in current_app.url_map._rules_by_endpoint:
-                            current_app.url_map._rules_by_endpoint[rule.endpoint].remove(rule)
-                            if not current_app.url_map._rules_by_endpoint[rule.endpoint]:
-                                del current_app.url_map._rules_by_endpoint[rule.endpoint]
-
-                        # 恢复原始视图函数
-                        original_endpoint = rule.endpoint.replace('custom_', '')
-                        route = Route.query.get(int(original_endpoint))
-                        if route and route.original_endpoint in current_app.view_functions:
-                            original_view = current_app.view_functions.get(route.original_endpoint)
-                            if original_view and original_view.__name__ == '<lambda>':
-                                # 如果是 404 处理函数，恢复原始视图
-                                original_view = current_app.view_functions.get(rule.endpoint)
-                                if original_view:
-                                    current_app.view_functions[route.original_endpoint] = original_view
-
-                        # 清理自定义视图函数
-                        if rule.endpoint in current_app.view_functions:
-                            del current_app.view_functions[rule.endpoint]
-
-                        print(f"[Route System] 已清理路由: {rule.rule} -> {rule.endpoint}")
-                    except Exception as e:
-                        print(f"[Route System] 清理路由时出错: {rule.rule} -> {str(e)}")
-
-            # 强制更新路由表
-            current_app.url_map.update()
-            current_app.url_map._remap = True
-
-            # 刷新路由以添加新路由
-            AdminService.refresh_custom_routes()
-
+            # 刷新路由
+            route_manager.refresh_routes()
             return True, '路由更新成功'
-
         except Exception as e:
             db.session.rollback()
             return False, str(e)
@@ -1430,21 +1399,12 @@ class AdminService:
         """删除路由"""
         try:
             route = Route.query.get_or_404(route_id)
-            
-            # 保存端点用于清除缓存
-            endpoint = route.original_endpoint
-            
             db.session.delete(route)
             db.session.commit()
             
-            # 清除路由缓存
-            cache_manager.delete('routes_last_refresh')
-            cache_manager.delete(f'route_status:{endpoint}')
             # 刷新路由
-            AdminService.refresh_custom_routes()
-            
+            route_manager.refresh_routes()
             return True, '路由删除成功'
-            
         except Exception as e:
             db.session.rollback()
             return False, str(e)
@@ -1455,168 +1415,25 @@ class AdminService:
         try:
             route = Route.query.get_or_404(route_id)
             route.is_active = not route.is_active
-            
-            # 清除路由缓存
-            cache_manager.delete('routes_last_refresh')
-            cache_manager.delete(f'route_status:{route.original_endpoint}')
-            
             db.session.commit()
             
             # 刷新路由
-            AdminService.refresh_custom_routes()
-            
+            route_manager.refresh_routes()
             return True, f'路由已{"启用" if route.is_active else "禁用"}'
-            
         except Exception as e:
             db.session.rollback()
             return False, str(e)
 
     @staticmethod
-    def refresh_custom_routes():
-        """刷新自定义路由"""
-        from flask import current_app, abort, url_for
-        from werkzeug.routing import Rule
-        
-        # 使用缓存检查是否需要刷新
-        cache_key = 'routes_last_refresh'
-        last_refresh = cache_manager.get(cache_key)
-        current_time = time.time()
-        
-        # 如果距离上次刷新不到1秒，跳过
-        if last_refresh and current_time - last_refresh < 1:
-            return True
-        
-        with AdminService._route_lock:
-            try:
-                print("\n[Route System] 开始刷新路由...")
-                
-                # 更新刷新时间
-                cache_manager.set(cache_key, current_time)
-                
-                # 清除路由状态缓存
-                route_keys = [k for k in cache_manager._cache.keys() if k.startswith('route_status:')]
-                for key in route_keys:
-                    cache_manager.delete(key)
-                
-                # 1. 清理所有自定义路由
-                rules_to_remove = []
-                endpoints_to_remove = set()
-                
-                for rule in current_app.url_map.iter_rules():
-                    if hasattr(rule, 'is_custom_route'):
-                        rules_to_remove.append(rule)
-                        endpoints_to_remove.add(rule.endpoint)
-                
-                print(f"[Route System] 找到 {len(rules_to_remove)} 个需要清理的自定义路由")
-                
-                # 移除旧路由规则和视图函数
-                for rule in rules_to_remove:
-                    try:
-                        current_app.url_map._rules.remove(rule)
-                        if rule.endpoint in current_app.url_map._rules_by_endpoint:
-                            current_app.url_map._rules_by_endpoint[rule.endpoint].remove(rule)
-                            if not current_app.url_map._rules_by_endpoint[rule.endpoint]:
-                                del current_app.url_map._rules_by_endpoint[rule.endpoint]
-                        
-                        # 恢复原始视图函数
-                        original_endpoint = rule.endpoint.replace('custom_', '')
-                        route = Route.query.get(int(original_endpoint))
-                        if route and route.original_endpoint in current_app.view_functions:
-                            original_view = current_app.view_functions.get(route.original_endpoint)
-                            if original_view and original_view.__name__ == '<lambda>':
-                                # 如果是 404 处理函数，恢复原始视图
-                                original_view = current_app.view_functions.get(rule.endpoint)
-                                if original_view:
-                                    current_app.view_functions[route.original_endpoint] = original_view
-                        
-                        # 清理自定义视图函数
-                        if rule.endpoint in current_app.view_functions:
-                            del current_app.view_functions[rule.endpoint]
-                        
-                        print(f"[Route System] 已清理路由: {rule.rule} -> {rule.endpoint}")
-                    except Exception as e:
-                        print(f"[Route System] 清理路由时出错: {rule.rule} -> {str(e)}")
-                
-                # 2. 获取所有活动路由
-                active_routes = Route.query.filter_by(is_active=True).all()
-                print(f"[Route System] 找到 {len(active_routes)} 个活动路由需要注册")
-                
-                # 3. 处理每个活动路由
-                for route in active_routes:
-                    try:
-                        original_endpoint = route.original_endpoint
-                        original_view = None
-                        original_rule = None
-                        
-                        # 查找原始路由规则
-                        for rule in current_app.url_map.iter_rules():
-                            if rule.endpoint == original_endpoint:
-                                original_rule = rule
-                                original_view = current_app.view_functions.get(original_endpoint)
-                                break
-                        
-                        if not original_rule or not original_view:
-                            print(f"[Route System] 跳过无效路由: {original_endpoint}")
-                            continue
-                        
-                        # 创建新的路由规则
-                        new_path = route.path if route.path.startswith('/') else '/' + route.path
-                        custom_endpoint = f'custom_{route.id}'
-                        
-                        # 保存原始视图函数的副本
-                        if original_endpoint in current_app.view_functions:
-                            original_view = current_app.view_functions[original_endpoint]
-                        
-                        # 添加新路由规则
-                        new_rule = Rule(
-                            new_path,
-                            endpoint=custom_endpoint,
-                            methods=original_rule.methods,
-                            defaults=original_rule.defaults,
-                            subdomain=original_rule.subdomain,
-                            strict_slashes=original_rule.strict_slashes,
-                            build_only=original_rule.build_only,
-                            redirect_to=original_rule.redirect_to
-                        )
-                        new_rule.is_custom_route = True
-                        current_app.url_map.add(new_rule)
-                        
-                        # 注册新的视图函数
-                        current_app.view_functions[custom_endpoint] = original_view
-                        
-                        # 让原始路由返回404
-                        current_app.view_functions[original_endpoint] = lambda *args, **kwargs: abort(404)
-                        
-                        print(f"[Route System] 已注册路由: {new_path} -> {custom_endpoint}")
-                    except Exception as e:
-                        print(f"[Route System] 注册路由时出错: {route.path} -> {str(e)}")
-                
-                # 4. 更新路由表
-                current_app.url_map.update()
-                
-                # 5. 强制更新路由缓存
-                current_app.url_map._remap = True
-                current_app.url_map.update()
-                
-                print("[Route System] 路由刷新完成!\n")
-                return True
-                
-            except Exception as e:
-                current_app.logger.error(f"Error refreshing routes: {str(e)}")
-                print(f"[Route System] 路由刷新失败: {str(e)}\n")
-                return False
-
-    @staticmethod
     def get_available_endpoints():
         """获取所有可用的端点"""
-        from flask import current_app
-        
         endpoints = []
         for rule in current_app.url_map.iter_rules():
-            # 排除静态文件路由和自定义路由
             if not rule.endpoint.startswith('static') and not hasattr(rule, 'is_custom_route'):
-                # 检查是否已经被重写
-                route = Route.query.filter_by(original_endpoint=rule.endpoint, is_active=True).first()
+                route = Route.query.filter_by(
+                    original_endpoint=rule.endpoint, 
+                    is_active=True
+                ).first()
                 if not route:
                     endpoints.append({
                         'endpoint': rule.endpoint,
@@ -1624,3 +1441,8 @@ class AdminService:
                         'methods': list(rule.methods)
                     })
         return endpoints
+
+    @staticmethod
+    def refresh_custom_routes():
+        """刷新自定义路由"""
+        return route_manager.refresh_routes()
