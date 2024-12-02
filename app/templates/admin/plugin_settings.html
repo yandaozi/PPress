@@ -92,9 +92,9 @@ async function handleSettingsSubmit(form) {
         
         if (data.status === 'success') {
             // 延迟一下再刷新，让用户看到成功提示
-            setTimeout(() => {
+            /*setTimeout(() => {
                 window.location.reload();
-            }, 1000);
+            }, 200);*/
         }
     } catch (error) {
         console.error('Error saving settings:', error);
