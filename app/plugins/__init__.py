@@ -147,17 +147,42 @@ class PluginBase:
     
     def load_settings(self):
         """加载插件设置"""
-        from app.models import Plugin as PluginModel
-        plugin = PluginModel.query.filter_by(name=self.name).first()
-        if plugin and plugin.config:
-            self.settings = plugin.config
+        try:
+            # 每次都从数据库获取最新配置
+            from app.models import Plugin as PluginModel
+            plugin = PluginModel.query.filter_by(name=self.name).first()
+            if plugin and plugin.config:
+                self.settings = plugin.config
+            else:
+                self.settings = self.default_settings.copy()
+        except Exception as e:
+            current_app.logger.error(f"Error loading plugin settings: {str(e)}")
+            self.settings = self.default_settings.copy()
+    
+    def get_settings(self):
+        """获取最新设置"""
+        self.load_settings()  # 每次都重新加载
+        return self.settings
     
     def save_settings(self, form_data):
-        """
-        保存插件设置的基类方法
-        子类应该重写这个方法来实现自己的设置保存逻辑
-        """
-        raise NotImplementedError("Plugin must implement save_settings method")
+        """保存插件设置的基类方法"""
+        try:
+            # 子类实现具体的设置保存逻辑
+            settings = self._save_settings(form_data)
+            
+            # 保存到数据库
+            from app.models import Plugin as PluginModel
+            plugin = PluginModel.query.filter_by(name=self.name).first()
+            if plugin:
+                plugin.config = settings
+                db.session.commit()
+                self.settings = settings
+                return True, '设置已保存'
+            return False, '插件不存在'
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, f'保存设置失败: {str(e)}'
     
     def export_plugin(self):
         """导出插件"""

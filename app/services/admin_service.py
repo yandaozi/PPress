@@ -1123,8 +1123,9 @@ class AdminService:
                 'tag': len([k for k in cache_keys if 'tag' in k or 'tags' in k]),
                 'search': len([k for k in cache_keys if 'search' in k]),
                 'user': len([k for k in cache_keys if 'user' in k]),
+                'plugin': len([k for k in cache_keys if 'plugin_' in k]),
                 'route': len([k for k in cache_keys if 'route' in k or 'routes' in k]),
-                'other': len([k for k in cache_keys if not any(x in k for x in ['index', 'article', 'category', 'tag', 'search', 'user', 'route'])])
+                'other': len([k for k in cache_keys if not any(x in k for x in ['index', 'article', 'category', 'tag', 'search', 'user', 'plugin', 'route'])])
             }
 
             # 获取缓存键的详细信息
@@ -1198,6 +1199,8 @@ class AdminService:
                 elif category == 'search' and 'search' in key:
                     should_delete = True
                 elif category == 'user' and 'user' in key:
+                    should_delete = True
+                elif category == 'plugin_' and 'plugin_' in key:
                     should_delete = True
                 elif category == 'route' and ('route' in key or 'routes' in key):  # 添加路由缓存处理
                     should_delete = True

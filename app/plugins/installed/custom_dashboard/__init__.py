@@ -2,6 +2,7 @@ from flask import render_template_string, current_app
 from flask_login import login_required
 from app.plugins import PluginBase
 from app.controller.admin import admin_required
+from app.utils.cache_manager import cache_manager
 import os
 
 class Plugin(PluginBase):
@@ -20,18 +21,39 @@ class Plugin(PluginBase):
         @login_required
         @admin_required
         def custom_dashboard():
-            template_path = os.path.join(os.path.dirname(__file__), 'templates', 'dashboard.html')
-            with open(template_path, 'r', encoding='utf-8') as f:
-                template = f.read()
-            return render_template_string(template)
-        
+            # 尝试从缓存获取仪表盘内容
+            cache_key = 'plugin_custom_dashboard:content'
+            content = cache_manager.get(
+                cache_key,
+                default_factory=lambda: self._get_dashboard_content(),
+                ttl=300  # 缓存5分钟
+            )
+            return content
+
         # 直接替换视图函数
         app.view_functions['admin.dashboard'] = custom_dashboard
         print(f"Dashboard view function replaced: {id(custom_dashboard)}")
 
+    def _get_dashboard_content(self):
+        """获取仪表盘内容"""
+        try:
+            template_path = os.path.join(os.path.dirname(__file__), 'templates', 'dashboard.html')
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template = f.read()
+            return render_template_string(template)
+        except Exception as e:
+            current_app.logger.error(f"Error getting dashboard content: {str(e)}")
+            return "Error loading dashboard"
+
     def teardown(self):
         """清理插件"""
-        # 恢复原始视图函数
-        if self.app and hasattr(self, '_original_dashboard'):
-            self.app.view_functions['admin.dashboard'] = self._original_dashboard
-            print("Restored original dashboard view")
+        try:
+            # 恢复原始视图函数
+            if self.app and hasattr(self, '_original_dashboard'):
+                self.app.view_functions['admin.dashboard'] = self._original_dashboard
+                print("Restored original dashboard view")
+            
+            # 清除仪表盘缓存
+            cache_manager.delete('plugin_custom_dashboard:*')
+        except Exception as e:
+            current_app.logger.error(f"Error in teardown: {str(e)}")

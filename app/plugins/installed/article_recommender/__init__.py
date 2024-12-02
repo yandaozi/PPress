@@ -1,10 +1,10 @@
 from flask import jsonify, render_template_string, current_app, url_for, send_from_directory
-
 from app import db
 from app.plugins import PluginBase
 from app.models import Article, Tag
 from sqlalchemy import func
 from markupsafe import Markup
+from app.utils.cache_manager import cache_manager
 import os
 
 class Plugin(PluginBase):
@@ -21,35 +21,18 @@ class Plugin(PluginBase):
         def get_recommendations(article_id):
             """获取文章推荐"""
             try:
-                current_article = Article.query.get_or_404(article_id)
-                
-                # 获取当前文章的标签和分类
-                current_tags = current_article.tags
-                current_category = current_article.category
-                
-                # 基于标签和分类查找相关文章
-                related_articles = Article.query\
-                    .filter(Article.id != article_id)\
-                    .filter(
-                        (Article.category_id == current_category.id) |
-                        (Article.tags.any(Tag.id.in_([tag.id for tag in current_tags]))
-                    ))\
-                    .order_by(func.random())\
-                    .limit(self.settings.get('recommend_count', self.default_settings['recommend_count']))\
-                    .all()
-                
-                return jsonify([{
-                    'id': article.id,
-                    'title': article.title,
-                    'summary': article.content[:100] if article.content else '',
-                    'category': article.category.name,
-                    'tags': [tag.name for tag in article.tags],
-                    'url': url_for('blog.article', id=article.id)
-                } for article in related_articles])
+                # 尝试从缓存获取推荐
+                cache_key = f'plugin_article_recommendations:{article_id}'
+                recommendations = cache_manager.get(
+                    cache_key,
+                    default_factory=lambda: self._get_recommendations(article_id),
+                    ttl=3600  # 缓存1小时
+                )
+                return jsonify(recommendations)
             except Exception as e:
                 current_app.logger.error(f"Error in get_recommendations: {str(e)}")
                 return jsonify({'error': str(e)}), 500
-        
+
         # 注册静态文件路由
         @self.route('/plugin/article_recommender/static/<path:filename>', 
                    endpoint='article_recommender_static',
@@ -58,7 +41,36 @@ class Plugin(PluginBase):
             """提供静态文件访问"""
             static_folder = os.path.join(os.path.dirname(__file__), 'static')
             return send_from_directory(static_folder, filename)
-    
+
+    def _get_recommendations(self, article_id):
+        """获取推荐文章的具体实现"""
+        current_article = Article.query.get_or_404(article_id)
+        
+        # 获取当前文章的标签和分类
+        current_tags = current_article.tags
+        current_category = current_article.category
+        settings = self.get_settings()  # 获取最新配置
+        # 基于标签和分类查找相关文章
+        related_articles = Article.query\
+            .filter(Article.id != article_id)\
+            .filter(
+                (Article.category_id == current_category.id) |
+                (Article.tags.any(Tag.id.in_([tag.id for tag in current_tags]))
+            ))\
+            .order_by(func.random())\
+            .limit(settings.get('recommend_count', self.default_settings['recommend_count']))\
+            .all()
+        
+        # 构建推荐数据
+        return [{
+            'id': article.id,
+            'title': article.title,
+            'summary': article.content[:100] if article.content else '',
+            'category': article.category.name,
+            'tags': [tag.name for tag in article.tags],
+            'url': url_for('blog.article', id=article.id)
+        } for article in related_articles]
+
     def init_app(self, app):
         """初始化插件"""
         super().init_app(app)
@@ -109,6 +121,8 @@ class Plugin(PluginBase):
                 plugin.config = settings
                 db.session.commit()
                 self.settings = settings
+                # 清除所有推荐缓存
+                cache_manager.delete('plugin_article_recommendations:*')
                 return True, '设置已保存'
             return False, '插件不存在'
             

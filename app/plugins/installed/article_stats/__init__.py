@@ -1,9 +1,9 @@
 from flask import jsonify, render_template_string, current_app, url_for, send_from_directory
-
 from app import db
 from app.plugins import PluginBase
 from bs4 import BeautifulSoup
 from markupsafe import Markup
+from app.utils.cache_manager import cache_manager
 import re
 import os
 
@@ -24,10 +24,21 @@ class Plugin(PluginBase):
         @self.route('/plugin/article_stats/calculate/<int:article_id>', methods=['GET'])
         def calculate_stats(article_id):
             """获取文章统计信息"""
-            from app.models import Article
-            article = Article.query.get_or_404(article_id)
-            stats = self.calculate_article_stats(article.content)
-            return jsonify(stats)
+            try:
+                from app.models import Article
+                article = Article.query.get_or_404(article_id)
+                
+                # 尝试从缓存获取统计信息
+                cache_key = f'plugin_article_stats:{article_id}'
+                stats = cache_manager.get(
+                    cache_key,
+                    default_factory=lambda: self.calculate_article_stats(article.content),
+                    ttl=3600  # 缓存1小时
+                )
+                return jsonify(stats)
+            except Exception as e:
+                current_app.logger.error(f"Error calculating stats: {str(e)}")
+                return jsonify({'error': str(e)}), 500
         
         # 注册静态文件路由
         @self.route('/plugin/article_stats/static/<path:filename>', 
@@ -96,12 +107,12 @@ class Plugin(PluginBase):
         images = len(soup.find_all('img'))
         
         # 计算阅读时间
-        total_words = chinese_chars + words
-        wpm = self.settings.get('words_per_minute', self.default_settings['words_per_minute'])
+        settings = self.get_settings()  # 获取最新配置
+        wpm = settings.get('words_per_minute', self.default_settings['words_per_minute'])
         read_time = round((chinese_chars / wpm['chinese'] + words / wpm['english']) * 60)
         
         return {
-            'word_count': total_words,
+            'word_count': chinese_chars + words,
             'read_time': read_time,
             'code_blocks': code_blocks,
             'images': images
@@ -130,6 +141,8 @@ class Plugin(PluginBase):
                 plugin.config = settings
                 db.session.commit()
                 self.settings = settings
+                # 清除所有统计缓存
+                cache_manager.delete('plugin_article_stats:*')
                 return True, '设置已保存'
             return False, '插件不存在'
             
