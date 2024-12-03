@@ -256,4 +256,8 @@ def create_app(db_type=DB_TYPE, init_components=True):
         from .utils.encrypt import CopyrightEncryptor
         return CopyrightEncryptor.get_copyright()
 
+    # 初始化自定义页面
+    from app.utils.custom_pages import custom_page_manager
+    custom_page_manager.init_custom_pages(app)
+
     return app 

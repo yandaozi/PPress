@@ -7,6 +7,10 @@ import json
 import numpy as np
 import io
 from app.services.admin_service import AdminService
+from app.models.custom_page import CustomPage
+from app import db
+from app.services.custom_page_service import CustomPageService
+from app.utils.custom_pages import custom_page_manager
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -713,3 +717,135 @@ def delete_route(id):
     success, message = AdminService.delete_route(id)
     flash(message)
     return redirect(url_for('admin.routes')) 
+
+@bp.route('/custom_pages')
+@login_required
+@admin_required
+def custom_pages():
+    """自定义页面管理"""
+    try:
+        # 获取分页参数
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+        
+        # 分页查询
+        pagination = CustomPage.query.order_by(CustomPage.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        return render_template('admin/custom_pages.html', 
+                             pagination=pagination)
+    except Exception as e:
+        current_app.logger.error(f"Custom pages error: {str(e)}")
+        flash('获取自定义页面列表失败')
+        return redirect(url_for('admin.dashboard'))
+
+@bp.route('/custom_pages/add', methods=['POST'])
+@login_required
+@admin_required
+def add_custom_page():
+    """添加自定义页面"""
+    try:
+        data = {
+            'key': request.form.get('key'),
+            'title': request.form.get('title'),
+            'template': request.form.get('template'),
+            'route': request.form.get('route'),
+            'content': request.form.get('content', ''),  # 直接获取内容，不需要 JSON 解析
+            'fields': json.loads(request.form.get('fields', '{}')),  # 解析字段 JSON
+            'require_login': request.form.get('require_login') == 'true'
+        }
+        
+        success, message, page = CustomPageService.add_page(data)
+        if not success:
+            return jsonify({'error': message}), 400
+            
+        return jsonify({
+            'message': message,
+            'page': page
+        })
+    except Exception as e:
+        current_app.logger.error(f"Add custom page error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/custom_pages/<int:id>', methods=['GET'])
+@login_required
+@admin_required
+def get_custom_page(id):
+    """获取自定义页面"""
+    success, error, page = CustomPageService.get_page(id)
+    if not success:
+        return jsonify({'error': error}), 404
+        
+    return jsonify({
+        'id': page.id,
+        'key': page.key,
+        'title': page.title,
+        'template': page.template,
+        'route': page.route,
+        'content': page.content,
+        'require_login': page.require_login
+    })
+
+@bp.route('/custom_pages/<int:id>/edit', methods=['GET'])
+@login_required
+@admin_required
+def edit_custom_page(id):
+    """编辑自定义页面表单"""
+    success, error, page = CustomPageService.get_page(id)
+    if not success:
+        flash(error)
+        return redirect(url_for('admin.custom_pages'))
+        
+    templates = custom_page_manager.get_custom_templates()
+    return render_template('admin/custom_page_form.html',
+                         page=page,
+                         templates=templates,
+                         title='编辑页面')
+
+@bp.route('/custom_pages/<int:id>/update', methods=['POST'])
+@login_required
+@admin_required 
+def update_custom_page(id):
+    """更新自定义页面"""
+    try:
+        data = {
+            'key': request.form.get('key'),  # 添加key字段
+            'title': request.form.get('title'),
+            'template': request.form.get('template'),
+            'route': request.form.get('route'),
+            'content': request.form.get('content', ''),
+            'fields': json.loads(request.form.get('fields', '{}')),
+            'require_login': request.form.get('require_login') == 'true'
+        }
+        
+        success, message, _ = CustomPageService.edit_page(id, data)
+        if not success:
+            return jsonify({'error': message}), 400
+            
+        return jsonify({'message': message})
+    except Exception as e:
+        current_app.logger.error(f"Edit custom page error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/custom_pages/<int:id>', methods=['DELETE'])
+@login_required
+@admin_required
+def delete_custom_page(id):
+    """删除自定义页面"""
+    success, message = CustomPageService.delete_page(id)
+    if not success:
+        return jsonify({'error': message}), 400
+        
+    return jsonify({'message': message}) 
+
+@bp.route('/custom_pages/create')
+@login_required
+@admin_required
+def create_custom_page():
+    """创建自定义页面"""
+    templates = custom_page_manager.get_custom_templates()
+    return render_template('admin/custom_page_form.html',
+                         title='创建页面',
+                         page=None,
+                         templates=templates)

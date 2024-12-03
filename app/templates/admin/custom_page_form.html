@@ -1,0 +1,177 @@
+{% extends theme_path('admin/base.html') %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b">
+            <h2 class="text-xl font-bold">{{ title }}</h2>
+        </div>
+        <div class="p-6">
+            <form id="pageForm" method="post" class="space-y-6" 
+                  action="{{ url_for('admin.update_custom_page', id=page.id) if page else url_for('admin.add_custom_page') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- 基本信息 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">页面标识</label>
+                    <input type="text" name="key" 
+                           value="{{ page.key if page else '' }}"
+                           required
+                           pattern="[a-zA-Z0-9_-]+"
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="mt-1 text-sm text-gray-500">唯一标识,只能包含字母、数字、下划线和连字符</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">页面标题</label>
+                    <input type="text" name="title" 
+                           value="{{ page.title if page else '' }}"
+                           required
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">模板文件</label>
+                    <select name="template" required
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        {% for tpl in templates %}
+                        <option value="{{ tpl.path }}"
+                                {% if page and page.template == tpl.path %}selected{% endif %}>
+                            {{ tpl.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">路由规则</label>
+                    <input type="text" name="route"
+                           value="{{ page.route if page else '' }}"
+                           placeholder="/custom/[key]"
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="mt-1 text-sm text-gray-500">留空则使用默认规则 /custom/[key]</p>
+                </div>
+
+                <!-- 自定义字段 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">自定义字段</label>
+                    <div id="customFields" class="space-y-4">
+                        {% if page and page.fields %}
+                            {% for key, value in page.fields.items() %}
+                            <div class="flex items-center space-x-4">
+                                <input type="text" name="field_keys[]" value="{{ key }}"
+                                       placeholder="字段名"
+                                       class="w-1/3 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <input type="text" name="field_values[]" value="{{ value }}"
+                                       placeholder="字段值"
+                                       class="w-2/3 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <button type="button" onclick="removeField(this)"
+                                        class="text-red-600 hover:text-red-900">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <button type="button" onclick="addField()"
+                            class="mt-2 px-4 py-2 text-sm border rounded-lg hover:bg-gray-50">
+                        + 添加字段
+                    </button>
+                </div>
+
+                <!-- 页面内容 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">页面内容</label>
+                    <textarea id="editor" name="content">{{ page.content|safe if page and page.content else '' }}</textarea>
+                    {{ render_tinymce(selector='#editor', height=500) }}
+                </div>
+
+                <div class="flex items-center">
+                    <input type="checkbox" name="require_login" id="require_login"
+                           {% if page and page.require_login %}checked{% endif %}
+                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="require_login" class="ml-2 text-sm text-gray-700">需要登录</label>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="flex justify-end space-x-4 pt-6 border-t">
+                    <a href="{{ url_for('admin.custom_pages') }}"
+                       class="px-4 py-2 border rounded-lg hover:bg-gray-50">
+                        取消
+                    </a>
+                    <button type="submit"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        {{ '保存修改' if page else '创建页面' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function addField() {
+    const container = document.getElementById('customFields');
+    const fieldDiv = document.createElement('div');
+    fieldDiv.className = 'flex items-center space-x-4';
+    fieldDiv.innerHTML = `
+        <input type="text" name="field_keys[]" placeholder="字段名"
+               class="w-1/3 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" name="field_values[]" placeholder="字段值"
+               class="w-2/3 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <button type="button" onclick="removeField(this)"
+                class="text-red-600 hover:text-red-900">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+    container.appendChild(fieldDiv);
+}
+
+function removeField(button) {
+    button.closest('div').remove();
+}
+
+document.getElementById('pageForm').onsubmit = function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    // 获取编辑器内容
+    formData.set('content', tinymce.get('editor').getContent());
+    
+    // 获取自定义字段
+    const fields = {};
+    const keys = formData.getAll('field_keys[]');
+    const values = formData.getAll('field_values[]');
+    keys.forEach((key, index) => {
+        if (key.trim()) {
+            fields[key.trim()] = values[index];
+        }
+    });
+    formData.set('fields', JSON.stringify(fields));
+    
+    // 获取需要登录选项
+    formData.set('require_login', document.getElementById('require_login').checked);
+    
+    // 提交表单
+    fetch(this.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert(data.error, 'error', '错误');
+        } else {
+            showAlert(data.message, 'success', '成功');
+            setTimeout(() => location.href = '{{ url_for("admin.custom_pages") }}', 500);
+        }
+    });
+};
+</script>
+{% endblock %} 

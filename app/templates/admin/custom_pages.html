@@ -1,0 +1,265 @@
+{% extends theme_path('admin/base.html') %}
+
+{% block title %}自定义页面管理{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b flex justify-between items-center">
+            <h2 class="text-xl font-bold">自定义页面管理</h2>
+            <a href="{{ url_for('admin.create_custom_page') }}"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                添加页面
+            </a>
+        </div>
+        
+        <div class="p-6">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">标识</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">标题</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">模板</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">路由</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">需要登录</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for page in pagination.items %}
+                    <tr>
+                        <td class="px-6 py-4">{{ page.key }}</td>
+                        <td class="px-6 py-4">{{ page.title }}</td>
+                        <td class="px-6 py-4">{{ page.template }}</td>
+                        <td class="px-6 py-4">{{ page.route }}</td>
+                        <td class="px-6 py-4">
+                            {% if page.require_login %}
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">是</span>
+                            {% else %}
+                            <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">否</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <a href="{{ url_for('admin.edit_custom_page', id=page.id) }}"
+                               class="text-blue-600 hover:text-blue-900">编辑</a>
+                            <button onclick="deletePage({{ page.id }})"
+                                    class="ml-3 text-red-600 hover:text-red-900">删除</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- 添加分页 -->
+            {% if pagination.pages > 1 %}
+            <div class="px-6 py-4 mt-4 border-t">
+                {% include 'components/pagination.html' %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 添加/编辑模态框 -->
+<div id="pageModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
+    <div class="relative w-full max-w-lg mx-auto mt-20">
+        <div class="bg-white rounded-lg shadow-xl">
+            <div class="px-6 py-4 border-b">
+                <h3 class="text-lg font-medium" id="modalTitle">添加页面</h3>
+            </div>
+            
+            <form id="pageForm" class="p-6 space-y-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="id" id="pageId">
+                
+                <!-- 基本信息 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">页面标识</label>
+                        <input type="text" name="key" id="pageKey"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">页面标题</label>
+                        <input type="text" name="title" id="pageTitle"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+                    
+                    <!-- 动态键值对区域 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">页面内容</label>
+                        <div id="contentPairs" class="space-y-2">
+                            <!-- 动态键值对将在这里添加 -->
+                        </div>
+                        <button type="button" onclick="addContentPair()"
+                                class="mt-2 px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100">
+                            + 添加内容
+                        </button>
+                    </div>
+                    
+                    <!-- 其他设置 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">模板文件</label>
+                        <select name="template" id="pageTemplate"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            {% for template in templates %}
+                            <option value="{{ template }}">{{ template }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">路由规则</label>
+                        <input type="text" name="route" id="pageRoute"
+                               placeholder="留空则使用默认规则 /custom/[key]"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" name="require_login" id="pageRequireLogin"
+                               class="rounded border-gray-300 text-blue-600">
+                        <label class="ml-2 text-sm text-gray-700">需要登录</label>
+                    </div>
+                </div>
+            </form>
+            
+            <div class="px-6 py-4 border-t flex justify-end space-x-4">
+                <button onclick="hideModal()"
+                        class="px-4 py-2 border rounded-md hover:bg-gray-50">
+                    取消
+                </button>
+                <button onclick="savePage()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showAddModal() {
+    document.getElementById('modalTitle').textContent = '添加页面';
+    document.getElementById('pageForm').reset();
+    document.getElementById('pageId').value = '';
+    document.getElementById('pageModal').classList.remove('hidden');
+}
+
+function hideModal() {
+    document.getElementById('pageModal').classList.add('hidden');
+}
+
+function addContentPair(key = '', value = '') {
+    const container = document.getElementById('contentPairs');
+    const pairId = Date.now();
+    
+    const pairHtml = `
+        <div class="flex items-center space-x-2" id="pair_${pairId}">
+            <input type="text" 
+                   name="content_keys[]" 
+                   placeholder="键名"
+                   value="${key}"
+                   class="flex-1 rounded-md border-gray-300 shadow-sm">
+            <input type="text" 
+                   name="content_values[]" 
+                   placeholder="值"
+                   value="${value}"
+                   class="flex-1 rounded-md border-gray-300 shadow-sm">
+            <button type="button" 
+                    onclick="removePair(${pairId})"
+                    class="p-2 text-red-600 hover:text-red-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', pairHtml);
+}
+
+function removePair(pairId) {
+    document.getElementById(`pair_${pairId}`).remove();
+}
+
+function savePage() {
+    const form = document.getElementById('pageForm');
+    const formData = new FormData(form);
+    
+    // 收集键值对
+    const keys = formData.getAll('content_keys[]');
+    const values = formData.getAll('content_values[]');
+    const content = {};
+    
+    keys.forEach((key, index) => {
+        if (key.trim()) {  // 只保存有键名的项
+            content[key.trim()] = values[index];
+        }
+    });
+    
+    // 添加内容到表单数据
+    formData.append('content', JSON.stringify(content));
+    
+    // 发送请求
+    const id = document.getElementById('pageId').value;
+    fetch(id ? `/admin/custom_pages/${id}/edit` : '/admin/custom_pages/add', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert(data.error, 'error', '错误');
+        } else {
+            showAlert(data.message, 'success', '成功');
+            setTimeout(() => location.reload(), 500);
+        }
+    });
+}
+
+function editPage(id) {
+    fetch(`/admin/custom_pages/${id}`)
+        .then(response => response.json())
+        .then(page => {
+            document.getElementById('modalTitle').textContent = '编辑页面';
+            document.getElementById('pageId').value = page.id;
+            document.getElementById('pageKey').value = page.key;
+            document.getElementById('pageTitle').value = page.title;
+            document.getElementById('pageTemplate').value = page.template;
+            document.getElementById('pageRoute').value = page.route;
+            document.getElementById('pageRequireLogin').checked = page.require_login;
+            
+            // 清空并重新添加内容键值对
+            document.getElementById('contentPairs').innerHTML = '';
+            if (page.content) {
+                Object.entries(page.content).forEach(([key, value]) => {
+                    addContentPair(key, value);
+                });
+            }
+            
+            document.getElementById('pageModal').classList.remove('hidden');
+        });
+}
+
+function deletePage(id) {
+    showAlert('确定要删除此页面吗？', 'warning', '确���删除', function() {
+        fetch(`/admin/custom_pages/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert(data.error, 'error', '错误');
+            } else {
+                showAlert('删除成功', 'success', '成功');
+                setTimeout(() => location.reload(), 500);
+            }
+        });
+    });
+}
+</script>
+{% endblock %} 
