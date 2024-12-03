@@ -1,6 +1,21 @@
 {% extends theme_path('base.html') %}
 {% block title %}{{ page.title }}{% endblock %}
 {% block content %}
+
+
+<!--比如你添加了一个字段:
+字段名: author
+字段值: PPress
+在模板中就可以这样使用
+{{ page.fields.author }}  #会显示"PPress"
+
+或者遍历所有字段:
+{% for key, value in page.fields.items() %}
+<div>
+    <strong>{{ key }}:</strong> {{ value }}
+</div>
+{% endfor %}-->
+
 <div class="max-w-4xl mx-auto px-4 py-8">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
