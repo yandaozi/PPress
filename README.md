@@ -1,4 +1,4 @@
-<div style="margin: 30px 0 2px;text-align:center;">
+<div style="text-align:center;">
     <img src="app/static/favicon.ico" width="90px" alt="PPress">
 </div>
 
