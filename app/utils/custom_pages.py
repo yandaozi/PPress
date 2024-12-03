@@ -1,5 +1,5 @@
 import os
-from flask import render_template, current_app, Blueprint, request
+from flask import render_template, current_app, Blueprint, request, abort
 from flask_login import login_required
 from functools import wraps
 from app.models import CustomPage
@@ -19,6 +19,8 @@ class CustomPageMiddleware:
         if path in custom_pages:
             # 找到匹配的页面,重定向到内部处理函数
             environ['PATH_INFO'] = f'/custom_page/{custom_pages[path]}'
+            # 添加标记表示这是通过中间件重定向的
+            environ['HTTP_X_CUSTOM_PAGE'] = 'true'
                 
         return self.wsgi_app(environ, start_response)
 
@@ -84,6 +86,10 @@ class CustomPageManager:
             # 注册内部处理路由
             @app.route('/custom_page/<path:page_key>')
             def handle_custom_page(page_key):
+                # 检查是否是通过中间件重定向的请求
+                if not request.environ.get('HTTP_X_CUSTOM_PAGE'):
+                    return abort(404)
+                    
                 page = CustomPage.query.filter_by(key=page_key, enabled=True).first_or_404()
                 if page.require_login:
                     return login_required(lambda: render_custom_page(page))()
