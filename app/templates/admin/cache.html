@@ -176,9 +176,50 @@
                 </div>
             </div>
 
-            <!-- 在快捷清除按钮后添加缓存列表 -->
-            <div class="bg-white rounded-lg p-6 border border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">缓存列表</h3>
+            <!-- 在缓存列表前添加搜索框 -->
+            <div class="bg-white rounded-lg p-4 sm:p-6 border border-gray-200">
+                <!-- 修改标题和搜索框的布局 -->
+                <div class="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">缓存列表</h3>
+                    
+                    <!-- 搜索框 -->
+                    <form class="w-full sm:w-auto sm:flex-1 sm:max-w-lg sm:ml-4" method="get" action="{{ url_for('admin.cache_stats') }}">
+                        <div class="relative">
+                            <input type="text" 
+                                   name="q" 
+                                   value="{{ search_query or '' }}"
+                                   placeholder="搜索缓存键..."
+                                   class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg 
+                                          focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                          dark:bg-gray-700 dark:border-gray-600 dark:text-white
+                                          text-sm sm:text-base">
+                            <button type="submit" 
+                                    class="absolute right-0 top-0 h-full px-3
+                                           flex items-center justify-center
+                                           text-gray-400 hover:text-gray-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 搜索结果提示 -->
+                {% if search_query %}
+                <div class="mb-4 text-sm text-gray-500 flex flex-wrap items-center gap-2">
+                    <span>找到 {{ pagination.total }} 个匹配的缓存键</span>
+                    <a href="{{ url_for('admin.cache_stats') }}" 
+                       class="inline-flex items-center text-blue-600 hover:text-blue-800">
+                        <span>清除搜索</span>
+                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </a>
+                </div>
+                {% endif %}
+
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
@@ -190,7 +231,7 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            {% for item in cache_keys %}
+                            {% for item in pagination.items %}
                             <tr>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ item.key }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-500">{{ item.type }}</td>
@@ -314,6 +355,25 @@ button.group:hover {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* 添加搜索框相关的响应式样式 */
+@media (max-width: 640px) {
+    /* 调整搜索框在移动端的样式 */
+    input[type="text"] {
+        font-size: 14px;
+        padding: 0.5rem 2.5rem 0.5rem 1rem;
+    }
+    
+    /* 调整搜索按钮位置 */
+    .relative button {
+        padding: 0 0.75rem;
+    }
+    
+    /* 调整搜索结果提示的布局 */
+    .flex-wrap {
+        gap: 0.5rem;
+    }
 }
 </style>
 {% endblock %} 

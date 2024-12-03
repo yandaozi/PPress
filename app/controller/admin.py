@@ -487,7 +487,7 @@ def export_plugin(plugin_name):
         flash(error, 'error')
         return redirect(url_for('admin.plugins'))
         
-    # 设置响应头
+    # ��置响应头
     response = send_file(
         io.BytesIO(content),
         mimetype='application/zip',
@@ -571,7 +571,9 @@ def cache_stats():
     """缓存统计"""
     try:
         page = request.args.get('page', 1, type=int)
-        data, error = AdminService.get_cache_stats(page=page)
+        search_query = request.args.get('q', '').strip()
+        
+        data, error = AdminService.get_cache_stats(page=page, search_query=search_query)
         if error:
             flash(error)
             return redirect(url_for('admin.dashboard'))

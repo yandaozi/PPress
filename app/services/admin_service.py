@@ -1096,20 +1096,25 @@ class AdminService:
             return False, str(e)
 
     @staticmethod
-    def get_cache_stats(page=1):
+    def get_cache_stats(page=1, search_query=None):
         """获取缓存统计信息"""
         try:
             from app.utils.cache_manager import cache_manager
 
             # 获取所有缓存键
             cache_keys = list(cache_manager._cache.keys())
+            
+            # 如果有搜索关键词，过滤缓存键
+            if search_query:
+                cache_keys = [key for key in cache_keys if search_query.lower() in key.lower()]
+            
             total_cache_count = len(cache_keys)
 
             # 计算总内存占用
             total_size = sum(len(str(cache_manager._cache.get(key))) for key in cache_keys)
             memory_usage = format_size(total_size)
 
-            # 计算命中率 (这里需要从 cache_manager 获取命中和未命中的次数)
+            # 计算命中率
             hits = getattr(cache_manager, '_hits', 0)
             misses = getattr(cache_manager, '_misses', 0)
             hit_rate = f"{(hits / (hits + misses) * 100):.1f}%" if hits + misses > 0 else "0%"
@@ -1129,7 +1134,7 @@ class AdminService:
             }
 
             # 获取缓存键的详细信息
-            cache_keys_info = []  # 改为列表
+            cache_keys_info = []
             for key in sorted(cache_keys):
                 value = cache_manager._cache.get(key)
                 size = len(str(value)) if value else 0
@@ -1139,7 +1144,7 @@ class AdminService:
                     'size': format_size(size)
                 })
 
-            # 使用传入的页码
+            # 分页
             per_page = 15
             total = len(cache_keys_info)
             total_pages = (total + per_page - 1) // per_page
@@ -1147,9 +1152,8 @@ class AdminService:
             start = (page - 1) * per_page
             end = start + per_page
 
-            # 创建分页对象
             pagination = Pagination(
-                items=cache_keys_info[start:end],  # 直接使用切片的列表
+                items=cache_keys_info[start:end],
                 total=total,
                 page=page,
                 per_page=per_page,
@@ -1163,10 +1167,12 @@ class AdminService:
                     'hit_rate': hit_rate,
                     'by_category': cache_categories
                 },
-                'cache_keys': cache_keys_info[start:end],  # 只返回当前页的数据
+                'pagination': pagination,
                 'cache_categories': cache_categories,
                 'total_cache_count': total_cache_count,
-                'pagination': pagination
+                'memory_usage': memory_usage,
+                'hit_rate': hit_rate,
+                'search_query': search_query
             }, None
 
         except Exception as e:
