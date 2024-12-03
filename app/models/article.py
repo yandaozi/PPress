@@ -73,19 +73,16 @@ def init_article_events():
     @db.event.listens_for(Article.category_id, 'set')
     def article_category_changed(target, value, oldvalue, initiator):
         """文章分类变更时更新计数"""
-        # 如果新旧值相同，不需要更新
         if oldvalue == value:
             return
         
         try:
-            # 处理旧分类
-            if oldvalue not in (None, NO_VALUE):  # 添加 NO_VALUE 检查
+            if oldvalue not in (None, NO_VALUE):
                 old_category = Category.query.get(oldvalue)
                 if old_category:
                     old_category.article_count = Category.query.filter_by(id=oldvalue).first().articles.count()
             
-            # 处理新分类
-            if value is not None:  # 只在有新分类时更新
+            if value is not None:
                 new_category = Category.query.get(value)
                 if new_category:
                     new_category.article_count = Category.query.filter_by(id=value).first().articles.count()
@@ -94,6 +91,47 @@ def init_article_events():
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Error updating category counts: {str(e)}")
+
+    @db.event.listens_for(Article.tags, 'append')
+    def article_tag_append(target, value, initiator):
+        """添加标签时更新计数"""
+        if value.article_count is None:
+            value.article_count = 0
+        value.article_count += 1
+        db.session.add(value)
+
+    @db.event.listens_for(Article.tags, 'remove')
+    def article_tag_remove(target, value, initiator):
+        """移除标签时更新计数"""
+        if value.article_count is None:
+            value.article_count = 0
+        value.article_count -= 1
+        db.session.add(value)
+
+    @db.event.listens_for(Article.tags, 'set')
+    def article_tags_set(target, value, oldvalue, initiator):
+        """标签集合被替换时更新计数"""
+        try:
+            # 减少旧标签的计数
+            if oldvalue is not None:
+                for tag in oldvalue:
+                    if tag.article_count is None:
+                        tag.article_count = 0
+                    tag.article_count -= 1
+                    db.session.add(tag)
+            
+            # 增加新标签的计数
+            if value is not None:
+                for tag in value:
+                    if tag.article_count is None:
+                        tag.article_count = 0
+                    tag.article_count += 1
+                    db.session.add(tag)
+                    
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error updating tag counts: {str(e)}")
 
 # 初始化事件监听器
 init_article_events()
