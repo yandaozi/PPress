@@ -86,7 +86,7 @@ def init_db(db_type='mysql'):
     app = create_app(db_type=db_type,init_components=False)
     
     with app.app_context():
-        print(f"\n开始初始化1000条测试数据到 {db_type} 数据库...")
+        print(f"\n开始初始化100000条测试数据到 {db_type} 数据库...")
         # 清空所有表
         db.drop_all()
         print("创建新表...")
@@ -235,7 +235,7 @@ Flask的主要优点包括：
 
         # 创建文章
         articles = []
-        for i in range(100):
+        for i in range(5000):
             article = Article(
                 title=f'技术探讨：{random.choice(["Web开发实践", "数据库优化", "前端技术", "后端架构", "系统设计"])} {i+1}',
                 content=random.choice(article_contents),
@@ -254,7 +254,7 @@ Flask的主要优点包括：
         db.session.commit()
 
         # 创建评论
-        for _ in range(150):
+        for _ in range(5000):
             comment = Comment(
                 content=random.choice([
                     '这篇文章讲解得很清楚，对我帮助很大！',
@@ -271,7 +271,7 @@ Flask的主要优点包括：
             db.session.add(comment)
 
         # 创建浏览历史
-        for _ in range(100):
+        for _ in range(7000):
             view = ViewHistory(
                 user_id=random.choice(users + [admin]).id,
                 article_id=random.choice(articles).id,

@@ -34,11 +34,6 @@
                     内容
                 </label>
                 <textarea id="editor" name="content">{{ article.content if article else '' }}</textarea>
-                <!-- 在模板中调用tinymce -->
-                {{ render_tinymce(
-                selector='#editor',
-                article_id=article.id if article else 0
-                ) }}
             </div>
 
             <!-- 分类选择 -->
@@ -136,6 +131,11 @@
     </div>
 </div>
 
+<!-- 在模板中调用tinymce -->
+{{ render_tinymce(
+selector='#editor',
+article_id=article.id if article else 0
+) }}
 <script>
     // 初始化变量
     const tagInput = document.getElementById('tag-input');
