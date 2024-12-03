@@ -54,80 +54,125 @@
             </div>
 
             <!-- 快捷清除按钮 -->
-            <div class="bg-white rounded-lg p-6 border border-gray-200">
-                <div class="flex flex-wrap gap-3">
-                    <button onclick="clearCacheCategory('index')" 
-                            class="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                        </svg>
-                        首页缓存
-                        <span class="ml-2 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.index }}</span>
-                    </button>
-                    <button onclick="clearCacheCategory('article')" 
-                            class="inline-flex items-center px-4 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2m-4 0h4"></path>
-                        </svg>
-                        文章缓存
-                        <span class="ml-2 bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.article }}</span>
-                    </button>
-                    <button onclick="clearCacheCategory('category')" 
-                            class="inline-flex items-center px-4 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-lg transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                        </svg>
-                        分类缓存
-                        <span class="ml-2 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.category }}</span>
-                    </button>
-                    <button onclick="clearCacheCategory('tag')" 
-                            class="inline-flex items-center px-4 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                        </svg>
-                        标签缓存
-                        <span class="ml-2 bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.tag }}</span>
-                    </button>
-                    <button onclick="clearCacheCategory('search')"
-                            class="inline-flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                        搜索缓存
-                        <span class="ml-2 bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.search }}</span>
-                    </button>
-                    <button onclick="clearCacheCategory('plugin')"
-                            class="inline-flex items-center px-4 py-2 bg-pink-50 text-pink-700 hover:bg-pink-100 rounded-lg transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-                        </svg>
-                        插件缓存
-                        <span class="ml-2 bg-pink-100 text-pink-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.plugin }}</span>
-                    </button>
-                    <button onclick="clearCacheCategory('custom_page')"
-                            class="inline-flex items-center px-4 py-2 bg-pink-50 text-pink-700 hover:bg-pink-100 rounded-lg transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-                        </svg>
-                        自定义页面缓存
-                        <span class="ml-2 bg-pink-100 text-pink-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.custom_page }}</span>
-                    </button>
-                    <button onclick="clearCacheCategory('route')"
-                            class="inline-flex items-center px-4 py-2 bg-pink-50 text-pink-700 hover:bg-pink-100 rounded-lg transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-                        </svg>
-                        路由缓存
-                        <span class="ml-2 bg-pink-100 text-pink-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.route }}</span>
-                    </button>
-                    <button onclick="clearCacheCategory('all')" 
-                            class="inline-flex items-center px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
-                        清除所有
-                        <span class="ml-2 bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs">{{ total_cache_count }}</span>
-                    </button>
+            <div class="bg-white rounded-lg p-4 sm:p-6 border border-gray-200">
+                <div class="flex flex-col space-y-4">
+                    <!-- 标题 -->
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">快捷清除</h3>
+                    
+                    <!-- 按钮组 - 修改网格布局的响应式设置 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- 内容缓存组 -->
+                        <div class="space-y-3">
+                            <h4 class="text-sm font-medium text-gray-500">内容缓存</h4>
+                            <div class="flex flex-col space-y-2">
+                                <button onclick="clearCacheCategory('article')" 
+                                        class="group w-full inline-flex items-center justify-between px-3 sm:px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-all duration-200">
+                                    <div class="flex items-center min-w-0">
+                                        <svg class="flex-shrink-0 w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2m-4 0h4"></path>
+                                        </svg>
+                                        <span class="truncate">文章缓存</span>
+                                    </div>
+                                    <span class="ml-2 flex-shrink-0 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.article }}</span>
+                                </button>
+
+                                <button onclick="clearCacheCategory('category')" 
+                                        class="w-full inline-flex items-center justify-between px-4 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg transition-colors duration-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                        </svg>
+                                        <span>分类缓存</span>
+                                    </div>
+                                    <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.category }}</span>
+                                </button>
+
+                                <button onclick="clearCacheCategory('tag')" 
+                                        class="w-full inline-flex items-center justify-between px-4 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg transition-colors duration-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                        </svg>
+                                        <span>标签缓存</span>
+                                    </div>
+                                    <span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.tag }}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 功能缓存组 -->
+                        <div class="space-y-3">
+                            <h4 class="text-sm font-medium text-gray-500">功能缓存</h4>
+                            <div class="space-y-2">
+                                <button onclick="clearCacheCategory('search')" 
+                                        class="w-full inline-flex items-center justify-between px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg transition-colors duration-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                        <span>搜索缓存</span>
+                                    </div>
+                                    <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.search }}</span>
+                                </button>
+
+                                <button onclick="clearCacheCategory('plugin')" 
+                                        class="w-full inline-flex items-center justify-between px-4 py-2 bg-pink-50 text-pink-700 hover:bg-pink-100 rounded-lg transition-colors duration-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path>
+                                        </svg>
+                                        <span>插件缓存</span>
+                                    </div>
+                                    <span class="bg-pink-100 text-pink-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.plugin }}</span>
+                                </button>
+
+                                <button onclick="clearCacheCategory('custom_page')" 
+                                        class="w-full inline-flex items-center justify-between px-4 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-lg transition-colors duration-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        <span>自定义页面</span>
+                                    </div>
+                                    <span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.custom_page }}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 系统缓存组 -->
+                        <div class="space-y-3">
+                            <h4 class="text-sm font-medium text-gray-500">系统缓存</h4>
+                            <div class="space-y-2">
+                                <button onclick="clearCacheCategory('route')" 
+                                        class="w-full inline-flex items-center justify-between px-4 py-2 bg-orange-50 text-orange-700 hover:bg-orange-100 rounded-lg transition-colors duration-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+                                        </svg>
+                                        <span>路由缓存</span>
+                                    </div>
+                                    <span class="bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.route }}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 全局操作 -->
+                        <div class="space-y-3">
+                            <h4 class="text-sm font-medium text-gray-500">全局操作</h4>
+                            <div class="space-y-2">
+                                <button onclick="clearCacheCategory('all')" 
+                                        class="w-full inline-flex items-center justify-between px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg transition-colors duration-200">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                        <span>清除所有</span>
+                                    </div>
+                                    <span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs">{{ total_cache_count }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -229,4 +274,46 @@ function clearCacheCategory(category) {
     });
 }
 </script>
+
+<style>
+/* 添加一些响应式样式 */
+@media (max-width: 640px) {
+    .grid-cols-1 > div {
+        margin-bottom: 1rem;
+    }
+    
+    .grid-cols-1 > div:last-child {
+        margin-bottom: 0;
+    }
+    
+    /* 在小屏幕上调整按钮内部间距 */
+    button {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    
+    /* 确保文本不会溢出 */
+    button span {
+        font-size: 0.875rem;
+    }
+    
+    /* 调整计数器大小 */
+    button span.rounded-full {
+        padding: 0.125rem 0.5rem;
+    }
+}
+
+/* 添加悬停效果 */
+button.group:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* 确保内容不会溢出 */
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+</style>
 {% endblock %} 
