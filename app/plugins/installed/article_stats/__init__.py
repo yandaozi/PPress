@@ -1,4 +1,4 @@
-from flask import jsonify, render_template_string, current_app, url_for, send_from_directory
+from flask import jsonify, render_template_string, current_app, send_from_directory
 from app import db
 from app.plugins import PluginBase
 from bs4 import BeautifulSoup

@@ -1,4 +1,4 @@
-from app import cache, db
+from app import cache
 from app.models import Category, Article
 
 def make_cache_key(*args, **kwargs):

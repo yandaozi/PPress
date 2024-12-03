@@ -1,6 +1,5 @@
 from app import db
 from datetime import datetime
-import json
 
 class CustomPage(db.Model):
     __tablename__ = 'custom_pages'

@@ -2,7 +2,6 @@ from flask import current_app, abort
 from werkzeug.routing import Rule
 from threading import Lock
 from app.models import Route
-from app.extensions import db
 from app.utils.cache_manager import cache_manager
 import time
 

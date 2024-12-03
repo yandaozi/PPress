@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, make_response, session
-from flask_login import login_user, logout_user, login_required, current_user
+from flask_login import logout_user, login_required, current_user
 from app.services.auth_service import AuthService
 from app.utils.captcha import generate_captcha
 from app.utils.common import get_categories_data

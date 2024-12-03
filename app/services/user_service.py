@@ -1,5 +1,4 @@
-from app.models import User, Article, ViewHistory, Comment, Category, Tag
-from sqlalchemy import func
+from app.models import User, Article, ViewHistory, Comment, Category
 from datetime import datetime
 from app.utils.cache_manager import cache_manager
 from app import db

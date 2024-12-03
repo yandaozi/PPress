@@ -10,6 +10,7 @@ from app.plugins import get_plugin_manager
 from flask_caching import Cache
 from config.database import get_db_url, DB_TYPE
 from sqlalchemy import event
+from app.utils.custom_pages import custom_page_manager
 
 cache = Cache()
 
@@ -36,6 +37,8 @@ def init_app_components(app):
         with app.app_context():
             init_plugins(app)
             init_cache(app)
+            # 初始化自定义页面
+            custom_page_manager.init_custom_pages(app)
         app._components_initialized = True
 
 def init_routes(app):
@@ -256,8 +259,5 @@ def create_app(db_type=DB_TYPE, init_components=True):
         from .utils.encrypt import CopyrightEncryptor
         return CopyrightEncryptor.get_copyright()
 
-    # 初始化自定义页面
-    from app.utils.custom_pages import custom_page_manager
-    custom_page_manager.init_custom_pages(app)
 
     return app 

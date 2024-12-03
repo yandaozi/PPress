@@ -1,4 +1,4 @@
-from flask import jsonify, render_template_string, current_app, url_for, send_from_directory
+from flask import render_template_string, current_app, url_for, send_from_directory
 from app import db
 from app.plugins import PluginBase
 from markupsafe import Markup

@@ -1,30 +1,21 @@
 import base64
 import os
-import click
 from app import create_app, db
-from app.models import User, Article, Tag, Comment, ViewHistory, Category, SiteConfig, Plugin, File
-from werkzeug.security import generate_password_hash
-from datetime import datetime, timedelta
-import random
+from app.models import User, Article, Tag, Category, SiteConfig
+from datetime import datetime
 import pymysql
 from config.database import MYSQL_CONFIG
 
 LOCK_FILE = 'ppress_db.lock'
 COPYRIGHT_INFO = base64.b64decode(
-    'UFByZXNzIC0gRmxhc2sgQmxvZyBTeXN0ZW0K54mI5p2D5omA5pyJIChjKSAyMDI0IOiogOmBk+'+
-    'WtkArkvZzogIVRUe+8mjU3NTczMjAyMgrpobnnm67lnLDlnYDvvJpodHRwczovL2dpdGVlLmNvb'+
-    'S9mb2ppZS9QUHJlc3MKCuitpuWRiu+8muaVsOaNruW6k+WIneWni+WMluS8mua4heepuuaJgOac'+
-    'ieaVsOaNru+8gQrlpoLmnpznoa7lrpropoHph43mlrDliJ3lp4vljJbmlbDmja7lupPvvIzor7fl'+
-    'iKDpmaTmraTmlofku7blkI7ph43or5XjgII='
+    'UFByZXNzIC0gRmxhc2sgQ29udGVudCBNYW5hZ2VtZW50IFN5c3RlbQrniYjmnYPmiYDmnIkgKGMpIDIwMjQg6KiA6YGT5a2QCuS9nOiAhVFR77yaNTc1NzMyNTYzCumhueebruWcsOWdgO+8mmh0dHBzOi8vZ2l0ZWUuY29tL2ZvamllL1BQcmVzcw=='
 ).decode('utf-8') # MIT Info pls do not delete. :)
 
 def check_db_lock():
     """检查数据库锁"""
     if os.path.exists(LOCK_FILE):
-        print("\n错误：检测到数据库锁文件！")
-        print("这是为了防止意外重置数据库的安全机制。")
-        print("如果您确定要重新初始化数据库，请先删除以下文件：")
-        print(f"  {os.path.abspath(LOCK_FILE)}")
+        print("\n检测到数据库锁文件！这是为了防止意外重置数据库的安全机制！")
+        print(f"如果确定要重新初始化数据库，请先删除以下文件：{os.path.abspath(LOCK_FILE)}")
         return True
     return False
 
@@ -95,7 +86,7 @@ def init_db(db_type='mysql'):
             {'key': 'site_name', 'value': 'PPress', 'description': '网站名称'},
             {'key': 'site_keywords', 'value': 'PPress,技术,博客,Python,Web开发', 'description': '网站关键词'},
             {'key': 'site_description', 'value': '分享技术知识和经验', 'description': '网站描述'},
-            {'key': 'contact_email', 'value': '575732022@qq.com', 'description': '联系邮箱'},
+            {'key': 'contact_email', 'value': 'ponyj@qq.com', 'description': '联系邮箱'},
             {'key': 'icp_number', 'value': '', 'description': 'ICP备案号'},
             {'key': 'footer_text', 'value': '© 2024 PPress 版权所有', 'description': '页脚文本'},
             {'key': 'site_theme', 'value': 'default', 'description': '网站主题'},
@@ -106,7 +97,7 @@ def init_db(db_type='mysql'):
         # 创建管理员用户
         admin = User(
             username='admin',
-            email='575732022@qq.com',
+            email='ponyj@qq.com',
             role='admin'
         )
         admin.set_password('123456')
@@ -129,7 +120,7 @@ def init_db(db_type='mysql'):
         # 创建一篇示例文章
         article = Article(
             title='欢迎使用 PPress',
-            content='''<p>欢迎使用 PPress 博客系统！&nbsp;PPress 是一个基于 Flask 的轻量级博客系统，由言道子(QQ:575732022)开发。</p>
+            content='''<p>欢迎使用 PPress 博客系统！&nbsp;PPress 是一个基于 Flask 的轻量级博客系统，由言道子(QQ:575732563)开发。</p>
 <p>主要特点： 简洁优雅的界面设计、支持插件扩展、支持主题切换、完善的后台管理&nbsp;</p>
 <p>项目地址：<a href="https://gitee.com/fojie/PPress">https://gitee.com/fojie/PPress </a></p>
 <p>开始使用：</p>
@@ -148,7 +139,7 @@ def init_db(db_type='mysql'):
         # 最终提交
         db.session.commit()
         
-        print("纯净数据库初始化完成！作者QQ：575732022")
+        print("纯净数据库初始化完成！作者QQ：575732563")
         print("管理员账号：")
         print("用户名：admin")
         print("密码：123456")

@@ -2,7 +2,6 @@ from ..extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from datetime import datetime
-from sqlalchemy.orm import load_only
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'

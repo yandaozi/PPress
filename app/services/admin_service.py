@@ -1,4 +1,4 @@
-from flask import current_app, url_for, abort, g, request
+from flask import current_app
 
 from app.models import User, Article, Comment, ViewHistory, Category, Tag, Plugin, File, SiteConfig, Route
 from app.utils.cache_manager import cache_manager
@@ -17,7 +17,6 @@ import sqlalchemy
 
 from app.utils.pagination import Pagination
 from threading import Lock
-import time
 
 from app.utils.route_manager import route_manager
 
@@ -56,7 +55,7 @@ class AdminService:
                 'template_folder': os.path.basename(current_app.template_folder),
                 'debug_mode': current_app.debug,
                 'environment': 'Development' if current_app.debug else 'Production',
-                'app_version': current_app.config.get('VERSION', '0.0.1'),
+                'app_version': current_app.config.get('VERSION', '0.0.2'),
                 'operating_system': f"{platform.system()} {platform.release()}"
             }
             

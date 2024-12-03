@@ -1,6 +1,5 @@
 import base64
 import os
-import click
 from app import create_app, db
 from app.models import User, Article, Tag, Comment, ViewHistory, Category, SiteConfig, Plugin, File
 from werkzeug.security import generate_password_hash
@@ -11,20 +10,14 @@ from config.database import MYSQL_CONFIG
 
 LOCK_FILE = 'ppress_db.lock'
 COPYRIGHT_INFO = base64.b64decode(
-    'UFByZXNzIC0gRmxhc2sgQmxvZyBTeXN0ZW0K54mI5p2D5omA5pyJIChjKSAyMDI0IOiogOmBk+'+
-    'WtkArkvZzogIVRUe+8mjU3NTczMjAyMgrpobnnm67lnLDlnYDvvJpodHRwczovL2dpdGVlLmNvb'+
-    'S9mb2ppZS9QUHJlc3MKCuitpuWRiu+8muaVsOaNruW6k+WIneWni+WMluS8mua4heepuuaJgOac'+
-    'ieaVsOaNru+8gQrlpoLmnpznoa7lrpropoHph43mlrDliJ3lp4vljJbmlbDmja7lupPvvIzor7fl'+
-    'iKDpmaTmraTmlofku7blkI7ph43or5XjgII='
+    'UFByZXNzIC0gRmxhc2sgQ29udGVudCBNYW5hZ2VtZW50IFN5c3RlbQrniYjmnYPmiYDmnIkgKGMpIDIwMjQg6KiA6YGT5a2QCuS9nOiAhVFR77yaNTc1NzMyNTYzCumhueebruWcsOWdgO+8mmh0dHBzOi8vZ2l0ZWUuY29tL2ZvamllL1BQcmVzcw=='
 ).decode('utf-8') # MIT Info pls do not delete. :)
 
 def check_db_lock():
     """检查数据库锁"""
     if os.path.exists(LOCK_FILE):
-        print("\n错误：检测到数据库锁文件！")
-        print("这是为了防止意外重置数据库的安全机制。")
-        print("如果您确定要重新初始化数据库，请先删除以下文件：")
-        print(f"  {os.path.abspath(LOCK_FILE)}")
+        print("\n检测到数据库锁文件！这是为了防止意外重置数据库的安全机制！")
+        print(f"如果确定要重新初始化数据库，请先删除以下文件：{os.path.abspath(LOCK_FILE)}")
         return True
     return False
 

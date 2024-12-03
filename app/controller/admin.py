@@ -4,11 +4,9 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required, current_user
 from functools import wraps
 import json
-import numpy as np
 import io
 from app.services.admin_service import AdminService
 from app.models.custom_page import CustomPage
-from app import db
 from app.services.custom_page_service import CustomPageService
 from app.utils.custom_pages import custom_page_manager
 

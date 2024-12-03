@@ -1,10 +1,8 @@
 import os
-from flask import render_template, current_app, Blueprint, request, abort
+from flask import render_template, current_app, request, abort
 from flask_login import login_required
-from functools import wraps
 from app.models import CustomPage
 from app.models.site_config import SiteConfig
-from app.extensions import db
 
 class CustomPageMiddleware:
     def __init__(self, wsgi_app, flask_app):

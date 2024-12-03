@@ -2,7 +2,6 @@ from app import db
 from app.models import CustomPage
 from flask import current_app
 import os
-import json
 
 class CustomPageService:
     @staticmethod

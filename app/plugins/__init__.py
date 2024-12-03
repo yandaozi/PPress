@@ -1,10 +1,9 @@
-from typing import Dict, List, Type
+from typing import Dict, List
 from importlib import import_module
 import os
 import json
-from flask import Blueprint, render_template_string, current_app
+from flask import render_template_string, current_app
 import inspect
-import sys
 from werkzeug.routing import Rule, Map
 from app import db
 from markupsafe import Markup
