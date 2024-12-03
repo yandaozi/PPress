@@ -23,7 +23,7 @@ PPress 是一个基于 Flask 框架构建的功能丰富的CMS系统，采用 Fl
 ## 运行
 1. 下载代码，解压缩
 2. 安装依赖 pip install -r requirements.txt
-3. 如果选择用mysql数据库需要在config/database文件MYSQL_CONFIG变量中配置mysql
+3. 如果选择用mysql数据库需要在config/database文件MYSQL_CONFIG变量中修改连接信息
 4. 运行 init_db.py 文件 初始化数据库
 5. 运行 run.py
 6. 后台地址：`/admin/`
