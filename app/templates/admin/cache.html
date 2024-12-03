@@ -104,6 +104,14 @@
                         插件缓存
                         <span class="ml-2 bg-pink-100 text-pink-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.plugin }}</span>
                     </button>
+                    <button onclick="clearCacheCategory('custom_page')"
+                            class="inline-flex items-center px-4 py-2 bg-pink-50 text-pink-700 hover:bg-pink-100 rounded-lg transition-colors duration-200">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                        自定义页面缓存
+                        <span class="ml-2 bg-pink-100 text-pink-800 px-2 py-0.5 rounded-full text-xs">{{ cache_categories.custom_page }}</span>
+                    </button>
                     <button onclick="clearCacheCategory('route')"
                             class="inline-flex items-center px-4 py-2 bg-pink-50 text-pink-700 hover:bg-pink-100 rounded-lg transition-colors duration-200">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,6 +205,7 @@ function clearCacheCategory(category) {
         'tag': '标签',
         'search': '搜索',
         'plugin': '插件',
+        'custom_page': '自定义页面',
         'route': '路由',
         'all': '所有'
     };

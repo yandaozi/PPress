@@ -2,6 +2,7 @@ from app import db
 from app.models import CustomPage
 from flask import current_app
 import os
+from app.utils.cache_manager import cache_manager
 
 class CustomPageService:
     @staticmethod
@@ -93,13 +94,24 @@ class CustomPageService:
             return False, str(e), None
 
     @staticmethod
+    def _clear_page_cache(page):
+        """清除页面缓存"""
+        try:
+            # 只清除前台页面的HTML缓存
+            cache_manager.delete(f'custom_page_html:{page.key}')
+            print(f"✓ 已清除页面缓存: {page.key}")
+        except Exception as e:
+            current_app.logger.error(f"Clear page cache error: {str(e)}")
+
+    @staticmethod
     def edit_page(page_id, data):
         """编辑自定义页面"""
         try:
             page = CustomPage.query.get_or_404(page_id)
+            old_key = page.key
             
             # 如果修改了key,检查唯一性
-            if 'key' in data and data['key'] != page.key:
+            if data['key'] != page.key:
                 if CustomPage.query.filter_by(key=data['key']).first():
                     return False, '页面标识已存在', None
                 page.key = data['key']
@@ -112,6 +124,11 @@ class CustomPageService:
             page.require_login = data.get('require_login', False)
             
             db.session.commit()
+            
+            # 清除旧的缓存
+            CustomPageService._clear_page_cache(page)
+            if old_key != page.key:
+                cache_manager.delete(f'custom_page_html:{old_key}')
             
             # 更新路由
             from app.utils.custom_pages import custom_page_manager
@@ -129,6 +146,10 @@ class CustomPageService:
         """删除自定义页面"""
         try:
             page = CustomPage.query.get_or_404(page_id)
+            
+            # 先清除缓存
+            CustomPageService._clear_page_cache(page)
+            
             db.session.delete(page)
             db.session.commit()
             return True, '删除成功'
@@ -145,4 +166,42 @@ class CustomPageService:
             return True, None, page
         except Exception as e:
             current_app.logger.error(f"Get custom page error: {str(e)}")
+            return False, str(e), None 
+
+    @staticmethod
+    def update_page(page_id, data):
+        """更新自定义页面"""
+        try:
+            page = CustomPage.query.get_or_404(page_id)
+            old_key = page.key
+            
+            # 如果修改了key,检查唯一性
+            if 'key' in data and data['key'] != page.key:
+                if CustomPage.query.filter_by(key=data['key']).first():
+                    return False, '页面标识已存在', None
+                page.key = data['key']
+            
+            page.title = data['title']
+            page.template = data['template']
+            page.route = data.get('route') or f'/custom/{page.key}'
+            page.content = data.get('content', '')
+            page.fields = data.get('fields', {})
+            page.require_login = data.get('require_login', False)
+            
+            db.session.commit()
+            
+            # 清除旧的缓存
+            CustomPageService._clear_page_cache(page)
+            if old_key != page.key:
+                cache_manager.delete(f'custom_page_html:{old_key}')
+            
+            # 更新路由
+            from app.utils.custom_pages import custom_page_manager
+            custom_page_manager.update_page_route(current_app, page)
+            
+            return True, '更新成功', page
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Edit custom page error: {str(e)}")
             return False, str(e), None 

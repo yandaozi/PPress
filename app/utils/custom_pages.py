@@ -3,6 +3,7 @@ from flask import render_template, current_app, request, abort
 from flask_login import login_required
 from app.models import CustomPage
 from app.models.site_config import SiteConfig
+from app.utils.cache_manager import cache_manager
 
 class CustomPageMiddleware:
     def __init__(self, wsgi_app, flask_app):
@@ -17,7 +18,6 @@ class CustomPageMiddleware:
         if path in custom_pages:
             # 找到匹配的页面,重定向到内部处理函数
             environ['PATH_INFO'] = f'/custom_page/{custom_pages[path]}'
-            # 添加标记表示这是通过中间件重定向的
             environ['HTTP_X_CUSTOM_PAGE'] = 'true'
                 
         return self.wsgi_app(environ, start_response)
@@ -25,12 +25,27 @@ class CustomPageMiddleware:
 def render_custom_page(page):
     """渲染自定义页面"""
     try:
-        # 先尝试当前主题的模板
-        current_theme = SiteConfig.get_config('site_theme', 'default')
-        template = f'{current_theme}/custom/{page.template}'
-        if not os.path.exists(os.path.join(current_app.template_folder, template)):
-            template = f'default/custom/{page.template}'
-        return render_template(template, page=page)
+        # 如果是管理后台的请求，不使用缓存
+        if request.endpoint and request.endpoint.startswith('admin.'):
+            current_theme = SiteConfig.get_config('site_theme', 'default')
+            template = f'{current_theme}/custom/{page.template}'
+            if not os.path.exists(os.path.join(current_app.template_folder, template)):
+                template = f'default/custom/{page.template}'
+            return render_template(template, page=page)
+            
+        # 前台页面使用缓存
+        cache_key = f'custom_page_html:{page.key}'
+        html = cache_manager.get(cache_key)
+        
+        if html is None:
+            current_theme = SiteConfig.get_config('site_theme', 'default')
+            template = f'{current_theme}/custom/{page.template}'
+            if not os.path.exists(os.path.join(current_app.template_folder, template)):
+                template = f'default/custom/{page.template}'
+            html = render_template(template, page=page)
+            cache_manager.set(cache_key, html)
+            
+        return html
     except Exception as e:
         current_app.logger.error(f"Render custom page error: {str(e)}")
         return render_template('default/custom/example.html', page=page)
