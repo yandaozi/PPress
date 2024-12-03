@@ -121,7 +121,7 @@ def create_app(db_type=DB_TYPE, init_components=True):
     app = Flask(__name__)
 
     # 配置
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev')
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'PPress')
     app.config['SQLALCHEMY_DATABASE_URI'] = get_db_url(db_type)
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')

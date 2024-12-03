@@ -1,10 +1,11 @@
 import os
 
-DB_TYPE = "sqlite"      #修改 DB_TYPE 为数据库类型 支持：mysql、sqlite
+DB_TYPE = "mysql"      #修改 DB_TYPE 为数据库类型 支持：mysql、sqlite
 
 # MySQL 配置
 MYSQL_CONFIG = {
     'host': 'localhost',
+    'port': 3306,      # 添加端口配置
     'user': 'flaskiosblog',
     'password': 'flaskiosblog',
     'database': 'flaskiosblog',
@@ -24,7 +25,7 @@ def get_db_url(db_type='mysql'):
     """获取数据库 URL"""
     if db_type == 'mysql':
         return (f"mysql+pymysql://{MYSQL_CONFIG['user']}:{MYSQL_CONFIG['password']}"
-                f"@{MYSQL_CONFIG['host']}/{MYSQL_CONFIG['database']}?"
+                f"@{MYSQL_CONFIG['host']}:{MYSQL_CONFIG['port']}/{MYSQL_CONFIG['database']}?"
                 f"charset={MYSQL_CONFIG['charset']}")
     else:
         # 确保 SQLite 数据库目录存在

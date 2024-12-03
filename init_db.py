@@ -59,6 +59,7 @@ def init_db(db_type='mysql'):
         # 使用配置文件中的连接信息
         conn = pymysql.connect(
             host=MYSQL_CONFIG['host'],
+            port=MYSQL_CONFIG['port'],
             user=MYSQL_CONFIG['user'],
             password=MYSQL_CONFIG['password']
         )
@@ -153,7 +154,7 @@ def init_db(db_type='mysql'):
 def get_db_type():
     """交互式获取数据库类型"""
     while True:
-        choice = input("\n请选择数据库类型 [1/2]:\n1. SQLite (默认)\n2. MySQL\n请输入(直接回车使用SQLite，请输入1或者2): ").strip()
+        choice = input("\n如果选mysql请提前在config/database.py中，把MYSQL_CONFIG配置好\n请选择数据库类型 [1/2]:\n1. SQLite (默认)\n2. MySQL\n请输入(直接回车使用SQLite，请输入1或者2): ").strip()
 
         if choice == '':
             print("\n已选择: SQLite")
