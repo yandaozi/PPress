@@ -1,6 +1,8 @@
 from app.models import Article, Category, Tag, Comment, ViewHistory, File, User
 from sqlalchemy import func
 from datetime import datetime, timedelta
+
+from app.models.article import article_categories
 from app.utils.cache_manager import cache_manager
 from app import db
 import os
@@ -42,54 +44,34 @@ class BlogService:
 
     @staticmethod
     def get_category_articles(category_id, page=1, user=None):
-        """获取分类下的文章列表（包含子分类的文章）"""
+        """获取分类文章列表"""
         def query_articles():
-            try:
-                # 获取当前分类
-                category = Category.query.get_or_404(category_id)
-                
-                # 获取所有子分类ID（包括当前分类）
-                category_ids = [category_id]
-                for child in category.get_descendants():
-                    category_ids.append(child.id)
-                
-                # 构建查询
-                query = Article.query\
-                    .options(
-                        db.joinedload(Article.author),
-                        db.joinedload(Article.category),
-                        db.joinedload(Article.tags)
-                    )\
-                    .filter(Article.category_id.in_(category_ids))
-                
-                # 过滤文章状态
-                if not user or user.role != 'admin':
-                    query = query.filter(
-                        db.or_(
-                            Article.status == Article.STATUS_PUBLIC,
-                            Article.status == Article.STATUS_PASSWORD,
-                            db.and_(
-                                Article.status.in_([Article.STATUS_PRIVATE, Article.STATUS_DRAFT]),
-                                Article.author_id == (user.id if user else None)
-                            )
-                        )
-                    )
-                
-                # 排序
-                query = query.order_by(Article.id.desc(), Article.created_at.desc())
-                
-                # 分页
-                pagination = query.paginate(page=page, per_page=10, error_out=False)
-                
-                return {
-                    'pagination': pagination,
-                    'current_category': category
-                }
-                
-            except Exception as e:
-                current_app.logger.error(f"Get category articles error: {str(e)}")
-                return None
-
+            # 获取当前分类
+            category = Category.query.get_or_404(category_id)
+            
+            # 构建查询
+            query = Article.query.options(
+                db.joinedload(Article.author),
+                db.joinedload(Article.tags)
+            )
+            
+            # 使用 union 合并主分类和多分类的文章
+            main_category_articles = query.filter(Article.category_id == category_id)
+            multi_category_articles = query.join(article_categories).filter(article_categories.c.category_id == category_id)
+            
+            # 合并查询结果
+            combined_query = main_category_articles.union(multi_category_articles)
+            
+            # 排序和分页
+            paginated = combined_query\
+                .order_by(Article.created_at.desc())\
+                .paginate(page=page, per_page=10, error_out=False)
+            
+            return {
+                'pagination': paginated,
+                'current_category': category
+            }
+        
         return cache_manager.get(
             f'category:{category_id}:page:{page}', 
             query_articles,
