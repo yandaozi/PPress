@@ -4,6 +4,7 @@ from flask import current_app
 from sqlalchemy.orm.attributes import NO_VALUE
 from sqlalchemy import event
 from sqlalchemy.orm import reconstructor
+from sqlalchemy.orm import object_session
 
 # 创建文章-标签关联表
 article_tags = db.Table('article_tags',
@@ -18,7 +19,7 @@ class Article(db.Model):
     title = db.Column(db.String(200), nullable=False, index=True)
     content = db.Column(db.Text, nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), index=True)
-    sentiment_score = db.Column(db.Float)
+    sentiment_score = db.Column(db.Float, default=0.0)
     view_count = db.Column(db.Integer, default=0, index=True)
     created_at = db.Column(db.DateTime, default=datetime.now, index=True)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
@@ -121,81 +122,71 @@ def init_article_events():
         except Exception as e:
             current_app.logger.error(f"Error in article_category_changed: {str(e)}")
 
-    @event.listens_for(Article.tags, 'append')
-    def article_tag_append(target, value, initiator):
-        """添加标签时更新计数"""
-        try:
-            # 确保对象在会话中
-            session = db.session
-            if target not in session:
-                session.add(target)
-            if value not in session:
-                session.add(value)
-                
-            if value.article_count is None:
-                value.article_count = 0
-            value.article_count += 1
-            
-            session.flush()  # 使用 flush 而不是 commit
-        except Exception as e:
-            current_app.logger.error(f"Error in article_tag_append: {str(e)}")
-
-    @event.listens_for(Article.tags, 'remove')
-    def article_tag_remove(target, value, initiator):
-        """移除标签时更新计数"""
-        try:
-            session = db.session
-            if target not in session:
-                session.add(target)
-            if value not in session:
-                session.add(value)
-                
-            if value.article_count is None:
-                value.article_count = 0
-            value.article_count -= 1
-            
-            session.flush()  # 使用 flush 而不是 commit
-        except Exception as e:
-            current_app.logger.error(f"Error in article_tag_remove: {str(e)}")
-
     @event.listens_for(Article.tags, 'set')
     def article_tags_set(target, value, oldvalue, initiator):
-        """文章标签变更时更新计数"""
+        """标签集合被替换时更新计数"""
         try:
             session = db.session
             
-            # 如果有旧值，减少旧标签的计数
+            # 减少旧标签的计数
             if oldvalue is not NO_VALUE:
                 for tag in oldvalue:
-                    if tag in session and tag.article_count > 0:
+                    if tag.article_count is None:
+                        tag.article_count = 0
+                    if tag.article_count > 0:  # 添加这个检查
                         tag.article_count -= 1
+                    session.add(tag)
             
             # 增加新标签的计数
             if value is not None:
                 for tag in value:
-                    if tag in session:
-                        if tag.article_count is None:
-                            tag.article_count = 0
-                        tag.article_count += 1
-            
-            # 使用 flush 而不是 commit
-            session.flush()
-            
+                    if tag.article_count is None:
+                        tag.article_count = 0
+                    tag.article_count += 1
+                    session.add(tag)
+                
+            session.commit()
         except Exception as e:
-            current_app.logger.error(f"Error in article_tags_set: {str(e)}")
             session.rollback()
+            current_app.logger.error(f"Error updating tag counts: {str(e)}")
 
-    # 添加删除事件监听器
+    @event.listens_for(Article.tags, 'append')
+    def article_tag_append(target, value, initiator):
+        """添加标签时更新计数"""
+        if value.article_count is None:
+            value.article_count = 0
+        value.article_count += 1
+        db.session.add(value)
+
+    @event.listens_for(Article.tags, 'remove')
+    def article_tag_remove(target, value, initiator):
+        """移除标签时更新计数"""
+        if value.article_count is None:
+            value.article_count = 0
+        if value.article_count > 0:  # 添加这个检查
+            value.article_count -= 1
+        db.session.add(value)
+
     @event.listens_for(Article, 'before_delete')
     def article_before_delete(mapper, connection, target):
-        """文章删除前清理标签关联"""
+        """文章删除前清理标签关联和更新计数"""
         try:
-            # 手动删除标签关联
+            # 获取文章的标签
+            session = object_session(target)
+            if session:
+                # 更新标签计数
+                for tag in target.tags:
+                    if tag.article_count is not None and tag.article_count > 0:
+                        tag.article_count -= 1
+                session.flush()
+            
+            # 删除标签关联
             connection.execute(
                 Article.__table__.metadata.tables['article_tags'].delete().where(
                     Article.__table__.metadata.tables['article_tags'].c.article_id == target.id
                 )
             )
+            
         except Exception as e:
             current_app.logger.error(f"Error in article_before_delete: {str(e)}")
 

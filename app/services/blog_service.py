@@ -315,9 +315,22 @@ class BlogService:
             return False, f'删除失败: {str(e)}'
     
     @staticmethod
-    def edit_article(article_id, form_data, user_id, is_admin=False):
+    def edit_article(article_id, data, user_id, is_admin=False):
         """编辑文章"""
         try:
+            # 验证必填字段
+            required_fields = ['title', 'content', 'category']
+            for field in required_fields:
+                if not data.get(field):
+                    return False, f'请填写{field}字段', None
+
+            # 数据类型转换
+            try:
+                category_id = int(data['category'])
+            except (ValueError, TypeError):
+                return False, '分类ID必须是数字', None
+
+            # 获取或创建文章
             if article_id:
                 article = Article.query.get_or_404(article_id)
                 if not is_admin and article.author_id != user_id:
@@ -325,48 +338,64 @@ class BlogService:
             else:
                 article = Article(author_id=user_id)
                 db.session.add(article)
-            
+
             # 更新基本信息
-            article.title = form_data.get('title')
-            article.content = form_data.get('content')
-            article.category_id = form_data.get('category', type=int)
+            article.title = data['title'].strip()
+            article.content = data['content']
+            article.category_id = category_id
+            
+            # 情感分析
+            try:
+                from textblob import TextBlob
+                blob = TextBlob(data['content'])
+                article.sentiment_score = blob.sentiment.polarity
+            except Exception as e:
+                current_app.logger.error(f"Sentiment analysis error: {str(e)}")
+                article.sentiment_score = 0.0
             
             # 处理标签
-            tags = []
-            tag_names = form_data.getlist('tags')
-            for name in tag_names:
-                name = name.strip()
-                if name:
-                    tag = Tag.query.filter_by(name=name).first()
-                    if not tag:
-                        tag = Tag(name=name)
-                        db.session.add(tag)
-                    tags.append(tag)
+            tag_names = [name.strip() for name in data.get('tag_names', '').split() if name.strip()]
+            new_tags = []
             
-            # 使用新的事务处理标签关联
-            with db.session.begin_nested():
-                # 清除旧的标签关联
-                if article_id:
-                    article.tags = []
-                    db.session.flush()
-                # 设置新的标签
-                article.tags = tags
+            # 获取或创建标签
+            for tag_name in tag_names:
+                tag = Tag.query.filter_by(name=tag_name).first()
+                if not tag:
+                    tag = Tag(name=tag_name)
+                    db.session.add(tag)
+                new_tags.append(tag)
+            
+            # 直接替换标签列表，避免使用 clear()
+            article.tags = new_tags
+            
+            # 更新时间戳
+            if article_id:
+                article.updated_at = datetime.now()
             
             db.session.commit()
             
-            # 清除缓存
-            cache_manager.delete_many([
-                'index:articles:*',
-                f'article:{article.id}',
-                'tag_*',
-                'category:*'
-            ])
+            # 清除相关缓存
+            cache_keys = ['index:articles:*']
+            if article_id:
+                cache_keys.append(f'article:{article.id}')
+            else:
+                cache_keys.extend([
+                    'random_articles',
+                    'tag:*',
+                    'search:*',
+                    'categories_count',
+                    'tag_suggestions:*'
+                ])
+            cache_keys.append(f'user:{user_id}:articles:*')
             
-            return True, '保存成功', article
+            for key in cache_keys:
+                cache_manager.delete(key)
+            
+            return True, '文章保存成功', article
             
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"Edit article error: {str(e)}")
+            current_app.logger.error(f"Save article error: {str(e)}")
             return False, f'保存失败: {str(e)}', None
     
     @staticmethod
