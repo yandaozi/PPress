@@ -21,6 +21,9 @@ PPress 是一个基于 Flask 框架构建的功能丰富的CMS系统，采用 Fl
 ![B.png](preview/B.png)
 
 ## 运行
+Centos7下PPress启动教程：https://www.bilibili.com/video/BV1jezSY3Eag/
+
+Windows下PPress启动教程：https://www.bilibili.com/video/BV1sEzSYHEHc/
 1. 下载代码，解压缩
 2. 安装依赖 pip install -r requirements.txt
 3. 如果选择用mysql数据库需要在config/database文件MYSQL_CONFIG变量中修改连接信息
