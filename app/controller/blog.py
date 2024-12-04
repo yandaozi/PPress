@@ -194,7 +194,7 @@ def edit(id=None):
     
     return render_template('blog/edit.html',
                          article=article,
-                         random_tags=BlogService.get_random_tags(),
+                         # random_tags=BlogService.get_random_tags(),
                          **get_categories_data())
 
 @bp.route('/tags/suggestions')

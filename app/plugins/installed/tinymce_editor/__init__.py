@@ -9,7 +9,7 @@ class Plugin(PluginBase):
     # 默认设置
     default_settings = {
         'language': 'zh_CN',
-        'height': 350,
+        'height': 450,
         'plugins': [
             'advlist', 'anchor', 'autolink', 'autoresize', 'autosave',
             'charmap', 'code', 'codesample', 'directionality', 'emoticons',
