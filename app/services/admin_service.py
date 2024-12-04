@@ -362,7 +362,8 @@ class AdminService:
                 if search_type == 'id':
                     try:
                         category_id = int(search_query)
-                        query = query.filter(Category.id == category_id)
+                        # ID搜索时直接返回匹配的分类
+                        categories = [Category.query.get_or_404(category_id)]
                     except ValueError:
                         return None, 'ID必须是数字'
                 else:
@@ -373,23 +374,41 @@ class AdminService:
                         Category.name != search_query
                     )
                     query = exact_matches.union(fuzzy_matches)
-            
-            # 获取分类数据
-            categories = [{
-                'id': cat.id,
-                'name': cat.name,
-                'description': cat.description,
-                'article_count': cat.article_count
-            } for cat in query.all()]
+                    categories = query.order_by(Category.sort_order).all()
+                    
+                    # 对于名称搜索，添加父分类链
+                    result_categories = []
+                    added_ids = set()
+                    
+                    for category in categories:
+                        # 添加父分类链
+                        ancestors = category.get_ancestors()
+                        for ancestor in ancestors:
+                            if ancestor.id not in added_ids:
+                                result_categories.append(ancestor)
+                                added_ids.add(ancestor.id)
+                        
+                        # 添加当前分类
+                        if category.id not in added_ids:
+                            result_categories.append(category)
+                            added_ids.add(category.id)
+                    
+                    # 按层级和排序重新排序
+                    result_categories.sort(key=lambda x: (x.get_level(), x.sort_order))
+                    categories = result_categories
+            else:
+                # 非搜索时只显示顶级分类
+                categories = query.filter(Category.parent_id == None)\
+                               .order_by(Category.sort_order).all()
             
             # 手动分页
-            per_page = 10
+            per_page = 50
             total = len(categories)
             total_pages = (total + per_page - 1) // per_page
             page = min(max(page, 1), total_pages if total_pages > 0 else 1)
             start = (page - 1) * per_page
             end = start + per_page
-
+            
             # 使用通用分页类
             pagination = Pagination(
                 items=categories[start:end],
@@ -406,93 +425,185 @@ class AdminService:
             return None, str(e)
 
     @staticmethod
-    def add_category(name, description):
+    def add_category(data):
         """添加分类"""
         try:
-            if Category.query.filter_by(name=name).first():
-                return False, '分类已存在', None
+            # 检查同级分类名称是否重复
+            if Category.query.filter_by(
+                name=data['name'],
+                parent_id=data.get('parent_id')
+            ).first():
+                return False, '同级分类下已存在相同名称', None
             
-            category = Category(name=name, description=description)
+            # 生成分类别名(slug)
+            from slugify import slugify
+            slug = slugify(data['name'])
+            
+            # 创建分类
+            category = Category(
+                name=data['name'],
+                slug=slug,
+                description=data.get('description'),
+                parent_id=data.get('parent_id', type=int),
+                sort_order=data.get('sort_order', type=int, default=0)
+            )
+            
             db.session.add(category)
             db.session.commit()
             
             # 清除分类缓存
+            cache_manager.delete('admin:categories:*')
             cache_manager.delete('categories_*')
             
-            return True, None, {
+            return True, '分类添加成功', {
                 'id': category.id,
                 'name': category.name
             }
             
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(f"Add category error: {str(e)}")
             return False, str(e), None
 
     @staticmethod
-    def delete_category(category_id):
-        """除分类"""
+    def update_category(category_id, data):
+        """更新分类"""
         try:
             category = Category.query.get_or_404(category_id)
             
-            # 不能删除默认分类
-            if category.id == 1:
-                return False, '不能删除默认分类'
+            # 检查同级分类名称是否重复
+            if data['name'] != category.name:
+                if Category.query.filter_by(
+                    name=data['name'],
+                    parent_id=data.get('parent_id', category.parent_id)
+                ).first():
+                    return False, '同级分类下已存在相同名称', None
             
-            # 将该分类下的文章移动到默认分类
-            default_category = Category.query.get(1)
-            if not default_category:
-                default_category = Category(id=1, name='默认分类')
-                db.session.add(default_category)
-                db.session.flush()
+            # 检查 slug 是否重复
+            new_slug = data.get('slug')
+            if new_slug:  # 如果提供了新的 slug
+                if new_slug != category.slug and Category.query.filter_by(slug=new_slug).first():
+                    return False, '别名已被使用', None
+                category.slug = new_slug
+            else:  # 如果没提供 slug，根据名称生成
+                from slugify import slugify
+                category.slug = slugify(data['name'])
             
-            # 更新文章分类
-            articles_count = category.article_count
-            Article.query.filter_by(category_id=category.id).update({
-                'category_id': default_category.id
-            })
-            
-            # 更新默认分文章计数
-            default_category.article_count += articles_count
-            
-            # 删除分类
-            db.session.delete(category)
-            
-            # 清除缓存
-            cache_manager.delete('categories_*')
+            # 更新其他字段
+            category.name = data['name']
+            category.description = data.get('description')
+            # 只在明确提供 parent_id 时更新
+            if 'parent_id' in data:
+                category.parent_id = data.get('parent_id', type=int)
+            category.sort_order = data.get('sort_order', type=int, default=category.sort_order)
             
             db.session.commit()
-            return True, None
             
-        except Exception as e:
-            db.session.rollback()
-            return False, str(e)
-
-    @staticmethod
-    def edit_category(category_id, name, description):
-        """编辑分类"""
-        try:
-            category = Category.query.get_or_404(category_id)
-            
-            # 检查名称是否已存在
-            if name != category.name and Category.query.filter_by(name=name).first():
-                return False, '分类名称已存在', None
-            
-            category.name = name
-            category.description = description
-            db.session.commit()
-            
-            # 清除缓存
+            # 清除分类缓存
+            cache_manager.delete('admin:categories:*')
             cache_manager.delete('categories_*')
             
-            return True, None, {
+            return True, '分类更新成功', {
                 'id': category.id,
                 'name': category.name,
-                'description': category.description
+                'slug': category.slug,
+                'description': category.description,
+                'parent_id': category.parent_id,
+                'sort_order': category.sort_order
             }
             
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(f"Update category error: {str(e)}")
             return False, str(e), None
+
+    @staticmethod
+    def delete_category(category_id):
+        """删除分类"""
+        try:
+            category = Category.query.get_or_404(category_id)
+            
+            # 检查是否是默认分类
+            if category_id == 1:  # 假设 ID 为 1 的是默认分类
+                return False, '不能删除默认分类'
+            
+            # 获取默认分类
+            default_category = Category.query.get(1)
+            if not default_category:
+                return False, '默认分类不存在'
+            
+            # 开始事务
+            with db.session.begin_nested():
+                # 将该分类的文章移动到默认分类
+                Article.query.filter_by(category_id=category_id).update({'category_id': 1})
+                
+                # 更新默认分类的文章计数
+                default_category.article_count = Article.query.filter_by(category_id=1).count()
+                
+                # 删除分类
+                db.session.delete(category)
+            
+            # 提交事务
+            db.session.commit()
+            
+            # 清除分类缓存
+            cache_manager.delete('admin:categories:*')
+            cache_manager.delete('categories_*')
+            
+            return True, '分类删除成功'
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Delete category error: {str(e)}")
+            return False, str(e)
+
+    @staticmethod
+    def move_category(category_id, new_parent_id):
+        """移动分类"""
+        try:
+            category = Category.query.get_or_404(category_id)
+            
+            # 检查是否形成循环
+            if new_parent_id:
+                parent = Category.query.get_or_404(new_parent_id)
+                if category.id == new_parent_id or parent.id in [c.id for c in category.get_descendants()]:
+                    return False, '不能将分类移动到自己或其子分类下'
+            
+            category.parent_id = new_parent_id
+            db.session.commit()
+            
+            # 清除分类缓存
+            cache_manager.delete('admin:categories:*')
+            cache_manager.delete('categories_*')
+            
+            return True, '分类移动成功'
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Move category error: {str(e)}")
+            return False, str(e)
+
+    @staticmethod
+    def sort_categories(category_ids):
+        """批量排序分类"""
+        try:
+            for index, category_id in enumerate(category_ids):
+                category = Category.query.get(category_id)
+                if category:
+                    category.sort_order = index
+            
+            db.session.commit()
+            
+            # 清除分类缓存
+            cache_manager.delete('admin:categories:*')
+            cache_manager.delete('categories_*')
+            
+            return True, '排序更新成功'
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Sort categories error: {str(e)}")
+            return False, str(e)
 
     @staticmethod
     def get_tags(page=1, search_type='', search_query=''):
@@ -511,7 +622,7 @@ class AdminService:
                 else:
                     query = query.filter(Tag.name.ilike(f'%{search_query}%'))
             
-            # 分页
+            # 分
             pagination = query.order_by(Tag.id.desc()).paginate(
                 page=page, per_page=20, error_out=False
             )
@@ -827,7 +938,7 @@ class AdminService:
                 import shutil
                 shutil.rmtree(plugin_path)
 
-            # 从数据库中删除插件记录
+            # 从据库中删除插件记录
             db.session.delete(plugin_record)
             db.session.commit()
 
@@ -1088,7 +1199,7 @@ class AdminService:
             # 检查是否有设置模板
             settings_html = plugin.get_settings_template()
             if not settings_html:
-                return False, '该插件没有设置页面'
+                return False, '插件没有设置页面'
 
             return True, '插件有设置页面'
 
@@ -1457,3 +1568,56 @@ class AdminService:
     def refresh_custom_routes():
         """刷新自定义路由"""
         return route_manager.refresh_routes()
+
+    @staticmethod
+    def get_category(category_id):
+        """获取单个分类信息"""
+        try:
+            category = Category.query.get_or_404(category_id)
+            return True, None, {
+                'id': category.id,
+                'name': category.name,
+                'slug': category.slug,
+                'description': category.description,
+                'parent_id': category.parent_id,
+                'sort_order': category.sort_order
+            }
+        except Exception as e:
+            current_app.logger.error(f"Get category error: {str(e)}")
+            return False, str(e), None
+
+    @staticmethod
+    def get_all_categories():
+        """获取所有分类(用于移动分类选择)"""
+        try:
+            # 获取所有分类并按层级排序
+            categories = Category.query.order_by(Category.sort_order).all()
+            
+            # 将分类对象转换为字典
+            def category_to_dict(category):
+                return {
+                    'id': category.id,
+                    'name': category.name,
+                    'parent_id': category.parent_id,
+                    'sort_order': category.sort_order
+                }
+            
+            # 构建树形结构
+            tree = []
+            category_map = {category.id: category_to_dict(category) for category in categories}
+            
+            for category in categories:
+                category_dict = category_map[category.id]
+                if category.parent_id is None:
+                    tree.append(category_dict)
+                else:
+                    parent = category_map.get(category.parent_id)
+                    if parent:
+                        if '_children' not in parent:
+                            parent['_children'] = []
+                        parent['_children'].append(category_dict)
+            
+            return tree, None
+        except Exception as e:
+            current_app.logger.error(f"Get all categories error: {str(e)}")
+            return None, str(e)

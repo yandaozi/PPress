@@ -42,26 +42,46 @@ class BlogService:
 
     @staticmethod
     def get_category_articles(category_id, page=1):
-        """获取分类下的文章列表"""
+        """获取分类下的文章列表（包含子分类的文章）"""
         def query_articles():
-            category = Category.query.get_or_404(category_id)
-            query = Article.query.options(
-                db.joinedload(Article.author),
-                db.joinedload(Article.category),
-                db.joinedload(Article.tags)
-            ).filter_by(category_id=category_id)
-            
-            pagination = query.order_by(Article.id.desc(),Article.created_at.desc())\
-                            .paginate(page=page, per_page=10, error_out=False)
-            
-            return {
-                'pagination': pagination,
-                'current_category': category
-            }
-        
-        return cache_manager.get(f'category:{category_id}:page:{page}', 
-                               query_articles,
-                               ttl=BlogService.CACHE_TIMES['CATEGORY'])
+            try:
+                # 获取当前分类
+                category = Category.query.get_or_404(category_id)
+                
+                # 获取所有子分类ID（包括当前分类）
+                category_ids = [category_id]
+                for child in category.get_descendants():
+                    category_ids.append(child.id)
+                
+                # 构建查询
+                query = Article.query\
+                    .options(
+                        db.joinedload(Article.author),
+                        db.joinedload(Article.category),
+                        db.joinedload(Article.tags)
+                    )\
+                    .filter(Article.category_id.in_(category_ids))\
+                    .order_by(Article.id.desc(), Article.created_at.desc())
+                
+                # 分页
+                pagination = query.paginate(page=page, per_page=10, error_out=False)
+                
+                # 返回与原有控制器完全一致的格式
+                return {
+                    'pagination': pagination,
+                    'current_category': category
+                }
+                
+            except Exception as e:
+                current_app.logger.error(f"Get category articles error: {str(e)}")
+                return None
+
+        # 使用缓存
+        return cache_manager.get(
+            f'category:{category_id}:page:{page}', 
+            query_articles,
+            ttl=BlogService.CACHE_TIMES['CATEGORY']
+        )
 
     @staticmethod
     def get_article_detail(article_id):
@@ -295,86 +315,58 @@ class BlogService:
             return False, f'删除失败: {str(e)}'
     
     @staticmethod
-    def edit_article(article_id, data, user_id, is_admin=False):
+    def edit_article(article_id, form_data, user_id, is_admin=False):
         """编辑文章"""
         try:
-            # 验证必填字段
-            required_fields = ['title', 'content', 'category']
-            for field in required_fields:
-                if not data.get(field):
-                    return False, f'请填写{field}字段', None
-
-            # 数据类型转换
-            try:
-                category_id = int(data['category'])
-            except (ValueError, TypeError):
-                return False, '分类ID必须是数字', None
-
-            article = Article.query.get_or_404(article_id) if article_id else None
-            
-            # 权限检查
-            if article and article.author_id != user_id and not is_admin:
-                return False, '没有权限编辑此文章', None
-            
-            # 情感分析
-            from textblob import TextBlob
-            blob = TextBlob(data['content'])
-            sentiment_score = blob.sentiment.polarity
-            
-            if article:
-                # 更新文章
-                article.title = data['title'].strip()
-                article.content = data['content']
-                article.category_id = category_id
-                article.sentiment_score = sentiment_score
-                article.updated_at = datetime.now()
+            if article_id:
+                article = Article.query.get_or_404(article_id)
+                if not is_admin and article.author_id != user_id:
+                    return False, '没有权限编辑此文章', None
             else:
-                # 创建新文章
-                article = Article(
-                    title=data['title'].strip(),
-                    content=data['content'],
-                    author_id=user_id,
-                    category_id=category_id,
-                    sentiment_score=sentiment_score
-                )
+                article = Article(author_id=user_id)
                 db.session.add(article)
             
+            # 更新基本信息
+            article.title = form_data.get('title')
+            article.content = form_data.get('content')
+            article.category_id = form_data.get('category', type=int)
+            
             # 处理标签
-            if article_id:
-                article.tags.clear()
-            tag_names = [name.strip() for name in data.get('tag_names', '').split() if name.strip()]
-            for tag_name in tag_names:
-                tag = Tag.query.filter_by(name=tag_name).first()
-                if not tag:
-                    tag = Tag(name=tag_name)
-                    db.session.add(tag)
-                article.tags.append(tag)
+            tags = []
+            tag_names = form_data.getlist('tags')
+            for name in tag_names:
+                name = name.strip()
+                if name:
+                    tag = Tag.query.filter_by(name=name).first()
+                    if not tag:
+                        tag = Tag(name=name)
+                        db.session.add(tag)
+                    tags.append(tag)
+            
+            # 使用新的事务处理标签关联
+            with db.session.begin_nested():
+                # 清除旧的标签关联
+                if article_id:
+                    article.tags = []
+                    db.session.flush()
+                # 设置新的标签
+                article.tags = tags
             
             db.session.commit()
             
-            # 清除相关缓存
-            if article_id:
-                cache_manager.delete(f'article:{article.id}')
-            else:
-                # 发布新文章时清除相关列表缓存
-                cache_manager.delete('index:articles:*')       # 首页文章列表
-                cache_manager.delete('random_articles')        # 随机文章推荐
-                cache_manager.delete('tag:*')                  # 标签相关
-                cache_manager.delete('search:*')               # 搜索结果
-                cache_manager.delete('categories_count')       # 分类统计
-                
-                # 如果有标签，清除标签相关缓存
-                if tag_names:
-                    cache_manager.delete('tag_suggestions:*')  # 标签建议
+            # 清除缓存
+            cache_manager.delete_many([
+                'index:articles:*',
+                f'article:{article.id}',
+                'tag_*',
+                'category:*'
+            ])
             
-            # 清除用户文章列表缓存
-            cache_manager.delete(f'user:{user_id}:articles:*')
-            
-            return True, '文章保存成功', article
+            return True, '保存成功', article
             
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"Save article error: {str(e)}")
+            current_app.logger.error(f"Edit article error: {str(e)}")
             return False, f'保存失败: {str(e)}', None
     
     @staticmethod

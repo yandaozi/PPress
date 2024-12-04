@@ -9,32 +9,30 @@
             <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center space-y-4 lg:space-y-0">
                 <h2 class="text-xl font-bold">分类管理</h2>
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full lg:w-auto">
-                    <form method="get" 
-                         class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 flex-1">
+                    <form method="get" class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 flex-1">
                         <select name="search_type" 
                                class="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
                             <option value="name" {% if search_type != 'id' %}selected{% endif %}>名称</option>
                             <option value="id" {% if search_type == 'id' %}selected{% endif %}>ID</option>
                         </select>
                         <div class="relative flex-1">
-                            <input type="text" name="q" 
-                                   value="{{ search_query }}"
+                            <input type="text" name="q" value="{{ search_query }}"
                                    placeholder="搜索分类..." 
-                                  class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                   class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
                             </div>
                         </div>
                         <button type="submit" 
-                               class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                                class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
                             搜索
                         </button>
                     </form>
                     <button onclick="showAddCategoryModal()" 
-                           class="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
-                        新增分类
+                            class="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                        添加分类
                     </button>
                 </div>
             </div>
@@ -46,43 +44,63 @@
                     <tr>
                         <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                         <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
+                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">别名</th>
                         <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">描述</th>
                         <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">文章数</th>
                         <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for category in pagination.items %}
-                    <tr>
+                <tbody class="bg-white divide-y divide-gray-200" id="categoryList">
+                    {% for category in pagination.items recursive %}
+                    <tr data-id="{{ category.id }}" {% if category.parent_id %}data-parent="{{ category.parent_id }}"{% endif %} class="category-item">
                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ category.id }}</td>
                         <td class="px-4 sm:px-6 py-4">
-                            <div class="text-sm font-medium text-gray-900">{{ category.name }}</div>
+                            <div class="flex items-center">
+                                <!-- 缩进 -->
+                                <div class="w-{{ category.get_level() * 8 }}"></div>
+                                <!-- 展开/折叠按钮 -->
+                                {% if category.children.count() > 0 %}
+                                <button class="toggle-children mr-2" onclick="toggleChildren({{ category.id }}, this)">
+                                    <svg class="w-4 h-4 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                {% else %}
+                                <div class="w-6 mr-2"></div>
+                                {% endif %}
+                                <span class="font-medium text-gray-900">{{ category.name }}</span>
+                            </div>
                             <!-- 移动端显示的额外信息 -->
                             <div class="sm:hidden mt-1 text-xs text-gray-500 space-y-1">
-                                <div>{{ category.description or '无描述' }}</div>
-                                <div>文章数：{{ category.article_count }}</div>
+                                <div>别名: {{ category.slug }}</div>
+                                <div>描述: {{ category.description or '无' }}</div>
+                                <div>文章数: {{ category.article_count }}</div>
                             </div>
                         </td>
+                        <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-500">{{ category.slug }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-500">{{ category.description or '无' }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ category.article_count }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <div class="flex items-center space-x-4">
-                                <button onclick="showEditCategoryModal({{ category.id }}, '{{ category.name }}', '{{ category.description|default('', true) }}')"
-                                        class="text-blue-600 hover:text-blue-900">
-                                    编辑
-                                </button>
-                                <button onclick="deleteCategory({{ category.id }})"
-                                        class="text-red-600 hover:text-red-900">
-                                    删除
-                                </button>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex items-center space-x-3">
+                                <button onclick="showAddChildModal({{ category.id }})" 
+                                        class="text-green-600 hover:text-green-900">添加子分类</button>
+                                <button onclick="showEditCategoryModal({{ category.id }})" 
+                                        class="text-blue-600 hover:text-blue-900">编辑</button>
+                                <button onclick="showMoveCategoryModal({{ category.id }})" 
+                                        class="text-yellow-600 hover:text-yellow-900">移动</button>
+                                <button onclick="deleteCategory({{ category.id }})" 
+                                        class="text-red-600 hover:text-red-900">删除</button>
                             </div>
                         </td>
                     </tr>
+                    {% if category.children %}
+                        {{ loop(category.children)|safe }}
+                    {% endif %}
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        
+
         {% if pagination.pages > 1 %}
         <div class="px-6 py-4 mt-4 border-t">
             {% with endpoint='admin.categories', kwargs={'q': search_query, 'search_type': search_type} %}
@@ -93,62 +111,43 @@
     </div>
 </div>
 
-<!-- 添加分类模态框 -->
-<div id="addCategoryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+<!-- 添加/编辑分类的模态框 -->
+<div id="categoryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
         <div class="px-6 py-4 border-b">
-            <h3 class="text-lg font-medium">添加分类</h3>
+            <h3 class="text-lg font-medium" id="modalTitle">添加分类</h3>
         </div>
-        <form id="addCategoryForm" class="p-6 space-y-4">
+        <form id="categoryForm" class="p-6 space-y-4">
+            <input type="hidden" name="parent_id" id="parentId">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">名称</label>
                 <input type="text" name="name" required
                        class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">别名</label>
+                <input type="text" name="slug"
+                       class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="留空将自动生成">
+                <p class="mt-1 text-xs text-gray-500">用于URL的别名，只能包含字母、数字和连字符</p>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">描述</label>
                 <textarea name="description" rows="3"
                           class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
             </div>
-        </form>
-        <div class="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
-            <button onclick="hideAddCategoryModal()"
-                    class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200">
-                取消
-            </button>
-            <button onclick="addCategory()"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                添加
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- 编辑分类模态框 -->
-<div id="editCategoryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-        <div class="px-6 py-4 border-b">
-            <h3 class="text-lg font-medium">编辑分类</h3>
-        </div>
-        <form id="editCategoryForm" class="p-6 space-y-4">
-            <input type="hidden" name="category_id">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">名称</label>
-                <input type="text" name="name" required
+                <label class="block text-sm font-medium text-gray-700 mb-1">排序</label>
+                <input type="number" name="sort_order" value="0"
                        class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">描述</label>
-                <textarea name="description" rows="3"
-                          class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-            </div>
         </form>
         <div class="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
-            <button onclick="hideEditCategoryModal()"
+            <button onclick="hideCategoryModal()"
                     class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200">
                 取消
             </button>
-            <button onclick="updateCategory()"
+            <button onclick="saveCategory()"
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
                 保存
             </button>
@@ -156,64 +155,106 @@
     </div>
 </div>
 
+<!-- 移动分类的模态框 -->
+<div id="moveCategoryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div class="px-6 py-4 border-b">
+            <h3 class="text-lg font-medium">移动分类</h3>
+        </div>
+        <form id="moveCategoryForm" class="p-6 space-y-4">
+            <input type="hidden" name="category_id">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">选择新的父分类</label>
+                <select name="new_parent_id" 
+                        class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">作为顶级分类</option>
+                </select>
+            </div>
+        </form>
+        <div class="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
+            <button onclick="hideMoveModal()"
+                    class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+                取消
+            </button>
+            <button onclick="moveCategory()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                移动
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
-function showAddCategoryModal() {
-    document.getElementById('addCategoryModal').classList.remove('hidden');
-    document.getElementById('addCategoryModal').classList.add('flex');
-}
-
-function hideAddCategoryModal() {
-    document.getElementById('addCategoryModal').classList.add('hidden');
-    document.getElementById('addCategoryModal').classList.remove('flex');
-    document.getElementById('addCategoryForm').reset();
-}
-
-function addCategory() {
-    const form = document.getElementById('addCategoryForm');
-    const formData = new FormData(form);
+// 展开/折叠子分类
+function toggleChildren(categoryId, button) {
+    const icon = button.querySelector('svg');
+    icon.classList.toggle('rotate-180');
     
-    fetch('/admin/categories/add', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token() }}'
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            showAlert(data.error, 'error', '错误');
-        } else {
-            showAlert('分类添加成功', 'success', '成功',function () {
-                setTimeout(() => location.reload(), 100);
+    const rows = document.querySelectorAll(`[data-parent="${categoryId}"]`);
+    rows.forEach(row => {
+        row.classList.toggle('hidden');
+        // 如果当前行被隐藏，同时隐藏其所有子行
+        if (row.classList.contains('hidden')) {
+            const childRows = document.querySelectorAll(`[data-parent="${row.dataset.id}"]`);
+            childRows.forEach(childRow => {
+                childRow.classList.add('hidden');
+                const childButton = childRow.querySelector('.toggle-children svg');
+                if (childButton) {
+                    childButton.classList.remove('rotate-180');
+                }
             });
-
         }
     });
 }
 
-function showEditCategoryModal(categoryId, name, description) {
-    const form = document.getElementById('editCategoryForm');
-    form.category_id.value = categoryId;
-    form.name.value = name;
-    form.description.value = description;
+// 页面加载时初始化分类显示状态
+document.addEventListener('DOMContentLoaded', function() {
+    // 默认展开所有分类
+    document.querySelectorAll('.toggle-children').forEach(button => {
+        // 旋转箭头
+        const icon = button.querySelector('svg');
+        icon.classList.add('rotate-180');
+    });
     
-    document.getElementById('editCategoryModal').classList.remove('hidden');
-    document.getElementById('editCategoryModal').classList.add('flex');
+    // 显示所有子分类
+    document.querySelectorAll('[data-parent]').forEach(row => {
+        row.classList.remove('hidden');
+    });
+});
+
+// 显示添加分类模态框
+function showAddCategoryModal(parentId = null) {
+    const form = document.getElementById('categoryForm');
+    form.reset();
+    form.parentId.value = parentId;
+    
+    document.getElementById('modalTitle').textContent = parentId ? '添加子分类' : '添加分类';
+    document.getElementById('categoryModal').classList.remove('hidden');
+    document.getElementById('categoryModal').classList.add('flex');
 }
 
-function hideEditCategoryModal() {
-    document.getElementById('editCategoryModal').classList.add('hidden');
-    document.getElementById('editCategoryModal').classList.remove('flex');
-    document.getElementById('editCategoryForm').reset();
+// 显示添加子分类模态框
+function showAddChildModal(parentId) {
+    showAddCategoryModal(parentId);
 }
 
-function updateCategory() {
-    const form = document.getElementById('editCategoryForm');
-    const categoryId = form.category_id.value;
+// 隐藏分类模态框
+function hideCategoryModal() {
+    document.getElementById('categoryModal').classList.add('hidden');
+    document.getElementById('categoryModal').classList.remove('flex');
+}
+
+// 保存分类
+function saveCategory() {
+    const form = document.getElementById('categoryForm');
     const formData = new FormData(form);
+    const isEdit = form.dataset.editing === 'true';
     
-    fetch(`/admin/categories/${categoryId}/edit`, {
+    const url = isEdit 
+        ? `/admin/categories/${form.dataset.categoryId}/edit`
+        : '/admin/categories/add';
+        
+    fetch(url, {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token() }}'
@@ -225,30 +266,141 @@ function updateCategory() {
         if (data.error) {
             showAlert(data.error, 'error', '错误');
         } else {
-            showAlert('分类更新成功', 'success', '成功');
-            setTimeout(() => location.reload(), 200);
+            showAlert(data.message || '操作成功', 'success', '成功');
+            setTimeout(() => location.reload(), 500);
         }
     });
 }
 
+// 显示编辑分类模态框
+function showEditCategoryModal(categoryId) {
+    fetch(`/admin/categories/${categoryId}`)
+        .then(response => response.json())
+        .then(category => {
+            const form = document.getElementById('categoryForm');
+            form.dataset.editing = 'true';
+            form.dataset.categoryId = categoryId;
+            form.name.value = category.name;
+            form.slug.value = category.slug;
+            form.description.value = category.description || '';
+            form.sort_order.value = category.sort_order;
+            form.parentId.value = category.parent_id || '';
+            
+            document.getElementById('modalTitle').textContent = '编辑分类';
+            document.getElementById('categoryModal').classList.remove('hidden');
+            document.getElementById('categoryModal').classList.add('flex');
+        });
+}
+
+// 显示移动分类模态框
+function showMoveCategoryModal(categoryId) {
+    const form = document.getElementById('moveCategoryForm');
+    form.category_id.value = categoryId;
+    
+    // 获取所有分类
+    fetch('/admin/categories/all')
+        .then(response => response.json())
+        .then(categories => {
+            const select = form.new_parent_id;
+            select.innerHTML = '<option value="">作为顶级分类</option>';
+            
+            function addOptions(categories, level = 0) {
+                categories.forEach(category => {
+                    // 不能移动到自己或自己的子分类下
+                    if (category.id != categoryId) {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = '　'.repeat(level) + category.name;
+                        select.appendChild(option);
+                        
+                        if (category._children) {
+                            addOptions(category._children, level + 1);
+                        }
+                    }
+                });
+            }
+            
+            addOptions(categories);
+        });
+    
+    document.getElementById('moveCategoryModal').classList.remove('hidden');
+    document.getElementById('moveCategoryModal').classList.add('flex');
+}
+
+// 隐藏移动分类模态框
+function hideMoveModal() {
+    document.getElementById('moveCategoryModal').classList.add('hidden');
+    document.getElementById('moveCategoryModal').classList.remove('flex');
+}
+
+// 移动分类
+function moveCategory() {
+    const form = document.getElementById('moveCategoryForm');
+    const formData = new FormData(form);
+    
+    fetch(`/admin/categories/${form.category_id.value}/move`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert(data.error, 'error', '错误');
+        } else {
+            showAlert(data.message, 'success', '成功');
+            setTimeout(() => location.reload(), 500);
+        }
+    });
+}
+
+// 删除分类
 function deleteCategory(categoryId) {
-    showAlert('确定要删除此分类吗？分类下若有文章将移动到id为1的默认分类下！！', 'warning', '确认删除', function() {
+    showAlert('确定要删除此分类吗？分下的文章将移动到默认分类！', 'warning', '确认删除', function() {
         fetch(`/admin/categories/${categoryId}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRFToken': '{{ csrf_token() }}'
             }
-        }).then(response => {
-            if (response.ok) {
-                showAlert('分类删除成功', 'success', '成功');
-                setTimeout(() => location.reload(), 100);
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert(data.error, 'error', '错误');
             } else {
-                response.json().then(data => {
-                    showAlert(data.error, 'error', '错误');
-                });
+                showAlert(data.message, 'success', '成功');
+                setTimeout(() => location.reload(), 1000);
             }
         });
     });
 }
+
+// 初始化拖拽排序
+new Sortable(document.getElementById('categoryList'), {
+    handle: '.category-item',
+    animation: 150,
+    onEnd: function(evt) {
+        const categoryIds = Array.from(evt.to.children).map(el => el.dataset.id);
+        fetch('/admin/categories/sort', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ category_ids: categoryIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert(data.error, 'error', '错误');
+                location.reload();
+            } else {
+                showAlert('排序已更新', 'success', '成功');
+            }
+        });
+    }
+});
 </script>
 {% endblock %} 

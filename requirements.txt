@@ -16,3 +16,4 @@ PyMySQL
 SQLAlchemy
 textblob
 Werkzeug
+python-slugify

@@ -197,6 +197,7 @@ def create_app(db_type=DB_TYPE, init_components=True):
             'max': max,
             'min': min,
             'dict': dict,
+            'hasattr': hasattr,
             'dict_items': lambda d: d.items() if d else [],
             'reject': lambda items, key: {k: v for k, v in items if k != key}
         }
@@ -220,7 +221,7 @@ def create_app(db_type=DB_TYPE, init_components=True):
         
         def get_author_info(article_or_author):
             """获取作者信息，支持从文章或作者对象获取"""
-            # 如果传入的是文章对象，获取其作者
+            # 如果传入的是文章对象，获取其作
             if hasattr(article_or_author, 'author'):
                 author = article_or_author.author
             else:
@@ -247,10 +248,11 @@ def create_app(db_type=DB_TYPE, init_components=True):
     @app.context_processor
     def inject_categories_data():
         from app.utils.common import get_categories_data
-        categories, article_counts = get_categories_data()
+        data = get_categories_data()
         return dict(
-            categories=categories,
-            article_counts=article_counts
+            categories=data['categories'],
+            article_counts=data['article_counts'],
+            all_categories=data['all_categories']
         )
 
     # 注册加密版权信息函数

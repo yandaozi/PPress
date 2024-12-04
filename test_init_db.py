@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import random
 import pymysql
 from config.database import MYSQL_CONFIG
+from slugify import slugify
 
 LOCK_FILE = 'ppress_db.lock'
 COPYRIGHT_INFO = base64.b64decode(
@@ -110,7 +111,7 @@ def init_db(db_type='mysql'):
         admin.set_password('123456')
         db.session.add(admin)
 
-        # 创建普通用户
+        # 创建普��用户
         users = []
         for i in range(25):
             user = User(
@@ -124,7 +125,7 @@ def init_db(db_type='mysql'):
 
         # 创建标签
         tags = []
-        tag_names = ['Python', 'Java', 'C++', ' 数据结构 ', ' 算法 ', ' 人工智能 ', ' 机器学习 ', ' 深度学习 ', ' 数据分析 ', ' 数据挖掘 ', ' 大数据 ', ' 云计算 ', ' 区块链 ', ' 网络安全 ', ' 物联网 ', ' 移动开发 ', 'Android', 'iOS', ' 游戏开发 ', ' 图形图像 ', ' 音视频处理 ', ' 数据库设计 ', 'SQL', 'NoSQL', 'MongoDB', 'Redis', 'Web 框架 ', 'Django', 'Flask', 'Spring', 'Hibernate', ' 前端框架 ', 'Vue.js', 'React', 'Angular', 'HTML5', 'CSS3', 'JavaScript', 'TypeScript', 'Node.js', ' 后端开发 ', ' 服务器 ', ' 运维 ', 'Linux', 'Unix', 'Windows 开发 ', ' 软件测试 ', ' 自动化测试 ', ' 性能测试 ', ' 单元测试 ', ' 集成测试 ', ' 系统测试 ', 'UI 设计 ', 'UX 设计 ', ' 交互设计 ', ' 产品设计 ', ' 项目管理 ', ' 敏捷开发 ', ' 瀑布模型 ', ' 迭代开发 ', ' 版本控制 ', 'Git', 'SVN', ' 代码规范 ', ' 编程思想 ', ' 设计模式 ', ' 软件工程 ', ' 计算机网络 ', 'TCP/IP', 'HTTP', 'HTTPS', ' 网络协议 ', ' 路由交换 ', ' 无线网络 ', ' 云计算平台 ', 'AWS', 'Azure', ' 阿里云 ', ' 腾讯云 ', ' 虚拟化技术 ', 'Docker', 'Kubernetes', ' 微服务架构 ', ' 消息队列 ', 'Kafka', 'RabbitMQ', ' 缓存技术 ', ' 数据存储 ', ' 文件系统 ', ' 分布式系统 ', ' 一致性算法 ', ' 分布式数据库 ', ' 数据仓库 ', ' 数据湖 ', ' 数据可视化 ', 'Echarts', 'Tableau', 'PowerBI', ' 商业智能 ', ' 人工智能算法 ', ' 神经网络 ', ' 卷积神经网络 ', ' 循环神经网络 ', ' 自然语言处理 ', ' 语音识别 ', ' 图像识别 ', ' 计算机视觉 ', ' 机器人技术 ', ' 智能硬件 ', ' 传感器技术 ', ' 嵌入式系统 ', ' 电子电路 ', ' 单片机 ', 'PLC 编程 ', ' 工业自动化 ', ' 增材制造 ', '3D 打印 ', ' 虚拟现实 ', ' 增强现实 ', ' 混合现实 ', ' 元宇宙 ', ' 数字孪生 ', ' 教育科技 ', ' 在线教育 ', ' 教育信息化 ', ' 智慧教育 ', ' 金融科技 ', ' 数字货币 ', ' 区块链金融 ', ' 支付系统 ', ' 风控系统 ', ' 保险科技 ', ' 医疗科技 ', ' 医疗信息化 ', ' 电子病历 ', ' 远程医疗 ', ' 医学影像 ', ' 生物识别 ', ' 基因技术 ', ' 精准医疗 ', ' 农业科技 ', ' 智慧农业 ', ' 农业物联网 ', ' 农业大数据 ', ' 无人机植保 ', ' 智能家居 ', ' 智能家电 ', ' 智能照明 ', ' 智能安防 ', ' 智能门锁 ', ' 智能窗帘 ', ' 智能音箱 ', ' 智能手表 ', ' 智能手环 ', ' 智能交通 ', ' 自动驾驶 ', ' 车联网 ', ' 智能物流 ', ' 物流信息化 ', ' 供应链管理 ', ' 电商平台 ', ' 电商运营 ', ' 电商营销 ', ' 跨境电商 ', ' 社交网络 ', ' 社交媒体 ', ' 短视频 ', ' 直播 ', ' 内容创作 ', ' 数字营销 ', ' 搜索引擎优化 ', ' 搜索引擎营销 ', ' 社交媒体营销 ', ' 电子邮件营销 ', ' 内容管理系统 ', 'WordPress', 'Drupal', 'Joomla']
+        tag_names = ['Python', 'Java', 'C++', ' 数据结构 ', ' 算法 ', ' 人工智能 ', ' 机器学习 ', ' 深度学习 ', ' 数据分析 ', ' 数据挖掘 ', ' 大数据 ', ' 云计算 ', ' 区块链 ', ' 网络安全 ', ' 物联网 ', ' 移动开发 ', 'Android', 'iOS', ' 游戏开发 ', ' 图形图像 ', ' 音视频处理 ', ' 数据库设计 ', 'SQL', 'NoSQL', 'MongoDB', 'Redis', 'Web 框架 ', 'Django', 'Flask', 'Spring', 'Hibernate', ' 前端框架 ', 'Vue.js', 'React', 'Angular', 'HTML5', 'CSS3', 'JavaScript', 'TypeScript', 'Node.js', ' 后端开发 ', ' 服务器 ', ' 运维 ', 'Linux', 'Unix', 'Windows 开发 ', ' 软件测试 ', ' 自动化测试 ', ' 性能测试 ', ' 单元测试 ', ' 集成测试 ', ' 系统测试 ', 'UI 设计 ', 'UX 设计 ', ' 交互设计 ', ' 产品设计 ', ' 项目管理 ', ' 敏捷开发 ', ' 瀑布模型 ', ' 迭代开发 ', ' 版本控制 ', 'Git', 'SVN', ' 代码规范 ', ' 编程思想 ', ' 设计模式 ', ' 软���工程 ', ' 计算机网络 ', 'TCP/IP', 'HTTP', 'HTTPS', ' 网络协议 ', ' 路由交换 ', ' 无线网络 ', ' 云计算平台 ', 'AWS', 'Azure', ' 阿里云 ', ' 腾讯云 ', ' 虚拟化技术 ', 'Docker', 'Kubernetes', ' 微服务架构 ', ' 消息队列 ', 'Kafka', 'RabbitMQ', ' 缓存技术 ', ' 数据存储 ', ' 文件系统 ', ' 分布式系统 ', ' 一致性算法 ', ' 分布式数据库 ', ' 数据仓库 ', ' 数据湖 ', ' 数据可视化 ', 'Echarts', 'Tableau', 'PowerBI', ' 商业智能 ', ' 人工智能算法 ', ' 神经网络 ', ' 卷积神经网络 ', ' 循环神经网络 ', ' 自然语言处理 ', ' 语音识别 ', ' 图像识别 ', ' 计算机视觉 ', ' 机器人技术 ', ' 智能硬件 ', ' 传感器技术 ', ' 嵌入式系统 ', ' 电子电路 ', ' 单片机 ', 'PLC 编程 ', ' 工业自动化 ', ' 增材制造 ', '3D 打印 ', ' 虚拟现实 ', ' 增强现实 ', ' 混合现实 ', ' 元宇宙 ', ' 数字孪生 ', ' 教育科技 ', ' 在线教育 ', ' 教育信息化 ', ' 智慧教育 ', ' 金融科技 ', ' 数字货币 ', ' 区块链金融 ', ' 支付系统 ', ' 风控系统 ', ' 保险科技 ', ' 医疗科技 ', ' 医疗信息化 ', ' 电子病历 ', ' 远程医疗 ', ' 医学影像 ', ' 生物识别 ', ' 基因技术 ', ' 精准医疗 ', ' 农业科技 ', ' 智慧农业 ', ' 农业物联网 ', ' 农业大数据 ', ' 无��机植保 ', ' 智能家居 ', ' 智能家电 ', ' 智能照明 ', ' 智能安防 ', ' 智能门锁 ', ' 智能窗帘 ', ' 智能音箱 ', ' 智能手表 ', ' 智能手环 ', ' 智能交通 ', ' 自动驾驶 ', ' 车联网 ', ' 智能物流 ', ' 物流信息化 ', ' 供应链管理 ', ' 电商平台 ', ' 电商运营 ', ' 电商营销 ', ' 跨境电商 ', ' 社交网络 ', ' 社交媒体 ', ' 短视频 ', ' 直播 ', ' 内容创作 ', ' 数字营销 ', ' 搜索引擎优化 ', ' 搜索引擎营销 ', ' 社交媒体营销 ', ' 电子邮件营销 ', ' 内容管理系统 ', 'WordPress', 'Drupal', 'Joomla']
         for name in tag_names:
             tag = Tag(name=name)
             tags.append(tag)
@@ -148,9 +149,42 @@ def init_db(db_type='mysql'):
             {'name': '其他8', 'description': '其他类型的文章'},
         ]
         for category_data in default_categories:
-            category = Category(**category_data)
+            # 生成 slug
+            slug = slugify(category_data['name'])
+            category = Category(
+                name=category_data['name'],
+                slug=slug,  # 添加 slug
+                description=category_data['description'],
+                sort_order=len(categories)  # 添加排序
+            )
             categories.append(category)
             db.session.add(category)
+
+        # 添加一些子分类作为示例
+        child_categories = [
+            {'name': 'Python教程', 'parent': '技术教程'},
+            {'name': 'Flask教程', 'parent': 'Python教程'},
+            {'name': 'Django教程', 'parent': 'Python教程'},
+            {'name': '前端开发', 'parent': '技术教程'},
+            {'name': 'Vue教程', 'parent': '前端开发'},
+            {'name': 'React教程', 'parent': '前端开发'},
+        ]
+
+        # 创建子分类
+        for child_data in child_categories:
+            parent = next((c for c in categories if c.name == child_data['parent']), None)
+            if parent:
+                child = Category(
+                    name=child_data['name'],
+                    slug=slugify(child_data['name']),
+                    parent_id=parent.id,
+                    sort_order=len(categories)
+                )
+                categories.append(child)
+                db.session.add(child)
+
+        # 提交以获取分类ID
+        db.session.commit()
 
         # 初始化插件表
         default_plugins = [

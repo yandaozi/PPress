@@ -219,34 +219,61 @@ def categories():
 @admin_required
 def add_category():
     """添加分类"""
-    success, error, data = AdminService.add_category(
-        request.form.get('name'),
-        request.form.get('description')
-    )
+    success, error, data = AdminService.add_category(request.form)
     if not success:
         return jsonify({'error': error}), 400
     return jsonify(data)
-
-@bp.route('/categories/<int:id>', methods=['DELETE'])
-@login_required
-@admin_required
-def delete_category(id):
-    """删除分类"""
-    success, error = AdminService.delete_category(id)
-    if not success:
-        return jsonify({'error': error}), 400
-    return '', 204
 
 @bp.route('/categories/<int:id>/edit', methods=['POST'])
 @login_required
 @admin_required
 def edit_category(id):
     """编辑分类"""
-    success, error, data = AdminService.edit_category(
-        id,
-        request.form.get('name'),
-        request.form.get('description')
-    )
+    success, error, data = AdminService.update_category(id, request.form)
+    if not success:
+        return jsonify({'error': error}), 400
+    return jsonify(data)
+
+@bp.route('/categories/<int:id>/move', methods=['POST'])
+@login_required
+@admin_required
+def move_category(id):
+    """移动分类"""
+    success, message = AdminService.move_category(id, request.form.get('new_parent_id', type=int))
+    if not success:
+        return jsonify({'error': message}), 400
+    return jsonify({'message': message})
+
+@bp.route('/categories/<int:id>', methods=['DELETE'])
+@login_required
+@admin_required
+def delete_category(id):
+    """删除分类"""
+    success, message = AdminService.delete_category(id)
+    if not success:
+        return jsonify({'error': message}), 400
+    return jsonify({'message': message})
+
+@bp.route('/categories/sort', methods=['POST'])
+@login_required
+@admin_required
+def sort_categories():
+    """排序分类"""
+    data = request.get_json()
+    if not data or 'category_ids' not in data:
+        return jsonify({'error': '无效的请求数据'}), 400
+        
+    success, message = AdminService.sort_categories(data['category_ids'])
+    if not success:
+        return jsonify({'error': message}), 400
+    return jsonify({'message': message})
+
+@bp.route('/categories/<int:id>')
+@login_required
+@admin_required
+def get_category(id):
+    """获取单个分类信息"""
+    success, error, data = AdminService.get_category(id)
     if not success:
         return jsonify({'error': error}), 400
     return jsonify(data)
@@ -487,7 +514,7 @@ def export_plugin(plugin_name):
         flash(error, 'error')
         return redirect(url_for('admin.plugins'))
         
-    # ��置响应头
+    # 置响应头
     response = send_file(
         io.BytesIO(content),
         mimetype='application/zip',
@@ -555,7 +582,7 @@ def utility_processor():
         return current_endpoint in menu_endpoints
     
     def is_current_menu(menu_items):
-        # 检查当前页面是否属于这个菜单组
+        # 检查当��页面是否属于这个菜单组
         current_endpoint = request.endpoint
         return current_endpoint and any(current_endpoint == item[0] for item in menu_items)
     
@@ -849,3 +876,13 @@ def create_custom_page():
                          title='创建页面',
                          page=None,
                          templates=templates)
+
+@bp.route('/categories/all')
+@login_required
+@admin_required
+def get_all_categories():
+    """获取所有分类(用于移动分类选择)"""
+    categories, error = AdminService.get_all_categories()
+    if error:
+        return jsonify({'error': error}), 400
+    return jsonify(categories)

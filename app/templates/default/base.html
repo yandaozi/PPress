@@ -49,7 +49,7 @@
         .logo-circle {
             position: relative;
             overflow: hidden;
-            transform: translateZ(0);  /* 启用硬件加速 */
+            transform: translateZ(0);  /* 启用硬件加 */
             background: linear-gradient(135deg, #0180FF, #0178FF);  /* 亮色模式下的渐变 */
         }
         
@@ -77,7 +77,7 @@
     </style>
 </head>
 <body class="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
-<nav class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
+<nav class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-40">
     <div class="max-w-7xl mx-auto">
         <div class="px-4 border-b dark:border-gray-700">
             <div class="flex justify-between h-16">
@@ -271,14 +271,59 @@
                    class="py-4 px-1 border-b-2 {% if request.endpoint == 'blog.index' and not request.args.get('category') %}border-blue-500 text-blue-600{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300{% endif %} whitespace-nowrap transition-colors duration-200">
                     全部
                 </a>
+                
+                {% macro render_category_item(category, level=0) %}
+                <div class="{% if level > 0 %}pl-{{ level * 4 }}{% endif %}">
+                    <a href="{{ url_for('blog.category', id=category.id) }}"
+                       class="block w-full px-4 py-2 text-{% if level == 0 %}base{% else %}sm{% endif %} text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <span>{{ category.name }}</span>
+                        <span class="text-xs text-gray-400 dark:text-gray-500 ml-1">({{ article_counts[category.id] }})</span>
+                    </a>
+                    {% if category._children %}
+                        {% for child in category._children %}
+                            {{ render_category_item(child, level + 1) }}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                {% endmacro %}
+
+                {% macro render_category(category) %}
+                    {% if category.name %}
+                    <div class="relative" style="position: relative;">
+                        <div class="flex items-center">
+                            <a href="{{ url_for('blog.category', id=category.id) }}"
+                               class="py-4 px-1 border-b-2 {% if (request.endpoint == 'blog.category' and request.view_args.id == category.id) or (request.endpoint == 'blog.article' and article is defined and article.category_id == category.id) %}border-blue-500 text-blue-600{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300{% endif %} whitespace-nowrap transition-colors duration-200">
+                                {{ category.name }}
+                                <span class="text-xs text-gray-400 dark:text-gray-500 ml-1">({{ article_counts[category.id] }})</span>
+                            </a>
+                            {% if category._children %}
+                            <button onclick="toggleCategoryDropdown(this, 'dropdown-{{ category.id }}')"
+                                    class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg ml-1">
+                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400 transform transition-transform duration-200"
+                                     fill="none" 
+                                     stroke="currentColor" 
+                                     viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            {% endif %}
+                        </div>
+                        
+                        {% if category._children %}
+                        <div id="dropdown-{{ category.id }}" 
+                             class="fixed mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 py-2 hidden"
+                             style="z-index: 50; min-width: 12rem; top: auto; left: auto; transform: none;">
+                            {% for child in category._children %}
+                                {{ render_category_item(child) }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endmacro %}
+                
                 {% for category in categories %}
-                {% if category.name %}
-                <a href="{{ url_for('blog.category', id=category.id) }}"
-                   class="py-4 px-1 border-b-2 {% if (request.endpoint == 'blog.category' and request.view_args.id == category.id) or (request.endpoint == 'blog.article' and article is defined and article.category_id == category.id) %}border-blue-500 text-blue-600{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300{% endif %} whitespace-nowrap transition-colors duration-200">
-                    {{ category.name }}
-                    <span class="text-xs text-gray-400 dark:text-gray-500">({{ article_counts[category.id] }})</span>
-                </a>
-                {% endif %}
+                    {{ render_category(category) }}
                 {% endfor %}
             </div>
         </div>
@@ -312,6 +357,26 @@
             }
         });
     }
+
+    function toggleCategoryDropdown(button, dropdownId) {
+        const dropdown = document.getElementById(dropdownId);
+        const icon = button.querySelector('svg');
+
+        // 切换下拉菜单显示状态
+        dropdown.classList.toggle('hidden');
+        // 切换箭头旋转
+        icon.classList.toggle('rotate-180');
+
+        // 点击其他地方关闭下拉菜单
+        document.addEventListener('click', function closeDropdown(e) {
+            if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+                document.removeEventListener('click', closeDropdown);
+            }
+        });
+    }
+    
 
     function validateSearch(form) {
         const query = form.q.value.trim();
