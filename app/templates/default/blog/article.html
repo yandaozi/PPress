@@ -38,15 +38,18 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
         </svg>
-        {% if article.category %}
-        <a href="{{ url_for('blog.index', category=article.category.id) }}" 
+        {% for category in article.categories %}
+        <a href="{{ url_for('blog.category', id=category.id) }}" 
            class="hover:text-blue-600 dark:hover:text-blue-400">
-            {{ article.category.name }}
+            {{ category.name }}
         </a>
+        {% if not loop.last %}
+        <span class="text-gray-400">/</span>
+        {% endif %}
+        {% endfor %}
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
         </svg>
-        {% endif %}
         <span class="text-gray-700 dark:text-gray-300 truncate max-w-xs">{{ article.title }}</span>
     </nav>
 
@@ -78,16 +81,41 @@
                 <span>阅读 {{ article.view_count }}</span>
             </div>
             
-            <!-- 情感分析标签 -->
-            <div class="flex-shrink-0">
-            {% if article.sentiment_score > 0.3 %}
-            <span class="ml-2 px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-xs">积极</span>
-            {% elif article.sentiment_score < -0.3 %}
-            <span class="ml-2 px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-xs">消极</span>
-            {% else %}
-            <span class="ml-2 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-xs">中性</span>
-            {% endif %}
+            <!-- 添加文章状态标签 -->
+            {% if article.status != 'public' %}
+            <div class="flex items-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    {% if article.status == 'private' %}
+                        bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                    {% elif article.status == 'password' %}
+                        bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                    {% elif article.status == 'hidden' %}
+                        bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200
+                    {% elif article.status == 'pending' %}
+                        bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
+                    {% endif %}">
+                    {% if article.status == 'private' %}
+                        私密
+                    {% elif article.status == 'password' %}
+                        密码保护
+                    {% elif article.status == 'hidden' %}
+                        隐藏
+                    {% elif article.status == 'pending' %}
+                        待审核
+                    {% endif %}
+                </span>
             </div>
+            {% endif %}
+            
+            <!-- 添加评论状态标签 -->
+            {% if not article.allow_comment %}
+            <div class="flex items-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                             bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
+                    评论已关闭
+                </span>
+            </div>
+            {% endif %}
         </div>
 
         <!-- 文章内容 -->
@@ -109,6 +137,17 @@
             </span>
             {% endfor %}
         </div>
+
+        <!-- 在文章内容下方添加分类显示 -->
+        <div class="flex flex-wrap items-center gap-2 mt-4 mb-4">
+            <span class="text-gray-600 dark:text-gray-400">所属分类：</span>
+            {% for category in article.categories %}
+            <a href="{{ url_for('blog.category', id=category.id) }}" 
+               class="text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200">
+                {{ category.name }}
+            </a>
+            {% endfor %}
+        </div>
     </article>
 
 
@@ -117,6 +156,7 @@
     {% endif %}
 
     <!-- 评论区 -->
+    {% if article.allow_comment %}
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8">
         <h3 class="text-xl font-bold mb-6 text-gray-900 dark:text-white">评论</h3>
         
@@ -174,6 +214,13 @@
         <div class="text-center py-8 text-gray-500 dark:text-gray-400">暂无评论</div>
         {% endfor %}
     </div>
+    {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8">
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+            评论功能已关闭
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>

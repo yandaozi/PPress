@@ -62,12 +62,31 @@ def category(id):
 @handle_view_errors
 def article(id):
     """文章详情路由"""
-    article = BlogService.get_article_detail(id)
-    if current_user.is_authenticated:
-        BlogService.record_view(current_user.id, id)
-    return render_template('blog/article.html',
-                         article=article,
-                         **get_categories_data())
+    try:
+        password = request.args.get('password')  # 从 URL 参数获取密码
+        result = BlogService.get_article_detail(id, password, current_user)
+        
+        # 如果需要密码
+        if isinstance(result, dict):
+            if result.get('need_password'):
+                return render_template('blog/password.html', 
+                                    article=result['article'],
+                                    error_message=result.get('error'))
+            if result.get('error'):
+                flash(result['error'])
+                return redirect(url_for('blog.index'))
+        
+        # 记录浏览历史
+        if current_user.is_authenticated:
+            BlogService.record_view(current_user.id, id)
+            
+        return render_template('blog/article.html',
+                             article=result,
+                             **get_categories_data())
+                             
+    except Exception as e:
+        flash(str(e))
+        return redirect(url_for('blog.index'))
 
 @bp.route('/search')
 @handle_view_errors
@@ -141,10 +160,17 @@ def delete_comment(comment_id):
 def edit(id=None):
     """编辑文章"""
     if request.method == 'POST':
-        for field in ['title', 'content', 'category']:
+        # 验证必填字段
+        required_fields = ['title', 'content']
+        for field in required_fields:
             if not request.form.get(field):
                 flash(f'请填写{field}字段')
                 return redirect(url_for('blog.edit', id=id))
+        
+        # 验证分类选择
+        if not request.form.getlist('categories'):
+            flash('请至少选择一个分类')
+            return redirect(url_for('blog.edit', id=id))
             
         success, message, article = BlogService.edit_article(
             id,
@@ -156,9 +182,18 @@ def edit(id=None):
         if success:
             return redirect(url_for('blog.article', id=article.id))
         return redirect(url_for('blog.edit', id=id))
-        
+    
+    # 获取文章用于编辑
+    article = None
+    if id:
+        try:
+            article = BlogService.get_article_for_edit(id, current_user)
+        except Exception as e:
+            flash(str(e))
+            return redirect(url_for('blog.index'))
+    
     return render_template('blog/edit.html',
-                         article=BlogService.get_article_detail(id) if id else None,
+                         article=article,
                          random_tags=BlogService.get_random_tags(),
                          **get_categories_data())
 

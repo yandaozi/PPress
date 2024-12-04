@@ -1,5 +1,6 @@
 from ..extensions import db
 from datetime import datetime
+from sqlalchemy import text
 
 class Category(db.Model):
     __tablename__ = 'categories'
@@ -15,18 +16,31 @@ class Category(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     parent = db.relationship('Category', remote_side=[id], backref=db.backref('children', lazy='dynamic'))
-    articles = db.relationship('Article', backref='category', lazy='dynamic')
+    related_articles = db.relationship('Article',
+                                     secondary='article_categories',
+                                     primaryjoin="Category.id == article_categories.c.category_id",
+                                     secondaryjoin="article_categories.c.article_id == Article.id",
+                                     lazy='dynamic',
+                                     viewonly=True)
     
     def update_article_count(self):
         """更新文章计数"""
-        self.article_count = self.articles.count()
+        # 获取主分类文章数
+        direct_count = self.articles.count()
+        # 获取多分类文章数
+        related_count = self.related_articles.count()
+        # 合并计数
+        self.article_count = direct_count + related_count
+        
         # 更新父分类的计数
         if self.parent:
             self.parent.update_article_count()
     
     def get_total_article_count(self):
         """获取包含子分类的总文章数"""
-        total = self.article_count
+        # 获取当前分类的文章数
+        total = self.articles.count() + self.related_articles.count()
+        # 加上子分类的文章数
         for child in self.children:
             total += child.get_total_article_count()
         return total

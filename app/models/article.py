@@ -12,18 +12,48 @@ article_tags = db.Table('article_tags',
     db.Column('tag_id', db.Integer, db.ForeignKey('tags.id', ondelete='CASCADE'), primary_key=True)
 )
 
+# 创建文章-分类关联表
+article_categories = db.Table('article_categories',
+    db.Column('article_id', db.Integer, db.ForeignKey('articles.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('category_id', db.Integer, db.ForeignKey('categories.id', ondelete='CASCADE'), primary_key=True)
+)
+
 class Article(db.Model):
     __tablename__ = 'articles'
+    
+    # 文章状态枚举
+    STATUS_PUBLIC = 'public'      # 公开
+    STATUS_HIDDEN = 'hidden'      # 隐藏
+    STATUS_PASSWORD = 'password'  # 密码保护
+    STATUS_PRIVATE = 'private'    # 私密
+    STATUS_PENDING = 'pending'    # 待审核
+    STATUS_DRAFT = 'draft'        # 草稿
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False, index=True)
     content = db.Column(db.Text, nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), index=True)
-    sentiment_score = db.Column(db.Float, default=0.0)
     view_count = db.Column(db.Integer, default=0, index=True)
     created_at = db.Column(db.DateTime, default=datetime.now, index=True)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), index=True)
+    
+    # 新增字段
+    status = db.Column(db.Enum(STATUS_PUBLIC, STATUS_HIDDEN, STATUS_PASSWORD, 
+                              STATUS_PRIVATE, STATUS_PENDING, STATUS_DRAFT),
+                      default=STATUS_PUBLIC, index=True)
+    password = db.Column(db.String(128))  # 文章密码
+    allow_comment = db.Column(db.Boolean, default=True)  # 是否允许评论
+    
+    # 主分类关系
+    category = db.relationship('Category', foreign_keys=[category_id], backref='articles')
+    
+    # 多分类关系
+    categories = db.relationship('Category', 
+                               secondary='article_categories',
+                               primaryjoin="Article.id == article_categories.c.article_id",
+                               secondaryjoin="article_categories.c.category_id == Category.id",
+                               lazy='joined')
     
     tags = db.relationship('Tag', secondary=article_tags, backref=db.backref('articles', lazy=True))
     
@@ -39,6 +69,51 @@ class Article(db.Model):
     @reconstructor
     def init_on_load(self):
         self._category_id = self.category_id
+
+    def is_accessible_by(self, user):
+        """检查用户是否有权限访问文章"""
+        # 管理员可以访问任何文章
+        if hasattr(user, 'role') and user.role == 'admin':
+            return True
+        
+        # 作者可以访问自己的文章
+        if hasattr(user, 'id') and self.author_id == user.id:
+            return True
+        
+        # 公开文章任何人可访问
+        if self.status == self.STATUS_PUBLIC:
+            return True
+        
+        # 隐藏文章需要知道链接
+        if self.status == self.STATUS_HIDDEN:
+            return True
+        
+        # 密码保护的文章需要输入密码
+        if self.status == self.STATUS_PASSWORD:
+            return True
+        
+        # 私密文章只有作者和管理员可以访问
+        if self.status == self.STATUS_PRIVATE:
+            return False
+        
+        # 待审核文章只有作者和管理员可以访问
+        if self.status == self.STATUS_PENDING:
+            return False
+        
+        return False
+    
+    def can_comment(self, user):
+        """检查用户是否可以评论"""
+        if not self.allow_comment:
+            return False
+            
+        if not user:
+            return False
+            
+        if self.status not in [self.STATUS_PUBLIC, self.STATUS_PASSWORD]:
+            return False
+            
+        return True
 
 # 将事件监听器移到文件末尾，并使用延迟导入
 def init_article_events():
@@ -122,50 +197,105 @@ def init_article_events():
         except Exception as e:
             current_app.logger.error(f"Error in article_category_changed: {str(e)}")
 
-    @event.listens_for(Article.tags, 'set')
-    def article_tags_set(target, value, oldvalue, initiator):
-        """标签集合被替换时更新计数"""
-        try:
-            session = db.session
-            
-            # 减少旧标签的计数
-            if oldvalue is not NO_VALUE:
-                for tag in oldvalue:
-                    if tag.article_count is None:
-                        tag.article_count = 0
-                    if tag.article_count > 0:  # 添加这个检查
-                        tag.article_count -= 1
-                    session.add(tag)
-            
-            # 增加新标签的计数
-            if value is not None:
-                for tag in value:
-                    if tag.article_count is None:
-                        tag.article_count = 0
-                    tag.article_count += 1
-                    session.add(tag)
-                
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            current_app.logger.error(f"Error updating tag counts: {str(e)}")
-
     @event.listens_for(Article.tags, 'append')
     def article_tag_append(target, value, initiator):
         """添加标签时更新计数"""
-        if value.article_count is None:
-            value.article_count = 0
-        value.article_count += 1
-        db.session.add(value)
+        try:
+            # 获取当前会话
+            session = object_session(target)
+            if session is None:
+                return  # 如果没有会话，说明可能是在初始化数据库，直接返回
+            
+            if not session.is_active:
+                return
+            
+            # 确保目标对象在会话中
+            if target not in session:
+                session.add(target)
+                
+            # 确保标签在会话中
+            if value not in session:
+                session.add(value)
+                
+            # 更新计数
+            if value.article_count is None:
+                value.article_count = 0
+            value.article_count += 1
+            
+            # 延迟提交，让外部控制事务
+            session.flush()
+            
+        except Exception as e:
+            current_app.logger.error(f"Error in article_tag_append: {str(e)}")
 
     @event.listens_for(Article.tags, 'remove')
     def article_tag_remove(target, value, initiator):
         """移除标签时更新计数"""
-        if value.article_count is None:
-            value.article_count = 0
-        if value.article_count > 0:  # 添加这个检查
-            value.article_count -= 1
-        db.session.add(value)
+        try:
+            session = object_session(target)
+            if session is None:
+                return
+            
+            if not session.is_active:
+                return
+            
+            # 确保目标对象在会话中
+            if target not in session:
+                session.add(target)
+                
+            # 确保标签在会话中
+            if value not in session:
+                session.add(value)
+                
+            # 更新计数
+            if value.article_count is None:
+                value.article_count = 0
+            if value.article_count > 0:
+                value.article_count -= 1
+            
+            session.flush()
+            
+        except Exception as e:
+            current_app.logger.error(f"Error in article_tag_remove: {str(e)}")
+
+    @event.listens_for(Article.tags, 'set')
+    def article_tags_set(target, value, oldvalue, initiator):
+        """标签集合被替换时更新计数"""
+        try:
+            session = object_session(target)
+            if session is None:
+                return
+            
+            if not session.is_active:
+                return
+            
+            # 确保目标对象在会话中
+            if target not in session:
+                session.add(target)
+            
+            # 减少旧标签的计数
+            if oldvalue is not NO_VALUE:
+                for tag in oldvalue:
+                    if tag not in session:
+                        session.add(tag)
+                    if tag.article_count is None:
+                        tag.article_count = 0
+                    if tag.article_count > 0:
+                        tag.article_count -= 1
+            
+            # 增加新标签的计数
+            if value is not None:
+                for tag in value:
+                    if tag not in session:
+                        session.add(tag)
+                    if tag.article_count is None:
+                        tag.article_count = 0
+                    tag.article_count += 1
+            
+            session.flush()
+            
+        except Exception as e:
+            current_app.logger.error(f"Error in article_tags_set: {str(e)}")
 
     @event.listens_for(Article, 'before_delete')
     def article_before_delete(mapper, connection, target):

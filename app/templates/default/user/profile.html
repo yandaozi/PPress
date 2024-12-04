@@ -48,17 +48,11 @@
                     <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">阅读情感倾向</h4>
                     <div class="flex items-center">
                         <div class="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
-                            <div class="h-2 rounded-full
-                                        {% if avg_sentiment > 0.3 %}bg-green-500 dark:bg-green-400
-                                        {% elif avg_sentiment < -0.3 %}bg-red-500 dark:bg-red-400
-                                        {% else %}bg-yellow-500 dark:bg-yellow-400{% endif %}"
-                                 style="width: {{ (avg_sentiment + 1) * 50 }}%">
+                            <div class="h-2 rounded-full bg-green-500 dark:bg-green-400 style="width: {{ (1 + 1) * 50 }}%">
                             </div>
                         </div>
                         <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">
-                            {% if avg_sentiment > 0.3 %}偏积极
-                            {% elif avg_sentiment < -0.3 %}偏消极
-                            {% else %}中性{% endif %}
+                            中性
                         </span>
                     </div>
                 </div>

@@ -132,7 +132,6 @@ def init_db(db_type='mysql'):
             category_id=category.id,
             created_at=datetime.now(),
             view_count=0,
-            sentiment_score=0.5
         )
         article.tags.append(tag)
         db.session.add(article)

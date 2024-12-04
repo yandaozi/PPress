@@ -15,7 +15,6 @@ def profile():
     return render_template('user/profile.html',
                          view_history=UserService.get_view_history(current_user.id, page),
                          user_articles=UserService.get_user_articles(current_user.id),
-                         avg_sentiment=UserService.get_user_sentiment_stats(current_user.id),
                          **get_categories_data())
 
 @bp.route('/profile/edit', methods=['GET', 'POST'])

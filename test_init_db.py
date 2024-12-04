@@ -139,14 +139,6 @@ def init_db(db_type='mysql'):
             {'name': '项目实战', 'description': '实际项目开发经验'},
             {'name': '技术资讯', 'description': '行业新闻和技术动态'},
             {'name': '其他', 'description': '其他类型的文章'},
-            {'name': '其他1', 'description': '其他类型的文章'},
-            {'name': '其他2', 'description': '其他类型的文章'},
-            {'name': '其他3', 'description': '其他类型的文章'},
-            {'name': '其他4', 'description': '其他类型的文章'},
-            {'name': '其他5', 'description': '其他类型的文章'},
-            {'name': '其他6', 'description': '其他类型的文章'},
-            {'name': '其他7', 'description': '其他类型的文章'},
-            {'name': '其他8', 'description': '其他类型的文章'},
         ]
         for category_data in default_categories:
             # 生成 slug
@@ -271,7 +263,6 @@ Flask的主要优点包括：
                 category_id=random.choice(categories).id,
                 created_at=datetime.now() - timedelta(days=random.randint(0, 30)),
                 view_count=random.randint(0, 100),
-                sentiment_score=random.uniform(-1, 1)
             )
             # 随机添加2-4个标签
             article.tags = random.sample(tags, random.randint(2, 4))

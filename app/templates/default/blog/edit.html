@@ -2,20 +2,15 @@
 
 {% block title %}{{ '编辑文章' if article else '创建文章' }}{% endblock %}
 
-{% block head %}
-
-{% endblock %}
-
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 py-8">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            {{ '编辑文章' if article else '创建文章' }}
-        </h2>
-        <form method="post" class="space-y-6" id="articleForm">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <form method="post" class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="articleForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- 左侧主要内容区域 -->
+        <div class="lg:col-span-2 space-y-6">
             <!-- 标题输入 -->
-            <div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     标题
                 </label>
@@ -24,52 +19,106 @@
                        class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
                               focus:outline-none focus:ring-2 focus:ring-blue-500 
                               bg-white dark:bg-gray-700 
-                              text-gray-900 dark:text-white 
-                              placeholder-gray-400 dark:placeholder-gray-500">
+                              text-gray-900 dark:text-white">
             </div>
 
             <!-- 内容编辑器 -->
-            <div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     内容
                 </label>
                 <textarea id="editor" name="content">{{ article.content if article else '' }}</textarea>
             </div>
+        </div>
 
+        <!-- 右侧设置区域 -->
+        <div class="space-y-6">
             <!-- 分类选择 -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
                     分类
                 </label>
-                <select name="category" required
+                <div class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                    {% macro render_category_checkbox(category, level=0) %}
+                    <div class="category-item flex items-center hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors duration-200 {% if level > 0 %}ml-{{ level * 4 }}{% endif %}">
+                        <div class="relative flex items-center">
+                            <input type="checkbox" 
+                                   name="categories" 
+                                   value="{{ category.id }}"
+                                   id="category_{{ category.id }}"
+                                   {% if article and category.id in article.categories|map(attribute='id') %}checked{% endif %}
+                                   class="w-4 h-4 text-blue-600 border-gray-300 rounded 
+                                          focus:ring-blue-500 dark:focus:ring-blue-600
+                                          dark:bg-gray-600 dark:border-gray-500">
+                            <label for="category_{{ category.id }}" 
+                                   class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                {{ category.name }}
+                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">({{ category.article_count }})</span>
+                            </label>
+                        </div>
+                    </div>
+                    {% if category._children %}
+                        {% for child in category._children %}
+                            {{ render_category_checkbox(child, level + 1) }}
+                        {% endfor %}
+                    {% endif %}
+                    {% endmacro %}
+
+                    {% for category in categories %}
+                        {{ render_category_checkbox(category) }}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 文章状态 -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    文章状态
+                </label>
+                <select name="status" 
+                        id="articleStatus"
+                        onchange="togglePasswordField()"
                         class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
                                focus:outline-none focus:ring-2 focus:ring-blue-500 
                                bg-white dark:bg-gray-700 
                                text-gray-900 dark:text-white">
-                    {% for category in categories %}
-                    <option value="{{ category.id }}"
-                            {% if article and article.category_id == category.id %}selected{% endif %}>
-                        {{ category.name }}
-                    </option>
-                    {% endfor %}
+                    <option value="public" {% if article and article.status == 'public' %}selected{% endif %}>公开</option>
+                    <option value="hidden" {% if article and article.status == 'hidden' %}selected{% endif %}>隐藏</option>
+                    <option value="password" {% if article and article.status == 'password' %}selected{% endif %}>密码保护</option>
+                    <option value="private" {% if article and article.status == 'private' %}selected{% endif %}>私密</option>
+                    <option value="pending" {% if article and article.status == 'pending' %}selected{% endif %}>待审核</option>
                 </select>
+
+                <!-- 密码保护选项 -->
+                <div id="passwordField" class="mt-4 {% if not article or article.status != 'password' %}hidden{% endif %}">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        访问密码
+                    </label>
+                    <input type="password" 
+                           name="password" 
+                           value="{{ article.password if article else '' }}"
+                           placeholder="留空将使用默认密码: 123456"
+                           class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                  bg-white dark:bg-gray-700 
+                                  text-gray-900 dark:text-white">
+                </div>
             </div>
 
-            <!-- 标签输入部分 -->
-            <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <!-- 标签设置 -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     标签
                 </label>
                 <div class="relative">
                     <!-- 标签输入区域 -->
-                    <div class="flex flex-wrap items-center gap-2 p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg min-h-[42px] focus-within:ring-2 focus-within:ring-blue-500">
-                        <!-- 已选标签 -->
+                    <div class="flex flex-wrap items-center gap-2 p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg min-h-[42px]">
                         <div id="selected-tags" class="flex flex-wrap gap-2">
                             {% if article %}
                                 {% for tag in article.tags %}
-                                <span class="tag-item inline-flex items-center px-2.5 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full text-sm transition-colors duration-200">
+                                <span class="tag-item inline-flex items-center px-2.5 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full text-sm">
                                     {{ tag.name }}
-                                    <button type="button" onclick="removeTag(this)" class="ml-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200">
+                                    <button type="button" onclick="removeTag(this)" class="ml-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                         </svg>
@@ -78,236 +127,203 @@
                                 {% endfor %}
                             {% endif %}
                         </div>
-                        
-                        <!-- 标签输入框 -->
                         <input type="text" 
                                id="tag-input"
                                placeholder="输入标签，按空格或回车添加"
-                               class="flex-1 min-w-[120px] bg-transparent border-0 outline-none focus:ring-0 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500">
+                               class="flex-1 min-w-[120px] bg-transparent border-0 outline-none focus:ring-0 text-gray-900 dark:text-gray-100">
                         <input type="hidden" name="tag_names" id="tag-names" value="{{ article.tags|map(attribute='name')|join(' ') if article else '' }}">
                     </div>
-                    
                     <!-- 标签建议下拉框 -->
-                    <div id="tag-suggestions" 
-                         class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 hidden overflow-hidden max-h-60 overflow-y-auto
-                         scrollbar-thin scrollbar-thumb-blue-400/50 dark:scrollbar-thumb-blue-500/50
-                         scrollbar-track-gray-100 dark:scrollbar-track-gray-800
-                         hover:scrollbar-thumb-blue-500/70 dark:hover:scrollbar-thumb-blue-400/70">
-                    </div>
+                    <div id="tag-suggestions" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 hidden"></div>
                 </div>
-                
-                <!-- 随机标签建议 -->
-                <div class="text-sm text-gray-500 dark:text-gray-400">
-                    <span class="mr-2">建议标签：</span>
-                    <div class="inline-flex flex-wrap gap-2">
-                        {% for tag in random_tags %}
-                        <button type="button" 
-                                onclick="addTag('{{ tag.name }}')"
-                                class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors duration-200">
-                            #{{ tag.name }}
-                        </button>
-                        {% endfor %}
-                    </div>
+            </div>
+
+            <!-- 评论设置 -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <input type="checkbox" 
+                           name="allow_comment" 
+                           id="allowComment"
+                           {% if not article or article.allow_comment %}checked{% endif %}
+                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="allowComment" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                        允许评论
+                    </label>
                 </div>
             </div>
 
             <!-- 操作按钮 -->
             <div class="flex justify-end space-x-4">
                 <a href="{{ url_for('blog.article', id=article.id) if article else url_for('blog.index') }}"
-                   class="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
-                          text-gray-700 dark:text-gray-300 
-                          hover:bg-gray-50 dark:hover:bg-gray-700 
-                          transition-colors duration-200">
+                   class="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300">
                     取消
                 </a>
+                {% if not article %}
                 <button type="submit"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg 
-                               hover:bg-blue-700 
-                               transition-colors duration-200">
+                        onclick="document.querySelector('select[name=status]').value='draft';"
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                    保存草稿
+                </button>
+                {% endif %}
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                     {{ '保存修改' if article else '发布文章' }}
                 </button>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 
-<!-- 在模板中调用tinymce -->
-{{ render_tinymce(
-selector='#editor',
-article_id=article.id if article else 0
-) }}
+<!-- 保留原有的 TinyMCE 和其他脚本 -->
+{{ render_tinymce(selector='#editor', article_id=article.id if article else 0) }}
 <script>
-    // 初始化变量
-    const tagInput = document.getElementById('tag-input');
-    const tagNames = document.getElementById('tag-names');
-    const selectedTags = document.getElementById('selected-tags');
-    const suggestions = document.getElementById('tag-suggestions');
-    let currentTags = new Set(tagNames.value.split(' ').filter(Boolean));
-
-    // 处理标签输入
-    tagInput.addEventListener('keydown', function(e) {
-        if ((e.key === ' ' || e.key === 'Enter') && this.value.trim()) {
-            e.preventDefault();
-            addTag(this.value);
-        } else if (e.key === 'Backspace' && !this.value) {
-            // 当输入框为空时，按退格键删除最后一个标签
-            e.preventDefault();
-            const tags = Array.from(currentTags);
-            if (tags.length > 0) {
-                const lastTag = selectedTags.lastElementChild;
-                if (lastTag) {
-                    const tagName = lastTag.textContent.trim().slice(0, -1);
-                    removeTag(lastTag.querySelector('button'));
-                }
-            }
-        }
-    });
-
-    // 处理失去焦点事件
-    tagInput.addEventListener('blur', function() {
-        const value = this.value.trim();
-        if (value) {
-            addTag(value);
-        }
-    });
-
-    function addTag(tagName) {
-        const name = tagName.trim();
-        if (!name || currentTags.has(name)) {
-            tagInput.value = '';
-            return;
-        }
-        
-        currentTags.add(name);
-        const tag = document.createElement('span');
-        tag.className = 'tag-item inline-flex items-center px-2.5 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full text-sm transition-colors duration-200';
-        tag.innerHTML = `
-            ${name}
-            <button type="button" onclick="removeTag(this)" class="ml-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        `;
-        selectedTags.appendChild(tag);
-        updateTagNames();
-        tagInput.value = '';
-        
-        // 隐藏建议框
-        suggestions.classList.add('hidden');
-    }
-
-    function removeTag(button) {
-        const tag = button.parentElement;
-        const name = tag.childNodes[0].textContent.trim();
-        currentTags.delete(name);
-        tag.remove();
-        updateTagNames();
-    }
-
-    function updateTagNames() {
-        tagNames.value = Array.from(currentTags).join(' ');
-    }
-
-    function selectSuggestion(name) {
-        addTag(name);
-        suggestions.classList.add('hidden');
-    }
-
-    // 获取标签建议
-    let debounceTimer;
-    tagInput.addEventListener('input', function() {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            const query = this.value.trim();
-            if (query.length < 1) {
-                suggestions.classList.add('hidden');
-                return;
-            }
-            
-            fetch(`/tags/suggestions?q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(renderSuggestions)
-                .catch(() => suggestions.classList.add('hidden'));
-        }, 300);
-    });
-
-    // 点击其他地方时隐藏建议
-    document.addEventListener('click', function(e) {
-        if (!tagInput.contains(e.target) && !suggestions.contains(e.target)) {
-            suggestions.classList.add('hidden');
-        }
-    });
-
-
-
-    // 渲染标签建议
-    function renderSuggestions(data) {
-        if (data.length === 0) {
-            suggestions.classList.add('hidden');
-            return;
-        }
-        
-        suggestions.innerHTML = data.map(tag => `
-            <div class="suggestion-item px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer flex items-center justify-between group transition-colors duration-200"
-                 onclick="selectSuggestion('${tag.name}')">
-                <div class="flex items-center">
-                    <span class="font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400">#${tag.name}</span>
-                    <span class="ml-2 text-xs text-gray-400 dark:text-gray-500">${tag.count}篇文章</span>
-                </div>
-                <svg class="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" 
-                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                          d="M9 5l7 7-7 7"></path>
-                </svg>
-            </div>
-        `).join('');
-        
-        suggestions.classList.remove('hidden');
-    }
+    // ... 保留原有的标签相关脚本 ...
 </script>
 
+<!-- 添加自定义滚动条样式 -->
 <style>
-    /* 自定义滚动条样式 */
-    .scrollbar-thin::-webkit-scrollbar {
-        width: 6px;
-    }
-    
-    .scrollbar-thin::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    
-    .scrollbar-thin::-webkit-scrollbar-thumb {
-        background-color: currentColor;
-        border-radius: 3px;
-        transition: background-color 0.2s ease;
-    }
-    
-    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-        background-color: currentColor;
-    }
-    
-    /* Firefox 滚动条样式 */
-    .scrollbar-thin {
-        scrollbar-width: thin;
-        scrollbar-color: var(--thumb-color) var(--track-color);
-    }
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
 
-    /* 设置亮色主题下的颜色变量 */
-    :root {
-        --thumb-color: rgba(96, 165, 250, 0.5);
-        --track-color: rgba(243, 244, 246, 1);
-    }
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
 
-    /* 设置暗色主题下的颜色变量 */
-    .dark {
-        --thumb-color: rgba(59, 130, 246, 0.5);
-        --track-color: rgba(31, 41, 55, 1);
-    }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+}
 
-    /* 悬停状态 */
-    .scrollbar-thin:hover {
-        --thumb-color: rgba(59, 130, 246, 0.7);
-    }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.8);
+}
+
+/* 标签输入框样式 */
+#tag-suggestions {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#tag-suggestions .suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#tag-suggestions .suggestion-item:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.dark #tag-suggestions .suggestion-item:hover {
+    background-color: rgba(59, 130, 246, 0.2);
+}
 </style>
+
+<!-- 添加标签建议脚本 -->
+<script>
+const tagInput = document.getElementById('tag-input');
+const selectedTags = document.getElementById('selected-tags');
+const tagNames = document.getElementById('tag-names');
+const tagSuggestions = document.getElementById('tag-suggestions');
+
+let currentTags = new Set(tagNames.value.split(' ').filter(Boolean));
+
+// 添加标签
+function addTag(tagName) {
+    tagName = tagName.trim();
+    if (!tagName || currentTags.has(tagName)) return;
+    
+    currentTags.add(tagName);
+    
+    const tagElement = document.createElement('span');
+    tagElement.className = 'tag-item inline-flex items-center px-2.5 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full text-sm';
+    tagElement.innerHTML = `
+        ${tagName}
+        <button type="button" onclick="removeTag(this)" class="ml-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+    
+    selectedTags.appendChild(tagElement);
+    tagNames.value = Array.from(currentTags).join(' ');
+    tagInput.value = '';
+}
+
+// 移除标签
+function removeTag(button) {
+    const tagItem = button.closest('.tag-item');
+    const tagName = tagItem.textContent.trim();
+    currentTags.delete(tagName);
+    tagItem.remove();
+    tagNames.value = Array.from(currentTags).join(' ');
+}
+
+// 处理标签输入
+tagInput.addEventListener('keydown', function(e) {
+    if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        addTag(this.value);
+    }
+});
+
+// 获取标签建议
+let debounceTimer;
+tagInput.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        const query = this.value.trim();
+        if (query.length < 1) {
+            tagSuggestions.innerHTML = '';
+            tagSuggestions.classList.add('hidden');
+            return;
+        }
+        
+        fetch(`/tags/suggestions?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(suggestions => {
+                if (suggestions.length === 0) {
+                    tagSuggestions.classList.add('hidden');
+                    return;
+                }
+                
+                tagSuggestions.innerHTML = suggestions.map(tag => `
+                    <div class="suggestion-item text-sm text-gray-700 dark:text-gray-300" onclick="addTag('${tag.name}')">
+                        # ${tag.name}
+                        <span class="text-xs text-gray-500 dark:text-gray-400">(${tag.count})</span>
+                    </div>
+                `).join('');
+                
+                tagSuggestions.classList.remove('hidden');
+            });
+    }, 300);
+});
+
+// 点击外部关闭标签建议
+document.addEventListener('click', function(e) {
+    if (!tagInput.contains(e.target) && !tagSuggestions.contains(e.target)) {
+        tagSuggestions.classList.add('hidden');
+    }
+});
+</script>
+
+<script>
+// 页面加载时检查状态
+document.addEventListener('DOMContentLoaded', function() {
+    togglePasswordField();
+});
+
+function togglePasswordField() {
+    const status = document.getElementById('articleStatus').value;
+    const passwordField = document.getElementById('passwordField');
+    
+    if (status === 'password') {
+        passwordField.classList.remove('hidden');
+    } else {
+        passwordField.classList.add('hidden');
+    }
+}
+</script>
 {% endblock %} 

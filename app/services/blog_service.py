@@ -5,7 +5,7 @@ from app.utils.cache_manager import cache_manager
 from app import db
 import os
 import hashlib
-from flask import current_app
+from flask import current_app, abort
 import random
 
 
@@ -41,7 +41,7 @@ class BlogService:
                                ttl=BlogService.CACHE_TIMES['INDEX'])
 
     @staticmethod
-    def get_category_articles(category_id, page=1):
+    def get_category_articles(category_id, page=1, user=None):
         """获取分类下的文章列表（包含子分类的文章）"""
         def query_articles():
             try:
@@ -60,13 +60,27 @@ class BlogService:
                         db.joinedload(Article.category),
                         db.joinedload(Article.tags)
                     )\
-                    .filter(Article.category_id.in_(category_ids))\
-                    .order_by(Article.id.desc(), Article.created_at.desc())
+                    .filter(Article.category_id.in_(category_ids))
+                
+                # 过滤文章状态
+                if not user or user.role != 'admin':
+                    query = query.filter(
+                        db.or_(
+                            Article.status == Article.STATUS_PUBLIC,
+                            Article.status == Article.STATUS_PASSWORD,
+                            db.and_(
+                                Article.status.in_([Article.STATUS_PRIVATE, Article.STATUS_DRAFT]),
+                                Article.author_id == (user.id if user else None)
+                            )
+                        )
+                    )
+                
+                # 排序
+                query = query.order_by(Article.id.desc(), Article.created_at.desc())
                 
                 # 分页
                 pagination = query.paginate(page=page, per_page=10, error_out=False)
                 
-                # 返回与原有控制器完全一致的格式
                 return {
                     'pagination': pagination,
                     'current_category': category
@@ -76,7 +90,6 @@ class BlogService:
                 current_app.logger.error(f"Get category articles error: {str(e)}")
                 return None
 
-        # 使用缓存
         return cache_manager.get(
             f'category:{category_id}:page:{page}', 
             query_articles,
@@ -84,16 +97,33 @@ class BlogService:
         )
 
     @staticmethod
-    def get_article_detail(article_id):
+    def get_article_detail(article_id, password=None, user=None):
         """获取文章详情"""
         def query_article():
-            return Article.query.options(
+            article = Article.query.options(
                 db.joinedload(Article.author),
                 db.joinedload(Article.tags),
-                db.joinedload(Article.category),
+                db.joinedload(Article.categories),
                 db.joinedload(Article.comments).joinedload(Comment.user)
             ).get_or_404(article_id)
             
+            # 检查访问权限
+            if not article.is_accessible_by(user):
+                return {'error': '您没有权限访问此文章'}
+            
+            # 检查密码保护
+            if article.status == Article.STATUS_PASSWORD:
+                if not password:
+                    return {'need_password': True, 'article': article}
+                if password != article.password:
+                    return {'error': '密码错误'}
+            
+            return article
+        
+        # 如果是密码保护的文章，不使用缓存
+        if password is not None:
+            return query_article()
+        
         return cache_manager.get(f'article:{article_id}', 
                                query_article,
                                ttl=BlogService.CACHE_TIMES['ARTICLE'])
@@ -319,14 +349,22 @@ class BlogService:
         """编辑文章"""
         try:
             # 验证必填字段
-            required_fields = ['title', 'content', 'category']
+            required_fields = ['title', 'content']
             for field in required_fields:
                 if not data.get(field):
                     return False, f'请填写{field}字段', None
 
-            # 数据类型转换
+            # 验证分类
+            category_ids = data.getlist('categories')  # 获取多个分类ID
+            if not category_ids:
+                return False, '请至少选择一个分类', None
+            
+            # 验证分类ID的有效性
             try:
-                category_id = int(data['category'])
+                category_ids = [int(cid) for cid in category_ids]
+                categories = Category.query.filter(Category.id.in_(category_ids)).all()
+                if len(categories) != len(category_ids):
+                    return False, '存在无效的分类ID', None
             except (ValueError, TypeError):
                 return False, '分类ID必须是数字', None
 
@@ -342,16 +380,22 @@ class BlogService:
             # 更新基本信息
             article.title = data['title'].strip()
             article.content = data['content']
-            article.category_id = category_id
             
-            # 情感分析
-            try:
-                from textblob import TextBlob
-                blob = TextBlob(data['content'])
-                article.sentiment_score = blob.sentiment.polarity
-            except Exception as e:
-                current_app.logger.error(f"Sentiment analysis error: {str(e)}")
-                article.sentiment_score = 0.0
+            # 更新分类关联
+            article.categories = categories
+            # 设置主分类（使用第一个选择的分类作为主分类）
+            article.category_id = categories[0].id if categories else None
+            
+            # 更新文章状态
+            article.status = data.get('status', Article.STATUS_PUBLIC)
+            if article.status == Article.STATUS_PASSWORD:
+                # 如果密码为空，使用默认密码
+                article.password = data.get('password') or '123456'
+            else:
+                article.password = None
+            
+            # 更新评论设置
+            article.allow_comment = data.get('allow_comment') == 'on'
             
             # 处理标签
             tag_names = [name.strip() for name in data.get('tag_names', '').split() if name.strip()]
@@ -365,12 +409,8 @@ class BlogService:
                     db.session.add(tag)
                 new_tags.append(tag)
             
-            # 直接替换标签列表，避免使用 clear()
+            # 更新标签关联
             article.tags = new_tags
-            
-            # 更新时间戳
-            if article_id:
-                article.updated_at = datetime.now()
             
             db.session.commit()
             
@@ -386,6 +426,16 @@ class BlogService:
                     'categories_count',
                     'tag_suggestions:*'
                 ])
+            
+            # 清除所有相关分类的缓存
+            for category in categories:
+                cache_keys.append(f'category:{category.id}:*')
+                # 清除父分类的缓存
+                parent = category.parent
+                while parent:
+                    cache_keys.append(f'category:{parent.id}:*')
+                    parent = parent.parent
+            
             cache_keys.append(f'user:{user_id}:articles:*')
             
             for key in cache_keys:
@@ -544,4 +594,20 @@ class BlogService:
             'latest_comments': lambda: BlogService.get_latest_comments()
         }
         cache_manager.warmup(warmup_keys)
+
+    @staticmethod
+    def get_article_for_edit(article_id, user):
+        """获取用于编辑的文章"""
+        article = Article.query.options(
+            db.joinedload(Article.author),
+            db.joinedload(Article.tags),
+            db.joinedload(Article.categories),
+            db.joinedload(Article.comments).joinedload(Comment.user)
+        ).get_or_404(article_id)
+        
+        # 检查编辑权限
+        if not user or (user.role != 'admin' and article.author_id != user.id):
+            abort(403, '您没有权限编辑此文章')
+        
+        return article
 

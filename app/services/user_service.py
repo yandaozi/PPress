@@ -73,23 +73,7 @@ class UserService:
         return cache_manager.get(f'user:{user_id}:stats', 
                                query_stats,
                                ttl=UserService.CACHE_TIMES['STATS'])
-    
-    @staticmethod
-    def get_user_sentiment_stats(user_id):
-        """获取用户的情感倾向统计"""
-        def query_sentiment():
-            sentiment_data = db.session.query(
-                db.func.avg(Article.sentiment_score).label('avg_sentiment')
-            ).join(ViewHistory)\
-             .filter(ViewHistory.user_id == user_id)\
-             .first()
-            
-            return sentiment_data.avg_sentiment if sentiment_data.avg_sentiment else 0
-            
-        return cache_manager.get(f'user:{user_id}:sentiment', 
-                               query_sentiment,
-                               ttl=UserService.CACHE_TIMES['SENTIMENT'])
-    
+
     @staticmethod
     def update_profile(user_id, data, avatar_file=None):
         """更新用户资料"""
