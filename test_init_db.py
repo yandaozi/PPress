@@ -16,10 +16,10 @@ COPYRIGHT_INFO = base64.b64decode(
 
 def check_db_lock():
     """检查数据库锁"""
-    if os.path.exists(LOCK_FILE):
-        print("\n检测到数据库锁文件！这是为了防止意外重置数据库的安全机制！")
-        print(f"如果确定要重新初始化数据库，请先删除以下文件：{os.path.abspath(LOCK_FILE)}")
-        return True
+    # if os.path.exists(LOCK_FILE):
+    #     print("\n检测到数据库锁文件！这是为了防止意外重置数据库的安全机制！")
+    #     print(f"如果确定要重新初始化数据库，请先删除以下文件：{os.path.abspath(LOCK_FILE)}")
+    #     return True
     return False
 
 def update_db_config(db_type):
@@ -232,7 +232,7 @@ Flask的主要优点包括：
 
 如果你正在选择Python Web框架，Flask是一个值得考虑的选择。''',
 
-            '''数据库设计是Web开发中的重要环节，好的数据库设计可以提高系统的性能和可维护性。
+            '''数据库设计是Web开发中的重要环节，好的数据库设计可以提高系统性能和可维护性。
 
 在设计数据库时，我们需要注意以下几点：
 1. 合理的表结构设计
@@ -256,16 +256,28 @@ Flask的主要优点包括：
         # 创建文章
         articles = []
         for i in range(300):
+            # 随机选择主分类和额外分类
+            main_category = random.choice(categories)
+            extra_categories = random.sample(
+                [c for c in categories if c != main_category],
+                k=random.randint(0, 2)  # 随机选择0-2个额外分类
+            )
+            
             article = Article(
                 title=f'技术探讨：{random.choice(["Web开发实践", "数据库优化", "前端技术", "后端架构", "系统设计"])} {i+1}',
                 content=random.choice(article_contents),
                 author_id=random.choice(users + [admin]).id,
-                category_id=random.choice(categories).id,
+                category_id=main_category.id,  # 设置主分类
                 created_at=datetime.now() - timedelta(days=random.randint(0, 30)),
                 view_count=random.randint(0, 100),
             )
+            
+            # 设置多分类关系（包括主分类）
+            article.categories = [main_category] + extra_categories
+            
             # 随机添加2-4个标签
             article.tags = random.sample(tags, random.randint(2, 4))
+            
             articles.append(article)
             db.session.add(article)
 
@@ -279,7 +291,7 @@ Flask的主要优点包括：
                     '这篇文章讲解得很清楚，对我帮助很大！',
                     '这篇文章太溜了，技术大师！',
                     '文章内容很实用，期待更多类似的分享。',
-                    '写得不错，把复杂的概念解释得很通俗易懂。',
+                    '写得不错，把复杂的概解释得很通俗易懂。',
                     '这个观点很有意思，值得深入探讨。',
                     '感谢分享，学到了很多新知识。'
                 ]),

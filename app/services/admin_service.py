@@ -1,6 +1,7 @@
 from flask import current_app
 
 from app.models import User, Article, Comment, ViewHistory, Category, Tag, Plugin, File, SiteConfig, Route
+from app.models.article import article_categories
 from app.utils.cache_manager import cache_manager
 from app.plugins import plugin_manager
 
@@ -381,7 +382,7 @@ class AdminService:
                     added_ids = set()
                     
                     for category in categories:
-                        # 添加父分类链
+                        # 添加父分类
                         ancestors = category.get_ancestors()
                         for ancestor in ancestors:
                             if ancestor.id not in added_ids:
@@ -521,41 +522,67 @@ class AdminService:
     def delete_category(category_id):
         """删除分类"""
         try:
-            category = Category.query.get_or_404(category_id)
-            
             # 检查是否是默认分类
-            if category_id == 1:  # 假设 ID 为 1 的是默认分类
+            if category_id == 1:
                 return False, '不能删除默认分类'
             
-            # 获取默认分类
+            category = Category.query.get_or_404(category_id)
+            
+            # 获取默认分类（ID为1的分类）
             default_category = Category.query.get(1)
             if not default_category:
                 return False, '默认分类不存在'
             
             # 开始事务
             with db.session.begin_nested():
-                # 将该分类的文章移动到默认分类
-                Article.query.filter_by(category_id=category_id).update({'category_id': 1})
+                # 获取所有使用此分类作为主分类的文章
+                articles_to_update = Article.query.filter_by(category_id=category_id).all()
                 
-                # 更新默认分类的文章计数
-                default_category.article_count = Article.query.filter_by(category_id=1).count()
+                # 更新这些文章的主分类和多分类关系
+                for article in articles_to_update:
+                    # 更新主分类
+                    article.category_id = default_category.id
+                    
+                    # 更新多分类关系：移除当前分类，添加默认分类
+                    if category in article.categories:
+                        article.categories.remove(category)
+                    if default_category not in article.categories:
+                        article.categories.append(default_category)
+                
+                # 更新其他文章的多分类关系
+                articles_with_category = Article.query.filter(
+                    Article.categories.contains(category)
+                ).all()
+                
+                for article in articles_with_category:
+                    if category in article.categories:
+                        article.categories.remove(category)
+                        if default_category not in article.categories:
+                            article.categories.append(default_category)
                 
                 # 删除分类
                 db.session.delete(category)
             
-            # 提交事务
+            # 提交主事务
             db.session.commit()
             
-            # 清除分类缓存
-            cache_manager.delete('admin:categories:*')
-            cache_manager.delete('categories_*')
+            # 在新的事务中更新文章计数
+            with db.session.begin():
+                default_category = Category.query.get(1)  # 重新获取默认分类
+                if default_category:
+                    default_category.update_article_count()
+            
+            # 清除相关缓存
+            cache_manager.delete('categories_data')
+            cache_manager.delete('category:*')
+            cache_manager.delete('index:articles:*')
             
             return True, '分类删除成功'
             
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Delete category error: {str(e)}")
-            return False, str(e)
+            return False, f'删除失败: {str(e)}'
 
     @staticmethod
     def move_category(category_id, new_parent_id):
@@ -921,7 +948,7 @@ class AdminService:
     def uninstall_plugin(plugin_name):
         """卸载插件"""
         try:
-            # 从数据库中获取插件记录
+            # 从数库中获取插件记录
             plugin_record = Plugin.query.filter_by(name=plugin_name).first_or_404()
             plugin_dir = plugin_record.directory
 
@@ -1036,7 +1063,7 @@ class AdminService:
 
                 # 检查插件是否已存在
                 if Plugin.query.filter_by(name=plugin_name).first():
-                    return False, '插件已存在'
+                    return False, '插件存在'
 
                 # 生成目录名
                 directory = plugin_info.get('directory', plugin_name.lower().replace(' ', '_'))
@@ -1065,7 +1092,7 @@ class AdminService:
                 # 添加到数据库
                 Plugin.add_plugin(plugin_info, directory, enabled=enabled, config=default_config)
 
-                # 如果插件默认启用，则立即加载它
+                # 如果插件默认启用，则立加载它
                 if enabled:
                     plugin_manager.load_plugin(directory)
 
@@ -1221,7 +1248,7 @@ class AdminService:
             
             total_cache_count = len(cache_keys)
 
-            # 计算总内存占用
+            # 计总内存占用
             total_size = sum(len(str(cache_manager._cache.get(key))) for key in cache_keys)
             memory_usage = format_size(total_size)
 
@@ -1346,7 +1373,7 @@ class AdminService:
             with open(os.path.join(plugin_dir, 'plugin.json'), 'r', encoding='utf-8') as f:
                 plugin_info = json.load(f)
 
-            # 获取插件实例
+            # 获插件实例
             module = import_module(f'app.plugins.installed.{plugin_name}')
             plugin_class = getattr(module, plugin_info.get('plugin_class', 'Plugin'))
             plugin = plugin_class()
@@ -1370,7 +1397,7 @@ class AdminService:
             # 重新加载插件
             plugin_manager.reload_plugin(plugin_name)
 
-            return True, f'插件重载成功！(默认状态：{"启用" if enabled else "禁用"})'
+            return True, f'插件重载���功！(默认状态：{"启用" if enabled else "禁用"})'
 
         except Exception as e:
             db.session.rollback()
@@ -1418,7 +1445,7 @@ class AdminService:
 
     @staticmethod
     def get_routes(page=1, search_query=''):
-        """获取路由列表"""
+        """获路由列表"""
         try:
             # 检查表是否存在
             inspector = db.inspect(db.engine)

@@ -1,6 +1,7 @@
 from ..extensions import db
 from datetime import datetime
 from sqlalchemy import text
+from flask import current_app
 
 class Category(db.Model):
     __tablename__ = 'categories'
@@ -9,37 +10,53 @@ class Category(db.Model):
     name = db.Column(db.String(50), nullable=False)
     slug = db.Column(db.String(50), unique=True, nullable=False)
     description = db.Column(db.String(200))
-    parent_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('categories.id', ondelete='SET NULL'), nullable=True)
     sort_order = db.Column(db.Integer, default=0)
     article_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     parent = db.relationship('Category', remote_side=[id], backref=db.backref('children', lazy='dynamic'))
+    
+    # 主分类关系
+    primary_articles = db.relationship('Article', 
+                                    foreign_keys='Article.category_id',
+                                    back_populates='category')
+    
+    # 多分类关系
     related_articles = db.relationship('Article',
-                                     secondary='article_categories',
-                                     primaryjoin="Category.id == article_categories.c.category_id",
-                                     secondaryjoin="article_categories.c.article_id == Article.id",
-                                     lazy='dynamic',
-                                     viewonly=True)
+                                    secondary='article_categories',
+                                    primaryjoin="Category.id == article_categories.c.category_id",
+                                    secondaryjoin="article_categories.c.article_id == Article.id",
+                                    back_populates='categories',
+                                    cascade="all, delete",
+                                    lazy='dynamic')
     
     def update_article_count(self):
         """更新文章计数"""
-        # 获取主分类文章数
-        direct_count = self.articles.count()
-        # 获取多分类文章数
-        related_count = self.related_articles.count()
-        # 合并计数
-        self.article_count = direct_count + related_count
-        
-        # 更新父分类的计数
-        if self.parent:
-            self.parent.update_article_count()
+        try:
+            # 使用 SQL 查询直接计算文章数
+            primary_count = db.session.query(Article).filter(Article.category_id == self.id).count()
+            
+            # 使用 SQL 查询计算多分类关系的文章数
+            related_count = db.session.query(Article)\
+                .join(article_categories)\
+                .filter(article_categories.c.category_id == self.id)\
+                .count()
+                
+            self.article_count = primary_count + related_count
+            
+            # 更新父分类的计数
+            if self.parent:
+                self.parent.update_article_count()
+                
+        except Exception as e:
+            current_app.logger.error(f"Error updating article count: {str(e)}")
     
     def get_total_article_count(self):
         """获取包含子分类的总文章数"""
         # 获取当前分类的文章数
-        total = self.articles.count() + self.related_articles.count()
+        total = self.primary_articles.count() + self.related_articles.count()
         # 加上子分类的文章数
         for child in self.children:
             total += child.get_total_article_count()

@@ -36,7 +36,7 @@ class Article(db.Model):
     view_count = db.Column(db.Integer, default=0, index=True)
     created_at = db.Column(db.DateTime, default=datetime.now, index=True)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), index=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id', ondelete='SET NULL'), index=True)
     
     # 新增字段
     status = db.Column(db.Enum(STATUS_PUBLIC, STATUS_HIDDEN, STATUS_PASSWORD, 
@@ -46,13 +46,16 @@ class Article(db.Model):
     allow_comment = db.Column(db.Boolean, default=True)  # 是否允许评论
     
     # 主分类关系
-    category = db.relationship('Category', foreign_keys=[category_id], backref='articles')
+    category = db.relationship('Category', 
+                             foreign_keys=[category_id],
+                             back_populates='primary_articles')
     
-    # 多分类关系
+    # 多分类关系 - 使用 back_populates
     categories = db.relationship('Category', 
                                secondary='article_categories',
                                primaryjoin="Article.id == article_categories.c.article_id",
                                secondaryjoin="article_categories.c.category_id == Category.id",
+                               back_populates='related_articles',  # 对应 Category 的关系名
                                lazy='joined')
     
     tags = db.relationship('Tag', secondary=article_tags, backref=db.backref('articles', lazy=True))
@@ -84,7 +87,7 @@ class Article(db.Model):
         if self.status == self.STATUS_PENDING:
             return False
         
-        # 公开文章任何人可访问
+        # 公开文章���何人可访问
         if self.status == self.STATUS_PUBLIC:
             return True
         
@@ -92,7 +95,7 @@ class Article(db.Model):
         if self.status == self.STATUS_HIDDEN:
             return True
         
-        # 密码保护的文章需要输入密码
+        # 密码保护的文章需输入密码
         if self.status == self.STATUS_PASSWORD:
             return True
         
@@ -158,7 +161,7 @@ def init_article_events():
                     where(Category.__table__.c.id == target.category_id)
                 )
             
-            # 更新标签计数
+            # 更新标签数
             for tag in target.tags:
                 connection.execute(
                     Tag.__table__.update().
@@ -226,7 +229,7 @@ def init_article_events():
                 value.article_count = 0
             value.article_count += 1
             
-            # 延迟提交，让外部控制事务
+            # 延迟提交，让外部控制事
             session.flush()
             
         except Exception as e:
@@ -303,23 +306,23 @@ def init_article_events():
 
     @event.listens_for(Article, 'before_delete')
     def article_before_delete(mapper, connection, target):
-        """文章删除前清理标签关联和更新计数"""
+        """文章删除前更新分类和标签计数"""
         try:
-            # 获取文章的标签
-            session = object_session(target)
-            if session:
-                # 更新标签计数
-                for tag in target.tags:
-                    if tag.article_count is not None and tag.article_count > 0:
-                        tag.article_count -= 1
-                session.flush()
-            
-            # 删除标签关联
-            connection.execute(
-                Article.__table__.metadata.tables['article_tags'].delete().where(
-                    Article.__table__.metadata.tables['article_tags'].c.article_id == target.id
+            # 使用 connection 而不是 session 执行更新
+            if target.category_id:
+                connection.execute(
+                    Category.__table__.update()
+                    .values(article_count=Category.__table__.c.article_count - 1)
+                    .where(Category.__table__.c.id == target.category_id)
                 )
-            )
+            
+            # 更新标签计数
+            for tag in target.tags:
+                connection.execute(
+                    Tag.__table__.update()
+                    .values(article_count=Tag.__table__.c.article_count - 1)
+                    .where(Tag.__table__.c.id == tag.id)
+                )
             
         except Exception as e:
             current_app.logger.error(f"Error in article_before_delete: {str(e)}")
