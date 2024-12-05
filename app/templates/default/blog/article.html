@@ -246,8 +246,8 @@
         
         <!-- 评论列表 -->
         <div class="space-y-6">
-            {% if comment_data and comment_data.comments %}
-                {% for comment in comment_data.comments %}
+            {% if comment_data and comment_data.items %}
+                {% for comment in comment_data.items %}
                     <div class="border-t border-gray-100 dark:border-gray-700 py-6 first:border-t-0" id="comment-{{ comment.id }}">
                         <!-- 父评论内容 -->
                         <div class="flex items-start space-x-3">
@@ -330,7 +330,7 @@
         </div>
 
         <!-- 分页 -->
-        {% if comment_data and comment_data.total_pages > 1 %}
+        {% if comment_data and comment_data.pages > 1 %}
         <div class="mt-6">
             {% with pagination=comment_data, endpoint='blog.article', kwargs={'id': article.id} %}
             {% include 'components/pagination.html' %}

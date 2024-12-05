@@ -9,6 +9,7 @@ import os
 import hashlib
 from flask import current_app, abort
 import random
+from app.utils.pagination import Pagination
 
 
 class BlogService:
@@ -71,7 +72,7 @@ class BlogService:
     def get_category_articles(category_id, page=1, user=None):
         """获取分类文章列表"""
         def query_articles():
-            # 获取当前分类
+            # 取当前分类
             category = Category.query.get_or_404(category_id)
             
             # 构建查询
@@ -161,7 +162,7 @@ class BlogService:
                     return {'need_password': True, 'article': article}
                 if password != article.password:
                     return {'error': '密码错误', 'need_password': True, 'article': article}
-                # 密码正确，获取评论数据并返回文章
+                # 密码正确，获取评论数据并返回章
                 article.comment_data = BlogService.get_article_comments(article_id, user)
                 return article
             
@@ -360,47 +361,64 @@ class BlogService:
     def get_article_comments(article_id, user=None, page=1):
         """获取文章评论"""
         try:
-            # 获取评论配置
             config = CommentConfig.get_config()
-            
-            # 构建基础查询
-            base_query = Comment.query.filter(
-                Comment.article_id == article_id
-            )
-            
-            # 检查用户权限（修改这里的判断逻辑）
             is_admin = user and hasattr(user, 'role') and user.role == 'admin'
             
-            # 如果不是管理员,只显示已审核的评论
-            if not is_admin:
-                base_query = base_query.filter(Comment.status == 'approved')
+            # 1. 获取所有评论
+            comments = Comment.query.filter(
+                Comment.article_id == article_id
+            ).order_by(Comment.created_at.asc()).all()
             
-            # 获取父评论
-            parent_query = base_query.filter(Comment.parent_id.is_(None))\
-                                   .options(
-                                       db.joinedload(Comment.user),
-                                       db.joinedload(Comment.replies).joinedload(Comment.user)
-                                   )
+            # 2. 先收集所有评论的ID和状态
+            comment_map = {}
+            parent_comments = []
             
-            # 分页
-            pagination = parent_query.order_by(Comment.created_at.desc())\
-                                   .paginate(page=page, 
-                                           per_page=config.comments_per_page,
-                                           error_out=False)
+            # 3. 第一次遍历：收集所有评论
+            for comment in comments:
+                # 跳过未审核的评论（非管理员）
+                if not is_admin and comment.status != 'approved':
+                    continue
+                
+                # 将评论添加到映射中
+                comment_map[comment.id] = comment
+                comment.replies = []
+                
+                # 如果是父评论（parent_id 为 None 或空字符串）
+                if not comment.parent_id:
+                    parent_comments.append(comment)
             
-            # 过滤已审核的回复
-            for comment in pagination.items:
-                if not is_admin:
-                    comment.replies = [r for r in comment.replies if r.status == 'approved']
-                comment.replies.sort(key=lambda x: x.created_at)
+            # 4. 第二次遍历：处理回复
+            for comment in comments:
+                if not is_admin and comment.status != 'approved':
+                    continue
+                    
+                if comment.parent_id and comment.parent_id in comment_map:
+                    parent = comment_map[comment.parent_id]
+                    parent.replies.append(comment)
             
-            return {
-                'comments': pagination.items,
-                'config': config,
-                'total': pagination.total,
-                'total_pages': pagination.pages,
-                'current_page': page
-            }
+            # 5. 对父评论按时间倒序排序
+            parent_comments.sort(key=lambda x: x.created_at, reverse=True)
+            
+            # 6. 对每个父评论的回复进行排序
+            for parent in parent_comments:
+                parent.replies.sort(key=lambda x: x.created_at)
+            
+            # 7. 进行分页
+            per_page = config.comments_per_page
+            total = len(parent_comments)
+            total_pages = (total + per_page - 1) // per_page
+            start = (page - 1) * per_page
+            end = start + per_page
+            paginated_comments = parent_comments[start:end]
+            
+            # 创建分页对象
+            return Pagination(
+                items=paginated_comments,
+                total=total,
+                page=page,
+                per_page=per_page,
+                total_pages=total_pages
+            )
             
         except Exception as e:
             current_app.logger.error(f"Get article comments error: {str(e)}")
@@ -418,18 +436,14 @@ class BlogService:
             # 获取评论配置
             config = CommentConfig.get_config()
             
-            # 验证游客评论
-            if not user_id:
-                if not config.allow_guest:
-                    return False, '不允许游客评论'
-                if not data.get('guest_name'):
-                    return False, '请输入昵称'
-                if config.require_email and not data.get('guest_email'):
-                    return False, '请输入邮箱'
-                if config.require_contact and not data.get('guest_contact'):
-                    return False, '请输入联系方式'
+            # 添加调试日志
+            current_app.logger.info(f"Adding comment for article {article_id}, user {user_id}")
+            current_app.logger.info(f"Comment config - require_audit: {config.require_audit}")
             
             # 创建评论
+            status = 'pending' if config.require_audit else 'approved'
+            current_app.logger.info(f"New comment status will be: {status}")
+            
             comment = Comment(
                 content=data['content'].strip(),
                 article_id=article_id,
@@ -439,7 +453,7 @@ class BlogService:
                 guest_contact=data.get('guest_contact'),
                 parent_id=data.get('parent_id'),
                 reply_to_id=data.get('reply_to_id'),
-                status='pending' if config.require_audit else 'approved'
+                status=status
             )
             
             db.session.add(comment)
@@ -464,7 +478,7 @@ class BlogService:
             
             # 检查权限
             if not is_admin and comment.user_id != user_id:
-                return False, '没有权限删除此评论'
+                return False, '没有权删除此评论'
             
             # 删除评论及其所有回复
             Comment.query.filter(
@@ -501,12 +515,12 @@ class BlogService:
             if not category_ids:
                 return False, '请至少择一个分类', None
             
-            # 验证分类ID的有效性
+            # 验证分类ID的效性
             try:
                 category_ids = [int(cid) for cid in category_ids]
                 categories = Category.query.filter(Category.id.in_(category_ids)).all()
                 if len(categories) != len(category_ids):
-                    return False, '存在无效的分类ID', None
+                    return False, '无效的分类ID', None
             except (ValueError, TypeError):
                 return False, '分类ID必须是数字', None
 
@@ -542,7 +556,7 @@ class BlogService:
             
             # 更新分类关联
             article.categories = categories
-            # 设置主分类（使用第一个选择的分类作为主分类）
+            # 设置主分类（使用第一个选的分类作为主分类）
             article.category_id = categories[0].id if categories else None
             
             # 新文章状态
@@ -556,7 +570,7 @@ class BlogService:
             # 更新评论设置
             article.allow_comment = data.get('allow_comment') == 'on'
             
-            # 处理标签
+            # 处理标
             tag_names = [name.strip() for name in data.get('tag_names', '').split() if name.strip()]
             new_tags = []
             
@@ -606,7 +620,7 @@ class BlogService:
             file_hash = hashlib.md5(file_content).hexdigest()
             file.seek(0)  # 重置文件指针
             
-            # 检查是否存在相同的文件
+            # 检查是否存在相同的文
             existing_file = File.query.filter_by(md5=file_hash).first()
             if existing_file:
                 return True, existing_file.file_path
@@ -682,9 +696,9 @@ class BlogService:
                 db.joinedload(Article.categories)
             ).get(article_id)
             
-            # 基础缓存式
+            # 础缓存式
             cache_patterns = [
-                f'article:{article_id}*',     # 所有用户的文章详情缓存（注意*前不加:）
+                f'article:{article_id}*',     # 所有用户的文章详情存（注意*前不加:）
                 'index:articles:*',           # 首页文章列表缓存
                 'hot_articles:*',             # 热门文章缓存
                 'random_articles',            # 随机文章缓存
@@ -768,4 +782,3 @@ class BlogService:
             abort(403, '您没有权限编辑此文章')
         
         return article
-

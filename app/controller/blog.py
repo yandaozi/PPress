@@ -66,36 +66,30 @@ def category(id):
 def article(id):
     """文章详情路由"""
     try:
-        password = request.args.get('password')  # 从 URL 参数获取密码
-        page = request.args.get('page', 1, type=int)  # 获取评论页码
+        # 获取页码
+        page = request.args.get('page', 1, type=int)
+        
+        # 获取密码
+        password = request.args.get('password')
         
         # 获取文章详情
         result = BlogService.get_article_detail(id, password, current_user)
         
-        # 如果需要密码
-        if isinstance(result, dict):
-            if result.get('need_password'):
-                return render_template('blog/password.html', 
-                                    article=result['article'],
-                                    error_message=result.get('error'))
-            if result.get('error'):
-                flash(result['error'])
-                return redirect(url_for('blog.index'))
-        
-        # 记录浏览历史
-        if current_user.is_authenticated:
-            BlogService.record_view(current_user.id, id)
+        if isinstance(result, dict) and 'error' in result:
+            flash(result['error'], 'error')
+            return redirect(url_for('blog.index'))
             
-        # 获取评论数据和配置
+        if isinstance(result, dict) and result.get('need_password'):
+            return render_template('blog/password.html', article=result['article'])
+            
+        # 获取评论数据
         comment_data = BlogService.get_article_comments(id, current_user, page)
-        comment_config = CommentConfig.get_config()
         
-        return render_template('blog/article.html',
+        # 渲染模板
+        return render_template('blog/article.html', 
                              article=result,
                              comment_data=comment_data,
-                             comment_config=comment_config,
-                             page=page,
-                             **get_categories_data())
+                             comment_config=CommentConfig.get_config())
                              
     except Exception as e:
         current_app.logger.error(f"Article view error: {str(e)}")
@@ -168,7 +162,7 @@ def add_comment(article_id):
 @login_required
 @handle_view_errors
 def delete_comment(comment_id):
-    """删除��论"""
+    """删除评论"""
     success, message = BlogService.delete_comment(
         comment_id,
         current_user.id,

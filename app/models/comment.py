@@ -23,31 +23,23 @@ class Comment(db.Model):
     article = db.relationship('Article', backref=db.backref('comments', lazy=True, cascade='all, delete'))
     user = db.relationship('User', back_populates='comments', lazy='joined')
     
-    # 评论层级关系
+    # 简化关系定义
     parent = db.relationship('Comment',
-                           backref=db.backref('replies', 
-                                            lazy='joined',  # 改为 joined 加载
-                                            order_by='Comment.created_at'),  # 添加默认排序
+                           backref=db.backref('_replies', lazy='select'),
                            remote_side=[id],
                            foreign_keys=[parent_id])
+    
     reply_to = db.relationship('Comment',
-                             backref=db.backref('replies_received', lazy=True),
+                             backref=db.backref('replies_received', lazy='select'),
                              remote_side=[id],
                              foreign_keys=[reply_to_id])
-
+    
     @property
     def display_name(self):
         """显示名称"""
         if self.user_id:
             return self.user.nickname or self.user.username
         return self.guest_name or '游客'
-
-    @property
-    def visible_replies(self):
-        """获取可见的回复评论"""
-        if hasattr(self, 'replies'):
-            return [r for r in self.replies if r.status == 'approved']
-        return []
 
     def is_visible(self, user=None):
         """检查评论是否对指定用户可见"""

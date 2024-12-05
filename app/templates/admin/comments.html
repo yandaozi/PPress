@@ -260,6 +260,16 @@
                     </button>
                 </div>
             </form>
+
+            <!-- 在评论配置表单下方添加 -->
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                <h4 class="font-bold mb-2">当前配置状态：</h4>
+                <pre class="text-sm">
+                    评论审核：{{ comment_config.require_audit }}
+                    游客评论：{{ comment_config.allow_guest }}
+                    每页评论数：{{ comment_config.comments_per_page }}
+                </pre>
+            </div>
         </div>
     </div>
 </div>
@@ -330,7 +340,7 @@ function deleteComment(commentId) {
             }
         }).then(response => {
             if (response.ok) {
-                showAlert('评论删除成功', 'success', '成功');
+                showAlert('评论删��成功', 'success', '成功');
                 setTimeout(() => location.reload(), 200);
             } else {
                 response.json().then(data => {
