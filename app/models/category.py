@@ -2,6 +2,7 @@ from ..extensions import db
 from datetime import datetime
 from sqlalchemy import text
 from flask import current_app
+from .article import Article, article_categories
 
 class Category(db.Model):
     __tablename__ = 'categories'
@@ -32,32 +33,34 @@ class Category(db.Model):
                                     cascade="all, delete",
                                     lazy='dynamic')
     
-    def update_article_count(self):
-        """更新文章计数"""
+    @staticmethod
+    def update_all_counts():
+        """直接更新所有分类的文章计数"""
         try:
-            # 使用 SQL 查询直接计算文章数
-            primary_count = db.session.query(Article).filter(Article.category_id == self.id).count()
+            # 获取所有分类
+            categories = Category.query.all()
             
-            # 使用 SQL 查询计算多分类关系的文章数
-            related_count = db.session.query(Article)\
-                .join(article_categories)\
-                .filter(article_categories.c.category_id == self.id)\
-                .count()
+            for category in categories:
+                # 计算主分类文章数
+                primary_count = Article.query.filter_by(category_id=category.id).count()
                 
-            self.article_count = primary_count + related_count
+                # 计算多分类关系文章数
+                related_count = Article.query.join(article_categories)\
+                    .filter(article_categories.c.category_id == category.id)\
+                    .count()
+                
+                # 更新计数
+                category.article_count = primary_count + related_count
             
-            # 更新父分类的计数
-            if self.parent:
-                self.parent.update_article_count()
-                
+            db.session.commit()
+            
         except Exception as e:
-            current_app.logger.error(f"Error updating article count: {str(e)}")
+            db.session.rollback()
+            current_app.logger.error(f"Error updating category counts: {str(e)}")
     
     def get_total_article_count(self):
         """获取包含子分类的总文章数"""
-        # 获取当前分类的文章数
         total = self.primary_articles.count() + self.related_articles.count()
-        # 加上子分类的文章数
         for child in self.children:
             total += child.get_total_article_count()
         return total
@@ -108,4 +111,4 @@ class Category(db.Model):
                 tree.append(node)
             return tree
             
-        return build_tree() 
+        return build_tree()

@@ -86,9 +86,11 @@ def article(id):
                              article=result,
                              **get_categories_data())
                              
+    except NotFound:
+        abort(404)  # 直接返回 404
     except Exception as e:
-        flash(str(e))
-        return redirect(url_for('blog.index'))
+        current_app.logger.error(f"Article view error: {str(e)}")
+        abort(404)  # 其他错误也返回 404
 
 @bp.route('/search')
 @handle_view_errors

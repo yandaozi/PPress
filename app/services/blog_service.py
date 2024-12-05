@@ -126,13 +126,22 @@ class BlogService:
     @staticmethod
     def get_article_detail(article_id, password=None, user=None):
         """获取文章详情"""
-        def query_article():
+        try:
+            # 直接查询文章,不存在则抛出 404
             article = Article.query.options(
                 db.joinedload(Article.author),
                 db.joinedload(Article.tags),
                 db.joinedload(Article.categories),
                 db.joinedload(Article.comments).joinedload(Comment.user)
             ).get_or_404(article_id)
+            
+            # 如果文章没有任何分类，添加到默认分类
+            if not article.category and not article.categories:
+                default_category = Category.query.get(1)
+                if default_category:
+                    article.category = default_category
+                    article.categories.append(default_category)
+                    db.session.commit()
             
             # 检查是否是管理员或作者
             is_admin = user and hasattr(user, 'role') and user.role == 'admin'
@@ -144,7 +153,7 @@ class BlogService:
             
             # 如果是待审核、私密或草稿文章，返回错误
             if article.status in [Article.STATUS_PENDING, Article.STATUS_PRIVATE, Article.STATUS_DRAFT]:
-                return {'error': '您没有权限访问此文章'}
+                return {'error': '您没有权限���问此文章'}
             
             # 如果是密码保护的文章
             if article.status == Article.STATUS_PASSWORD:
@@ -153,37 +162,17 @@ class BlogService:
                 if password != article.password:
                     return {'error': '密码错误', 'need_password': True, 'article': article}
             
-            # 如果是或隐藏文章允许访问
+            # 如果是公开或隐藏文章允许访问
             if article.status in [Article.STATUS_PUBLIC, Article.STATUS_HIDDEN]:
                 return article
             
             # 其他情况返回错误
             return {'error': '您没有权限访问此文章'}
-        
-        # 构建缓存键，包含用户信息和密码信息
-        cache_key = f'article:{article_id}'
-        
-        # 添加用户信息到缓存键
-        if user and hasattr(user, 'id'):
-            cache_key += f':user_{user.id}'
-            if hasattr(user, 'role') and user.role == 'admin':
-                cache_key += ':admin'
-        else:
-            cache_key += ':anonymous'
-        
-        # 添加密码信息到缓存键
-        if password:
-            # 使用密码的哈希值，避免在缓存键中使用原始密码
-            password_hash = hashlib.md5(password.encode()).hexdigest()
-            cache_key += f':pwd_{password_hash}'
-        
-        # 如果是密码保护的文章，不使用缓存
-        if password is not None:
-            return query_article()
-        
-        return cache_manager.get(cache_key, 
-                               query_article,
-                               ttl=BlogService.CACHE_TIMES['ARTICLE'])
+            
+        except Exception as e:
+            # 记录错误但不返回具体错误信息给用户
+            current_app.logger.error(f"Get article detail error: {str(e)}")
+            abort(404)  # 直接抛出 404 错误
 
     @staticmethod
     def get_hot_articles_today():
@@ -198,8 +187,10 @@ class BlogService:
             ).group_by(ViewHistory.article_id)\
              .subquery()
             
+            # 只获取存在的公开文章
             return db.session.query(Article, views_subquery.c.views)\
                 .join(views_subquery, Article.id == views_subquery.c.article_id)\
+                .filter(Article.status == Article.STATUS_PUBLIC)\
                 .options(db.joinedload(Article.author))\
                 .order_by(views_subquery.c.views.desc())\
                 .limit(5)\
@@ -223,8 +214,10 @@ class BlogService:
             ).group_by(ViewHistory.article_id)\
              .subquery()
             
+            # 只获取存在的公开文章
             return db.session.query(Article, views_subquery.c.views)\
                 .join(views_subquery, Article.id == views_subquery.c.article_id)\
+                .filter(Article.status == Article.STATUS_PUBLIC)\
                 .options(db.joinedload(Article.author))\
                 .order_by(views_subquery.c.views.desc())\
                 .limit(5)\
@@ -460,7 +453,7 @@ class BlogService:
             # 设置主分类（使用第一个选择的分类作为主分类）
             article.category_id = categories[0].id if categories else None
             
-            # 更新文章状态
+            # 新文章状态
             article.status = data.get('status', Article.STATUS_PUBLIC)
             if article.status == Article.STATUS_PASSWORD:
                 # 如果密码为空，使用默认密码

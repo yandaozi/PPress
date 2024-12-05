@@ -36,7 +36,7 @@ class Article(db.Model):
     view_count = db.Column(db.Integer, default=0, index=True)
     created_at = db.Column(db.DateTime, default=datetime.now, index=True)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id', ondelete='SET NULL'), index=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id', ondelete='SET NULL'), nullable=True, index=True)
     
     # 新增字段
     status = db.Column(db.Enum(STATUS_PUBLIC, STATUS_HIDDEN, STATUS_PASSWORD, 
@@ -87,7 +87,7 @@ class Article(db.Model):
         if self.status == self.STATUS_PENDING:
             return False
         
-        # 公开文章���何人可访问
+        # 公开文章何人可访问
         if self.status == self.STATUS_PUBLIC:
             return True
         
@@ -121,6 +121,15 @@ class Article(db.Model):
             return False
             
         return True
+
+    @property
+    def main_category(self):
+        """获取主分类，如果没有则返回第一个多分类"""
+        if self.category:
+            return self.category
+        elif self.categories:
+            return self.categories[0] if self.categories else None
+        return None
 
 # 将事件监听器移到文件末尾，并使用延迟导入
 def init_article_events():

@@ -20,7 +20,7 @@ from app.utils.pagination import Pagination
 from threading import Lock
 
 from app.utils.route_manager import route_manager
-
+from sqlalchemy import text, update
 
 def format_size(size):
     """格式化文件大小显示"""
@@ -67,7 +67,7 @@ class AdminService:
                 'article_count': cat.article_count
             } for cat in Category.query.all()]
             
-            # 获取随机标签
+            # 随机标签
             selected_tags = [{
                 'id': tag.id,
                 'name': tag.name,
@@ -366,7 +366,7 @@ class AdminService:
                         # ID搜索时直接返回匹配的分类
                         categories = [Category.query.get_or_404(category_id)]
                     except ValueError:
-                        return None, 'ID必须是数字'
+                        return None, 'ID必须数字'
                 else:
                     # 名称搜索 - 先精确后模糊
                     exact_matches = query.filter(Category.name == search_query)
@@ -394,7 +394,7 @@ class AdminService:
                             result_categories.append(category)
                             added_ids.add(category.id)
                     
-                    # 按层级和排序重新排序
+                    # 按层级排序重排序
                     result_categories.sort(key=lambda x: (x.get_level(), x.sort_order))
                     categories = result_categories
             else:
@@ -522,57 +522,36 @@ class AdminService:
     def delete_category(category_id):
         """删除分类"""
         try:
-            # 检查是否是默认分类
+            # 不能删除默认分类
             if category_id == 1:
                 return False, '不能删除默认分类'
             
             category = Category.query.get_or_404(category_id)
-            
-            # 获取默认分类（ID为1的分类）
             default_category = Category.query.get(1)
+            
             if not default_category:
                 return False, '默认分类不存在'
             
-            # 开始事务
-            with db.session.begin_nested():
-                # 获取所有使用此分类作为主分类的文章
-                articles_to_update = Article.query.filter_by(category_id=category_id).all()
-                
-                # 更新这些文章的主分类和多分类关系
-                for article in articles_to_update:
-                    # 更新主分类
-                    article.category_id = default_category.id
-                    
-                    # 更新多分类关系：移除当前分类，添加默认分类
-                    if category in article.categories:
-                        article.categories.remove(category)
-                    if default_category not in article.categories:
-                        article.categories.append(default_category)
-                
-                # 更新其他文章的多分类关系
-                articles_with_category = Article.query.filter(
-                    Article.categories.contains(category)
-                ).all()
-                
-                for article in articles_with_category:
-                    if category in article.categories:
-                        article.categories.remove(category)
-                        if default_category not in article.categories:
-                            article.categories.append(default_category)
-                
-                # 删除分类
-                db.session.delete(category)
+            # 1. 更新主分类
+            Article.query.filter_by(category_id=category_id).update({
+                'category_id': default_category.id
+            })
             
-            # 提交主事务
+            # 2. 删除多分类关系
+            db.session.execute(
+                article_categories.delete().where(
+                    article_categories.c.category_id == category_id
+                )
+            )
+            
+            # 3. 删除分类
+            db.session.delete(category)
             db.session.commit()
             
-            # 在新的事务中更新文章计数
-            with db.session.begin():
-                default_category = Category.query.get(1)  # 重新获取默认分类
-                if default_category:
-                    default_category.update_article_count()
+            # 4. 更新所有分类的文章计数
+            Category.update_all_counts()
             
-            # 清除相关缓存
+            # 5. 清除缓存
             cache_manager.delete('categories_data')
             cache_manager.delete('category:*')
             cache_manager.delete('index:articles:*')
@@ -772,7 +751,7 @@ class AdminService:
             user.email = email
             if password:
                 user.set_password(password)
-            # 只有编辑其他用户时才允许修改角色
+            # 只编辑其他用户时才允许修改角色
             if user.id != current_user_id and role:
                 user.role = role
             
@@ -909,7 +888,7 @@ class AdminService:
                     )
                 )
 
-            # 分页
+            # 分
             pagination = query.order_by(Plugin.installed_at.desc()).paginate(
                 page=page, per_page=9, error_out=False
             )
@@ -984,7 +963,7 @@ class AdminService:
             db.session.commit()
 
             if plugin.enabled:
-                # 启用插件 - 重新加载
+                # 启用插件 - 重新加
                 if plugin_manager.reload_plugin(plugin_name):
                     status = '启用'
                 else:
@@ -1005,12 +984,12 @@ class AdminService:
 
     @staticmethod
     def save_plugin_settings(plugin_name, form_data):
-        """保存插件设置"""
+        """保存插件设"""
         try:
-            # 移除开头和结尾的斜杠
+            # 除开头和结尾的斜杠
             plugin_name = plugin_name.strip('/')
 
-            # 获取插件实例
+            # 获取插件实��
             plugin = plugin_manager.get_plugin(plugin_name)
             if not plugin:
                 return False, '插件未加载或不存在'
@@ -1049,7 +1028,7 @@ class AdminService:
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(temp_dir)
 
-                # 检查插件格式是否正确
+                # 检插件式是否正确
                 if not os.path.exists(os.path.join(temp_dir, 'plugin.json')):
                     return False, '无效的插件格式'
 
@@ -1080,7 +1059,7 @@ class AdminService:
                 if os.path.exists(plugin_zip):
                     os.remove(plugin_zip)
 
-                # 导入插件模块获取默认配置
+                # 导入插件模块获取默配
                 module = import_module(f'app.plugins.installed.{directory}')
                 plugin_class = getattr(module, plugin_info.get('plugin_class', 'Plugin'))
                 plugin = plugin_class()
@@ -1149,7 +1128,7 @@ class AdminService:
             if os.path.exists(file_path):
                 os.remove(file_path)
 
-                # 如果文件所在目录为空，删除目录
+                # 如果文件所在目录为空，除目录
                 directory = os.path.dirname(file_path)
                 if not os.listdir(directory):
                     os.rmdir(directory)
@@ -1168,7 +1147,7 @@ class AdminService:
     def export_plugin(plugin_name):
         """导出插件"""
         try:
-            # 从数据库获取插件记录
+            # 从数据库取插件记录
             plugin_record = Plugin.query.filter_by(name=plugin_name).first_or_404()
             plugin_dir = plugin_record.directory
 
@@ -1192,7 +1171,7 @@ class AdminService:
             # 移除开头和结尾的斜杠
             plugin_name = plugin_name.strip('/')
 
-            # 获取插件实例
+            # 取插件实
             plugin = plugin_manager.get_plugin(plugin_name)
             if not plugin:
                 return False, '插件未加载或不存在', None, None
@@ -1218,7 +1197,7 @@ class AdminService:
             # 移除开头和结尾的斜杠
             plugin_name = plugin_name.strip('/')
 
-            # 获取插件实例
+            # 获取插件实
             plugin = plugin_manager.get_plugin(plugin_name)
             if not plugin:
                 return False, '插件未加载或不存在'
@@ -1226,7 +1205,7 @@ class AdminService:
             # 检查是否有设置模板
             settings_html = plugin.get_settings_template()
             if not settings_html:
-                return False, '插件没有设置页面'
+                return False, '插件没有设页面'
 
             return True, '插件有设置页面'
 
@@ -1397,7 +1376,7 @@ class AdminService:
             # 重新加载插件
             plugin_manager.reload_plugin(plugin_name)
 
-            return True, f'插件重载���功！(默认状态：{"启用" if enabled else "禁用"})'
+            return True, f'插件重载成��！(默认状态：{"启用" if enabled else "禁用"})'
 
         except Exception as e:
             db.session.rollback()
