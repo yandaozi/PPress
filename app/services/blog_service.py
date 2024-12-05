@@ -26,7 +26,7 @@ class BlogService:
     }
 
     @staticmethod
-    def get_index_articles(page=1, category_id=None):
+    def get_index_articles(page=1, category_id=None, user=None):
         """获取首页文章列表"""
         def query_articles():
             with db.session.no_autoflush:
@@ -35,6 +35,31 @@ class BlogService:
                     db.joinedload(Article.category),
                     db.joinedload(Article.tags)
                 )
+                
+                # 检查是否是管理员
+                is_admin = user and hasattr(user, 'role') and user.role == 'admin'
+                
+                if is_admin:
+                    # 管理员可以看到所有文章
+                    pass
+                elif user and hasattr(user, 'id'):
+                    # 登录用户可以看到:
+                    # 1. 所有公开文章
+                    # 2. 自己的所有文章
+                    query = query.filter(
+                        db.or_(
+                            Article.status == Article.STATUS_PUBLIC,  # 只显示公开文章
+                            Article.author_id == user.id  # 显示自己的所有文章
+                        )
+                    )
+                else:
+                    # 未登录用户只能看到公开文章
+                    query = query.filter(Article.status == Article.STATUS_PUBLIC)
+
+                # 分类过滤
+                if category_id:
+                    query = query.filter(Article.category_id == category_id)
+                    
                 return query.order_by(Article.id.desc(), Article.created_at.desc())\
                            .paginate(page=page, per_page=10, error_out=False)
                        
@@ -54,6 +79,26 @@ class BlogService:
                 db.joinedload(Article.author),
                 db.joinedload(Article.tags)
             )
+            
+            # 检查是否是管理员
+            is_admin = user and hasattr(user, 'role') and user.role == 'admin'
+            
+            if is_admin:
+                # 管理员可以看到所有文章
+                pass
+            elif user and hasattr(user, 'id'):
+                # 登录用户可以看到:
+                # 1. 所有公开文章
+                # 2. 自己的所有文章
+                query = query.filter(
+                    db.or_(
+                        Article.status == Article.STATUS_PUBLIC,  # 只显示公开文章
+                        Article.author_id == user.id  # 显示自己的所有文章
+                    )
+                )
+            else:
+                # 未登录用户只能看到公开文章
+                query = query.filter(Article.status == Article.STATUS_PUBLIC)
             
             # 使用 union 合并主分类和多分类的文章
             main_category_articles = query.filter(Article.category_id == category_id)
@@ -89,24 +134,54 @@ class BlogService:
                 db.joinedload(Article.comments).joinedload(Comment.user)
             ).get_or_404(article_id)
             
-            # 检查访问权限
-            if not article.is_accessible_by(user):
+            # 检查是否是管理员或作者
+            is_admin = user and hasattr(user, 'role') and user.role == 'admin'
+            is_author = user and hasattr(user, 'id') and article.author_id == user.id
+            
+            # 如果是管理员或作者，直接返回文章
+            if is_admin or is_author:
+                return article
+            
+            # 如果是待审核、私密或草稿文章，返回错误
+            if article.status in [Article.STATUS_PENDING, Article.STATUS_PRIVATE, Article.STATUS_DRAFT]:
                 return {'error': '您没有权限访问此文章'}
             
-            # 检查密码保护
+            # 如果是密码保护的文章
             if article.status == Article.STATUS_PASSWORD:
                 if not password:
                     return {'need_password': True, 'article': article}
                 if password != article.password:
-                    return {'error': '密码错误'}
+                    return {'error': '密码错误', 'need_password': True, 'article': article}
             
-            return article
+            # 如果是或隐藏文章允许访问
+            if article.status in [Article.STATUS_PUBLIC, Article.STATUS_HIDDEN]:
+                return article
+            
+            # 其他情况返回错误
+            return {'error': '您没有权限访问此文章'}
+        
+        # 构建缓存键，包含用户信息和密码信息
+        cache_key = f'article:{article_id}'
+        
+        # 添加用户信息到缓存键
+        if user and hasattr(user, 'id'):
+            cache_key += f':user_{user.id}'
+            if hasattr(user, 'role') and user.role == 'admin':
+                cache_key += ':admin'
+        else:
+            cache_key += ':anonymous'
+        
+        # 添加密码信息到缓存键
+        if password:
+            # 使用密码的哈希值，避免在缓存键中使用原始密码
+            password_hash = hashlib.md5(password.encode()).hexdigest()
+            cache_key += f':pwd_{password_hash}'
         
         # 如果是密码保护的文章，不使用缓存
         if password is not None:
             return query_article()
         
-        return cache_manager.get(f'article:{article_id}', 
+        return cache_manager.get(cache_key, 
                                query_article,
                                ttl=BlogService.CACHE_TIMES['ARTICLE'])
 
@@ -303,7 +378,7 @@ class BlogService:
             return True, '评论发表成功'
         except Exception as e:
             db.session.rollback()
-            return False, f'评论发表失败: {str(e)}'
+            return False, f'评论发失败: {str(e)}'
     
     @staticmethod
     def delete_comment(comment_id, user_id, is_admin=False):
@@ -336,7 +411,7 @@ class BlogService:
                 if not data.get(field):
                     return False, f'请填写{field}字段', None
 
-            # 验证分类
+            # 验分类
             category_ids = data.getlist('categories')  # 获取多个分类ID
             if not category_ids:
                 return False, '请至少选择一个分类', None
@@ -359,9 +434,26 @@ class BlogService:
                 article = Article(author_id=user_id)
                 db.session.add(article)
 
+            # 记录原始状态
+            old_status = article.status if article_id else None
+
+            # 更新文章状态
+            new_status = data.get('status', Article.STATUS_PUBLIC)
+            article.status = new_status
+
             # 更新基本信息
             article.title = data['title'].strip()
             article.content = data['content']
+            
+            # 更新发布时间
+            created_at = data.get('created_at')
+            if created_at:
+                try:
+                    article.created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
+                except ValueError:
+                    return False, '发布时间格式不正确', None
+            elif not article_id:  # 新文章且未设置时间则使用当前时间
+                article.created_at = datetime.now()
             
             # 更新分类关联
             article.categories = categories
@@ -397,31 +489,11 @@ class BlogService:
             db.session.commit()
             
             # 清除相关缓存
-            cache_keys = ['index:articles:*']
-            if article_id:
-                cache_keys.append(f'article:{article.id}')
-            else:
-                cache_keys.extend([
-                    'random_articles',
-                    'tag:*',
-                    'search:*',
-                    'categories_count',
-                    'tag_suggestions:*'
-                ])
+            BlogService.clear_article_related_cache(article.id)  # 使用统一的缓存清理方法
             
-            # 清除所有相关分类的缓存
-            for category in categories:
-                cache_keys.append(f'category:{category.id}:*')
-                # 清除父分类的缓存
-                parent = category.parent
-                while parent:
-                    cache_keys.append(f'category:{parent.id}:*')
-                    parent = parent.parent
-            
-            cache_keys.append(f'user:{user_id}:articles:*')
-            
-            for key in cache_keys:
-                cache_manager.delete(key)
+            # 额外清除用户相关缓存
+            cache_manager.delete(f'user:{user_id}:articles:*')
+            cache_manager.delete('routes_last_refresh')
             
             return True, '文章保存成功', article
             
@@ -454,7 +526,7 @@ class BlogService:
             if existing_file:
                 return True, existing_file.file_path
             
-            # 生成日期路径和文件名
+            # 生成期路径和文件名
             date_path = datetime.now().strftime('%Y%m%d')
             file_ext = file.filename.rsplit('.', 1)[1].lower()
             filename = f"{file_hash}.{file_ext}"
@@ -519,22 +591,41 @@ class BlogService:
     @staticmethod
     def clear_article_related_cache(article_id):
         """清除文章相关的所有缓存"""
-        # 使用列表管理需要清除的缓存键模式
-        cache_patterns = [
-            f'article:{article_id}',    # 文章详情缓存
-            'index:articles:*',         # 首页文章列表缓存
-            'category:*',               # 分类文章列表缓存
-            'hot_articles:*',           # 热门文章缓存
-            'random_articles',          # 随机文章缓存
-            'search:*',                 # 搜索结果缓存
-            'tag:*',                    # 标签相关缓存
-            'search_suggestions:*',     # 搜索建议缓存
-            'search_tags:*'             # 搜索标签缓存
-        ]
-        
-        # 批量清除缓存
-        for pattern in cache_patterns:
-            cache_manager.delete(pattern)
+        try:
+            # 获取文章信息以清除相关分类缓存
+            article = Article.query.options(
+                db.joinedload(Article.categories)
+            ).get(article_id)
+            
+            # 基础缓存模式
+            cache_patterns = [
+                f'article:{article_id}*',     # 所有用户的文章详情缓存（注意*前不加:）
+                'index:articles:*',           # 首页文章列表缓存
+                'hot_articles:*',             # 热门文章缓存
+                'random_articles',            # 随机文章缓存
+                'search:*',                   # 搜索结果缓存
+                'tag:*',                      # 标签相关缓存
+                'search_suggestions:*',       # 搜索建议缓存
+                'search_tags:*'               # 搜索标签缓存
+            ]
+            
+            # 添加分类相关缓存
+            if article:
+                for category in article.categories:
+                    cache_patterns.append(f'category:{category.id}:*')
+                    # 清除父分类缓存
+                    parent = category.parent
+                    while parent:
+                        cache_patterns.append(f'category:{parent.id}:*')
+                        parent = parent.parent
+            
+            # 批量清除缓存
+            for pattern in cache_patterns:
+                current_app.logger.info(f"Clearing cache pattern: {pattern}")  # 添加日志
+                cache_manager.delete(pattern)
+            
+        except Exception as e:
+            current_app.logger.error(f"Error clearing article cache: {str(e)}")
     
     @staticmethod
     def get_search_suggestions(query):

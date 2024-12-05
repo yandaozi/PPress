@@ -80,6 +80,10 @@ class Article(db.Model):
         if hasattr(user, 'id') and self.author_id == user.id:
             return True
         
+        # 待审核文章只有作者和管理员可以访问
+        if self.status == self.STATUS_PENDING:
+            return False
+        
         # 公开文章任何人可访问
         if self.status == self.STATUS_PUBLIC:
             return True
@@ -96,8 +100,8 @@ class Article(db.Model):
         if self.status == self.STATUS_PRIVATE:
             return False
         
-        # 待审核文章只有作者和管理员可以访问
-        if self.status == self.STATUS_PENDING:
+        # 草稿只有作者和管理员可以访问
+        if self.status == self.STATUS_DRAFT:
             return False
         
         return False

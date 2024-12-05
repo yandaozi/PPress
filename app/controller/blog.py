@@ -30,7 +30,8 @@ def index():
     return render_template('blog/index.html',
                          articles=BlogService.get_index_articles(
                              request.args.get('page', 1, type=int),
-                             request.args.get('category', type=int)
+                             request.args.get('category', type=int),
+                             current_user
                          ),
                          hot_articles_today=BlogService.get_hot_articles_today(),
                          hot_articles_week=BlogService.get_hot_articles_week(),
@@ -45,7 +46,8 @@ def category(id):
     """分类文章列表"""
     data = BlogService.get_category_articles(
         id,
-        request.args.get('page', 1, type=int)
+        request.args.get('page', 1, type=int),
+        current_user
     )
     return render_template('blog/index.html',
                            articles=data['pagination'],

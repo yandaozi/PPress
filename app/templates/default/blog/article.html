@@ -138,16 +138,6 @@
             {% endfor %}
         </div>
 
-        <!-- 在文章内容下方添加分类显示 -->
-        <div class="flex flex-wrap items-center gap-2 mt-4 mb-4">
-            <span class="text-gray-600 dark:text-gray-400">所属分类：</span>
-            {% for category in article.categories %}
-            <a href="{{ url_for('blog.category', id=category.id) }}" 
-               class="text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200">
-                {{ category.name }}
-            </a>
-            {% endfor %}
-        </div>
     </article>
 
 

@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-8">
-    <form method="post" class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="articleForm">
+    <form method="post" class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="articleForm" onsubmit="return validateForm()">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <!-- 左侧主要内容区域 -->
@@ -33,6 +33,21 @@
 
         <!-- 右侧设置区域 -->
         <div class="space-y-6">
+            <!-- 发布时间 -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    发布时间
+                </label>
+                <input type="datetime-local"
+                       name="created_at"
+                       value="{{ article.created_at.strftime('%Y-%m-%dT%H:%M') if article else '' }}"
+                       class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg
+                              focus:outline-none focus:ring-2 focus:ring-blue-500
+                              bg-white dark:bg-gray-700
+                              text-gray-900 dark:text-white">
+                <p class="mt-1 text-xs text-gray-500">留空则使用当前时间</p>
+            </div>
+
             <!-- 分类选择 -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
@@ -86,6 +101,7 @@
                     <option value="hidden" {% if article and article.status == 'hidden' %}selected{% endif %}>隐藏</option>
                     <option value="password" {% if article and article.status == 'password' %}selected{% endif %}>密码保护</option>
                     <option value="private" {% if article and article.status == 'private' %}selected{% endif %}>私密</option>
+                    <option value="draft" {% if article and article.status == 'draft' %}selected{% endif %}>草稿</option>
                     <option value="pending" {% if article and article.status == 'pending' %}selected{% endif %}>待审核</option>
                 </select>
 
@@ -158,13 +174,6 @@
                    class="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300">
                     取消
                 </a>
-                {% if not article %}
-                <button type="submit"
-                        onclick="document.querySelector('select[name=status]').value='draft';"
-                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-                    保存草稿
-                </button>
-                {% endif %}
                 <button type="submit"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                     {{ '保存修改' if article else '发布文章' }}
@@ -322,5 +331,48 @@ function togglePasswordField() {
         passwordField.classList.add('hidden');
     }
 }
+</script>
+
+<!-- 在页面底部添加验证脚本 -->
+<script>
+function validateForm() {
+    // 检查分类选择
+    const categories = document.querySelectorAll('input[name="categories"]:checked');
+    if (categories.length === 0) {
+        showAlert('请至少选择一个分类', 'error', '错误');
+        // 滚动到分类选择区域
+        document.querySelector('.custom-scrollbar').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+    }
+    
+    // 检查标题
+    const title = document.querySelector('input[name="title"]').value.trim();
+    if (!title) {
+        showAlert('请填写文章标题', 'error', '错误');
+        document.querySelector('input[name="title"]').focus();
+        return false;
+    }
+    
+    // 检查内容
+    const content = tinymce.get('editor').getContent().trim();
+    if (!content) {
+        showAlert('请填写文章内容', 'error', '错误');
+        tinymce.get('editor').focus();
+        return false;
+    }
+    
+    return true;
+}
+
+// 添加分类选择监听
+document.querySelectorAll('input[name="categories"]').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const categories = document.querySelectorAll('input[name="categories"]:checked');
+        if (categories.length === 0) {
+            // 如果没有选中任何分类,显示提示
+            showAlert('请至少选择一个分类', 'warning', '提示');
+        }
+    });
+});
 </script>
 {% endblock %} 
