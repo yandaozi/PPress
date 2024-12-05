@@ -22,9 +22,17 @@ def profile():
 def edit_profile():
     """编辑个人资料"""
     if request.method == 'POST':
+        data = {
+            'username': request.form.get('username'),
+            'email': request.form.get('email'),
+            'password': request.form.get('password'),
+            'confirm_password': request.form.get('confirm_password'),
+            'nickname': request.form.get('nickname'),
+        }
+        
         success, message = UserService.update_profile(
             current_user.id,
-            request.form,
+            data,
             request.files.get('avatar')
         )
         flash(message)

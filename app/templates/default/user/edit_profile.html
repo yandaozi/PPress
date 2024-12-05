@@ -29,6 +29,20 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 昵称 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        昵称
+                    </label>
+                    <input type="text" name="nickname" value="{{ current_user.nickname or '' }}"
+                           class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500
+                                  bg-white dark:bg-gray-700
+                                  text-gray-900 dark:text-white
+                                  placeholder-gray-400 dark:placeholder-gray-500"
+                           placeholder="输入昵称">
+                </div>
                 
                 <!-- 用户名 -->
                 <div>
@@ -42,6 +56,7 @@
                                   text-gray-900 dark:text-white 
                                   placeholder-gray-400 dark:placeholder-gray-500">
                 </div>
+
                 
                 <!-- 邮箱 -->
                 <div>

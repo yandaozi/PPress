@@ -91,6 +91,10 @@ class UserService:
                     return False, '邮箱已被注册'
                 user.email = data['email']
                 
+            # 更新昵称 - 如果为空字符串则设为 None
+            nickname = data.get('nickname', '').strip()
+            user.nickname = nickname if nickname else None
+            
             # 更新密码
             password = data.get('password')
             if password:

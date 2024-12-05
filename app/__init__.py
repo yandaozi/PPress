@@ -208,13 +208,16 @@ def create_app(db_type=DB_TYPE, init_components=True):
         def get_user_info(user):
             """获取用户信息"""
             if user:
+                nickname = user.nickname if user.nickname else user.username
                 return {
                     'id': user.id,
+                    'nickname': nickname,
                     'username': user.username,
                     'avatar': user.avatar
                 }
             return {
                 'id': None,
+                'nickname': '已注销用户',
                 'username': '已注销用户',
                 'avatar': url_for('static', filename='default_avatar.png')
             }

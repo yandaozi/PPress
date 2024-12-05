@@ -127,7 +127,6 @@ class BlogService:
     def get_article_detail(article_id, password=None, user=None):
         """获取文章详情"""
         try:
-            # 直接查询文章,不存在则抛出 404
             article = Article.query.options(
                 db.joinedload(Article.author),
                 db.joinedload(Article.tags),
@@ -153,7 +152,7 @@ class BlogService:
             
             # 如果是待审核、私密或草稿文章，返回错误
             if article.status in [Article.STATUS_PENDING, Article.STATUS_PRIVATE, Article.STATUS_DRAFT]:
-                return {'error': '您没有权限���问此文章'}
+                return {'error': '您没有权限访问此文章'}
             
             # 如果是密码保护的文章
             if article.status == Article.STATUS_PASSWORD:
@@ -161,6 +160,8 @@ class BlogService:
                     return {'need_password': True, 'article': article}
                 if password != article.password:
                     return {'error': '密码错误', 'need_password': True, 'article': article}
+                # 密码正确，直接返回文章
+                return article
             
             # 如果是公开或隐藏文章允许访问
             if article.status in [Article.STATUS_PUBLIC, Article.STATUS_HIDDEN]:
@@ -170,9 +171,8 @@ class BlogService:
             return {'error': '您没有权限访问此文章'}
             
         except Exception as e:
-            # 记录错误但不返回具体错误信息给用户
             current_app.logger.error(f"Get article detail error: {str(e)}")
-            abort(404)  # 直接抛出 404 错误
+            abort(404)
 
     @staticmethod
     def get_hot_articles_today():

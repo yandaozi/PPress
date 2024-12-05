@@ -12,7 +12,7 @@
                 <div class="flex flex-col items-center">
                     <img src="{{ author.avatar }}" alt="avatar" 
                          class="w-24 h-24 rounded-full mb-4">
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ author.username }}</h1>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ author.nickname }}</h1>
                     <p class="text-gray-500 dark:text-gray-400 mt-2">加入时间：{{ author.created_at.strftime('%Y-%m-%d') }}</p>
                     {% if author.role == 'admin' %}
                     <span class="mt-2 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm">管理员</span>

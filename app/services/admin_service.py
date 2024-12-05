@@ -67,7 +67,7 @@ class AdminService:
                 'article_count': cat.article_count
             } for cat in Category.query.all()]
             
-            # ��机标签
+            # 机标签
             selected_tags = [{
                 'id': tag.id,
                 'name': tag.name,
@@ -366,7 +366,7 @@ class AdminService:
                         # ID搜索时直接返回匹配的分类
                         categories = [Category.query.get_or_404(category_id)]
                     except ValueError:
-                        return None, 'ID必���数字'
+                        return None, 'ID必须是数字'
                 else:
                     # 名称搜索 - 先精确后模糊
                     exact_matches = query.filter(Category.name == search_query)
@@ -749,6 +749,7 @@ class AdminService:
             email = data.get('email')
             password = data.get('password')
             role = data.get('role')
+            nickname = data.get('nickname', '').strip() or None
             
             # 检查用户名和邮箱是否已存在
             if username != user.username and User.query.filter_by(username=username).first():
@@ -758,6 +759,7 @@ class AdminService:
             
             user.username = username
             user.email = email
+            user.nickname = nickname
             if password:
                 user.set_password(password)
             # 只编辑其他用户时才允许修改角色
@@ -769,6 +771,7 @@ class AdminService:
             return True, None, {
                 'id': user.id,
                 'username': user.username,
+                'nickname': user.nickname,
                 'email': user.email,
                 'role': user.role,
                 'created_at': user.created_at.strftime('%Y-%m-%d %H:%M')
@@ -972,7 +975,7 @@ class AdminService:
             db.session.commit()
 
             if plugin.enabled:
-                # 启用插件 - ��新加
+                # 启用插件 - 新加
                 if plugin_manager.reload_plugin(plugin_name):
                     status = '启用'
                 else:
@@ -1185,7 +1188,7 @@ class AdminService:
             if not plugin:
                 return False, '插件未加载或不存在', None, None
 
-            # 获取插件的设��模板
+            # 获取插件的设模板
             settings_html = plugin.get_settings_template()
             if not settings_html:
                 return False, '该插件没有设置页面', None, None
@@ -1223,7 +1226,7 @@ class AdminService:
 
     @staticmethod
     def get_cache_stats(page=1, search_query=None):
-        """获取缓存统计信��"""
+        """获取缓存统计信"""
         try:
             from app.utils.cache_manager import cache_manager
 

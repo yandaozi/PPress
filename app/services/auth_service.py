@@ -60,7 +60,7 @@ class AuthService:
                 return False, '邮箱已被注册'
             
             # 创建新用户
-            user = User(username=username, email=email)
+            user = User(username=username, email=email, nickname=f"昵称_{username}")
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
