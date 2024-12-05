@@ -67,7 +67,7 @@ class AdminService:
                 'article_count': cat.article_count
             } for cat in Category.query.all()]
             
-            # 随机标签
+            # ��机标签
             selected_tags = [{
                 'id': tag.id,
                 'name': tag.name,
@@ -366,7 +366,7 @@ class AdminService:
                         # ID搜索时直接返回匹配的分类
                         categories = [Category.query.get_or_404(category_id)]
                     except ValueError:
-                        return None, 'ID必须数字'
+                        return None, 'ID必���数字'
                 else:
                     # 名称搜索 - 先精确后模糊
                     exact_matches = query.filter(Category.name == search_query)
@@ -531,27 +531,36 @@ class AdminService:
             
             if not default_category:
                 return False, '默认分类不存在'
+
+            # 1. 获取所有需要更新的分类ID
+            affected_categories = set()
+            affected_categories.add(default_category.id)  # 默认分类会接收文章
+            if category.parent_id:
+                affected_categories.add(category.parent_id)  # 父分类需要更新
             
-            # 1. 更新主分类
+            # 2. 更新主分类
             Article.query.filter_by(category_id=category_id).update({
                 'category_id': default_category.id
             })
             
-            # 2. 删除多分类关系
+            # 3. 删除多分类关系
             db.session.execute(
                 article_categories.delete().where(
                     article_categories.c.category_id == category_id
                 )
             )
             
-            # 3. 删除分类
+            # 4. 删除分类
             db.session.delete(category)
             db.session.commit()
             
-            # 4. 更新所有分类的文章计数
-            Category.update_all_counts()
+            # 5. 更新受影响分类的文章计数
+            for cat_id in affected_categories:
+                cat = Category.query.get(cat_id)
+                if cat:
+                    cat.update_article_count()
             
-            # 5. 清除缓存
+            # 6. 清除缓存
             cache_manager.delete('categories_data')
             cache_manager.delete('category:*')
             cache_manager.delete('index:articles:*')
@@ -963,7 +972,7 @@ class AdminService:
             db.session.commit()
 
             if plugin.enabled:
-                # 启用插件 - 重新加
+                # 启用插件 - ��新加
                 if plugin_manager.reload_plugin(plugin_name):
                     status = '启用'
                 else:
@@ -989,7 +998,7 @@ class AdminService:
             # 除开头和结尾的斜杠
             plugin_name = plugin_name.strip('/')
 
-            # 获取插件实��
+            # 获取插件实
             plugin = plugin_manager.get_plugin(plugin_name)
             if not plugin:
                 return False, '插件未加载或不存在'
@@ -1176,7 +1185,7 @@ class AdminService:
             if not plugin:
                 return False, '插件未加载或不存在', None, None
 
-            # 获取插件的设置模板
+            # 获取插件的设��模板
             settings_html = plugin.get_settings_template()
             if not settings_html:
                 return False, '该插件没有设置页面', None, None
@@ -1214,7 +1223,7 @@ class AdminService:
 
     @staticmethod
     def get_cache_stats(page=1, search_query=None):
-        """获取缓存统计信息"""
+        """获取缓存统计信��"""
         try:
             from app.utils.cache_manager import cache_manager
 
@@ -1376,7 +1385,7 @@ class AdminService:
             # 重新加载插件
             plugin_manager.reload_plugin(plugin_name)
 
-            return True, f'插件重载成��！(默认状态：{"启用" if enabled else "禁用"})'
+            return True, f'插件重载成！(默认状态：{"启用" if enabled else "禁用"})'
 
         except Exception as e:
             db.session.rollback()

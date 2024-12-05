@@ -33,30 +33,58 @@ class Category(db.Model):
                                     cascade="all, delete",
                                     lazy='dynamic')
     
-    @staticmethod
-    def update_all_counts():
-        """直接更新所有分类的文章计数"""
+    def update_article_count(self):
+        """更新文章计数"""
         try:
-            # 获取所有分类
-            categories = Category.query.all()
+            # 使用 UNION 去重计算文章总数
+            sql = text("""
+                SELECT COUNT(DISTINCT article_id) as total
+                FROM (
+                    SELECT id as article_id 
+                    FROM articles 
+                    WHERE category_id = :category_id
+                    UNION
+                    SELECT article_id
+                    FROM article_categories
+                    WHERE category_id = :category_id
+                ) as combined_articles
+            """)
             
-            for category in categories:
-                # 计算主分类文章数
-                primary_count = Article.query.filter_by(category_id=category.id).count()
-                
-                # 计算多分类关系文章数
-                related_count = Article.query.join(article_categories)\
-                    .filter(article_categories.c.category_id == category.id)\
-                    .count()
-                
-                # 更新计数
-                category.article_count = primary_count + related_count
-            
+            result = db.session.execute(sql, {'category_id': self.id})
+            self.article_count = result.scalar() or 0
             db.session.commit()
             
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"Error updating category counts: {str(e)}")
+            current_app.logger.error(f"Error updating article count for category {self.id}: {str(e)}")
+    
+    @staticmethod
+    def update_all_counts():
+        """更新所有分类的文章计数"""
+        try:
+            # 使用单条 SQL 更新所有分类的计数
+            sql = text("""
+                UPDATE categories c
+                SET article_count = (
+                    SELECT COUNT(DISTINCT article_id) 
+                    FROM (
+                        SELECT id as article_id 
+                        FROM articles 
+                        WHERE category_id = c.id
+                        UNION
+                        SELECT article_id
+                        FROM article_categories
+                        WHERE category_id = c.id
+                    ) as combined_articles
+                )
+            """)
+            
+            db.session.execute(sql)
+            db.session.commit()
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error updating all category counts: {str(e)}")
     
     def get_total_article_count(self):
         """获取包含子分类的总文章数"""
