@@ -22,9 +22,9 @@ class User(UserMixin, db.Model):
     articles = db.relationship('Article', 
                              backref=db.backref('author', lazy='select'),
                              lazy='select')
-    comments = db.relationship('Comment',
-                             backref=db.backref('user', lazy='select'),
-                             lazy='select')
+    comments = db.relationship('Comment', 
+                             back_populates='user',
+                             lazy='dynamic')
     view_history = db.relationship('ViewHistory',
                                  backref=db.backref('user', lazy='select'),
                                  cascade='all, delete-orphan',

@@ -1,4 +1,4 @@
-from app.models import Article, Category, Tag, Comment, ViewHistory, File, User
+from app.models import Article, Category, Tag, Comment, ViewHistory, File, User, CommentConfig
 from sqlalchemy import func
 from datetime import datetime, timedelta
 
@@ -125,13 +125,12 @@ class BlogService:
 
     @staticmethod
     def get_article_detail(article_id, password=None, user=None):
-        """获取文章详情"""
+        """获取文章详"""
         try:
             article = Article.query.options(
                 db.joinedload(Article.author),
                 db.joinedload(Article.tags),
-                db.joinedload(Article.categories),
-                db.joinedload(Article.comments).joinedload(Comment.user)
+                db.joinedload(Article.categories)
             ).get_or_404(article_id)
             
             # 如果文章没有任何分类，添加到默认分类
@@ -148,6 +147,8 @@ class BlogService:
             
             # 如果是管理员或作者，直接返回文章
             if is_admin or is_author:
+                # 获取评论数据
+                article.comment_data = BlogService.get_article_comments(article_id, user)
                 return article
             
             # 如果是待审核、私密或草稿文章，返回错误
@@ -160,11 +161,14 @@ class BlogService:
                     return {'need_password': True, 'article': article}
                 if password != article.password:
                     return {'error': '密码错误', 'need_password': True, 'article': article}
-                # 密码正确，直接返回文章
+                # 密码正确，获取评论数据并返回文章
+                article.comment_data = BlogService.get_article_comments(article_id, user)
                 return article
             
             # 如果是公开或隐藏文章允许访问
             if article.status in [Article.STATUS_PUBLIC, Article.STATUS_HIDDEN]:
+                # 获取评论数据
+                article.comment_data = BlogService.get_article_comments(article_id, user)
                 return article
             
             # 其他情况返回错误
@@ -353,45 +357,133 @@ class BlogService:
         )
     
     @staticmethod
-    def add_comment(article_id, user_id, content):
+    def get_article_comments(article_id, user=None, page=1):
+        """获取文章评论"""
+        try:
+            # 获取评论配置
+            config = CommentConfig.get_config()
+            
+            # 构建基础查询
+            base_query = Comment.query.filter(
+                Comment.article_id == article_id
+            )
+            
+            # 检查用户权限（修改这里的判断逻辑）
+            is_admin = user and hasattr(user, 'role') and user.role == 'admin'
+            
+            # 如果不是管理员,只显示已审核的评论
+            if not is_admin:
+                base_query = base_query.filter(Comment.status == 'approved')
+            
+            # 获取父评论
+            parent_query = base_query.filter(Comment.parent_id.is_(None))\
+                                   .options(
+                                       db.joinedload(Comment.user),
+                                       db.joinedload(Comment.replies).joinedload(Comment.user)
+                                   )
+            
+            # 分页
+            pagination = parent_query.order_by(Comment.created_at.desc())\
+                                   .paginate(page=page, 
+                                           per_page=config.comments_per_page,
+                                           error_out=False)
+            
+            # 过滤已审核的回复
+            for comment in pagination.items:
+                if not is_admin:
+                    comment.replies = [r for r in comment.replies if r.status == 'approved']
+                comment.replies.sort(key=lambda x: x.created_at)
+            
+            return {
+                'comments': pagination.items,
+                'config': config,
+                'total': pagination.total,
+                'total_pages': pagination.pages,
+                'current_page': page
+            }
+            
+        except Exception as e:
+            current_app.logger.error(f"Get article comments error: {str(e)}")
+            return None
+    
+    @staticmethod
+    def add_comment(article_id, user_id, data):
         """添加评论"""
         try:
+            # 获取文章
+            article = Article.query.get_or_404(article_id)
+            if not article.allow_comment:
+                return False, '该文章已关闭评论功能'
+            
+            # 获取评论配置
+            config = CommentConfig.get_config()
+            
+            # 验证游客评论
+            if not user_id:
+                if not config.allow_guest:
+                    return False, '不允许游客评论'
+                if not data.get('guest_name'):
+                    return False, '请输入昵称'
+                if config.require_email and not data.get('guest_email'):
+                    return False, '请输入邮箱'
+                if config.require_contact and not data.get('guest_contact'):
+                    return False, '请输入联系方式'
+            
+            # 创建评论
             comment = Comment(
-                content=content,
+                content=data['content'].strip(),
                 article_id=article_id,
-                user_id=user_id
+                user_id=user_id,
+                guest_name=data.get('guest_name'),
+                guest_email=data.get('guest_email'),
+                guest_contact=data.get('guest_contact'),
+                parent_id=data.get('parent_id'),
+                reply_to_id=data.get('reply_to_id'),
+                status='pending' if config.require_audit else 'approved'
             )
+            
             db.session.add(comment)
             db.session.commit()
             
             # 清除相关缓存
-            cache_manager.delete(f'article:{article_id}')  # 文章详情缓存
-            cache_manager.delete('latest_comments')        # 最新评论缓存
+            cache_manager.delete(f'article:{article_id}:*')
+            cache_manager.delete('latest_comments')
             
-            return True, '评论发表成功'
+            return True, '评论发表成功' + ('，等待审核' if config.require_audit else '')
+            
         except Exception as e:
             db.session.rollback()
-            return False, f'评论发失败: {str(e)}'
+            current_app.logger.error(f"Add comment error: {str(e)}")
+            return False, f'评论失败: {str(e)}'
     
     @staticmethod
     def delete_comment(comment_id, user_id, is_admin=False):
         """删除评论"""
         try:
             comment = Comment.query.get_or_404(comment_id)
-            if comment.user_id != user_id and not is_admin:
+            
+            # 检查权限
+            if not is_admin and comment.user_id != user_id:
                 return False, '没有权限删除此评论'
             
-            article_id = comment.article_id
-            db.session.delete(comment)
+            # 删除评论及其所有回复
+            Comment.query.filter(
+                db.or_(
+                    Comment.id == comment_id,
+                    Comment.parent_id == comment_id
+                )
+            ).delete()
+            
             db.session.commit()
             
             # 清除相关缓存
-            cache_manager.delete(f'article:{article_id}')  # 文章详情缓存
-            cache_manager.delete('latest_comments')        # 最新评论缓存
+            cache_manager.delete(f'article:{comment.article_id}:*')
             
-            return True, '评论已删除'
+            return True, '评论删除成功'
+            
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(f"Delete comment error: {str(e)}")
             return False, f'删除失败: {str(e)}'
     
     @staticmethod
@@ -407,7 +499,7 @@ class BlogService:
             # 验分类
             category_ids = data.getlist('categories')  # 获取多个分类ID
             if not category_ids:
-                return False, '请至少选择一个分类', None
+                return False, '请至少择一个分类', None
             
             # 验证分类ID的有效性
             try:
@@ -590,13 +682,13 @@ class BlogService:
                 db.joinedload(Article.categories)
             ).get(article_id)
             
-            # 基础缓存模式
+            # 基础缓存式
             cache_patterns = [
                 f'article:{article_id}*',     # 所有用户的文章详情缓存（注意*前不加:）
                 'index:articles:*',           # 首页文章列表缓存
                 'hot_articles:*',             # 热门文章缓存
                 'random_articles',            # 随机文章缓存
-                'search:*',                   # 搜索结果缓存
+                'search:*',                   # 搜索果缓存
                 'tag:*',                      # 标签相关缓存
                 'search_suggestions:*',       # 搜索建议缓存
                 'search_tags:*'               # 搜索标签缓存

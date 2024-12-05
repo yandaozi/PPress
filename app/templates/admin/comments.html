@@ -5,130 +5,322 @@
 {% block content %}
 <div class="p-6">
     <div class="bg-white rounded-lg shadow-sm">
-        <div class="px-6 py-4 border-b">
-            <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center space-y-4 lg:space-y-0">
-                <h2 class="text-xl font-bold">评论管理</h2>
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full lg:w-auto">
-                    <form method="get" 
-                         class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 flex-1">
-                        <select name="search_type" 
-                               class="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <option value="content" {% if search_type != 'id' and search_type != 'author' %}selected{% endif %}>内容</option>
-                            <option value="id" {% if search_type == 'id' %}selected{% endif %}>ID</option>
-                            <option value="author" {% if search_type == 'author' %}selected{% endif %}>作者</option>
-                        </select>
-                        <div class="relative flex-1">
-                            <input type="text" name="q" 
-                                   value="{{ search_query }}"
-                                   placeholder="搜索评论..." 
-                                   class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </div>
-                        <button type="submit" 
-                               class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                            搜索
-                        </button>
-                    </form>
-                </div>
-            </div>
+        <!-- Tab 切换 -->
+        <div class="border-b border-gray-200">
+            <nav class="flex -mb-px">
+                <button onclick="switchTab('comments')"
+                        class="tab-button flex-1 sm:flex-none px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200
+                               {% if active_tab == 'comments' %}
+                               border-blue-500 text-blue-600 bg-blue-50
+                               {% else %}
+                               border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50
+                               {% endif %}">
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                        </svg>
+                        <span>评论列表</span>
+                    </div>
+                </button>
+                <button onclick="switchTab('config')"
+                        class="tab-button flex-1 sm:flex-none px-6 py-4 border-b-2 font-medium text-sm transition-all duration-200
+                               {% if active_tab == 'config' %}
+                               border-blue-500 text-blue-600 bg-blue-50
+                               {% else %}
+                               border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50
+                               {% endif %}">
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span>评论设置</span>
+                    </div>
+                </button>
+            </nav>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">内容</th>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">作者</th>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">文章</th>
-                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">发布时间</th>
-                        <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for comment in pagination.items %}
-                    <tr>
-                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ comment.id }}</td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm text-gray-900">
-                                <div class="line-clamp-2">{{ comment.content }}</div>
-                                <div class="sm:hidden mt-2 text-xs text-gray-500 space-y-1">
-                                    {% if comment.user %}
-                                    <div class="flex items-center">
-                                        <img src="{{ comment.user.avatar }}" alt="avatar" class="w-4 h-4 rounded-full mr-1">
-                                        <span>{{ comment.user.username }}</span>
-                                    </div>
-                                    {% else %}
-                                        <span>已删除用户</span>
-                                    {% endif %}
-                                    {% if comment.article %}
-                                    <div class="truncate">
-                                        <span>评论文章：</span>
-                                        <a href="{{ url_for('blog.article', id=comment.article.id) }}" 
-                                           class="text-blue-600 hover:text-blue-900">
-                                            {{ comment.article.title }}
-                                        </a>
-                                    </div>
-                                    {% else %}
-                                    <div class="text-gray-400">文章已删除</div>
-                                    {% endif %}
-                                    <div>{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+        <!-- 评论列表内容 -->
+        <div id="comments-tab" class="{% if active_tab != 'comments' %}hidden{% endif %}">
+            <div class="px-6 py-4 border-b">
+                <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center space-y-4 lg:space-y-0">
+                    <h2 class="text-xl font-bold">评论管理</h2>
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full lg:w-auto">
+                        <form method="get" class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 flex-1">
+                            <select name="search_type" 
+                                   class="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                                <option value="content" {% if search_type == 'content' %}selected{% endif %}>内容</option>
+                                <option value="id" {% if search_type == 'id' %}selected{% endif %}>ID</option>
+                                <option value="author" {% if search_type == 'author' %}selected{% endif %}>作者</option>
+                            </select>
+                            <div class="relative flex-1">
+                                <input type="text" name="q" value="{{ search_query }}"
+                                       placeholder="搜索评论..." 
+                                       class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
                                 </div>
                             </div>
-                        </td>
-                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                {% if comment.user %}
-                                    <img src="{{ comment.user.avatar }}" alt="avatar" class="w-6 h-6 rounded-full">
-                                    <a href="{{ url_for('user.author', id=comment.user.id) }}" 
-                                       class="ml-2 text-sm text-gray-900 hover:text-blue-600">
-                                        {{ comment.user.username }}
-                                    </a>
-                                {% else %}
-                                    <span class="ml-2 text-sm text-gray-500">已删除用户</span>
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
-                            {% if comment.article %}
-                                <a href="{{ url_for('blog.article', id=comment.article.id) }}" 
-                                   class="text-sm text-blue-600 hover:text-blue-900" target="_blank">
-                                    {{ comment.article.title }}
-                                </a>
-                            {% else %}
-                                <span class="text-sm text-gray-500">已删除文章</span>
-                            {% endif %}
-                        </td>
-                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}
-                        </td>
-                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
-                            <button onclick="deleteComment({{ comment.id }})"
-                                    class="text-red-600 hover:text-red-900">
-                                删除
+                            <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                搜索
                             </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 评论列表 -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID/时间</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评论内容</th>
+                            <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评论者</th>
+                            <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评论文章</th>
+                            <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评论状态</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for comment in pagination.items %}
+                        <tr>
+                            <td class="px-4 sm:px-6 py-4">
+                                <div class="text-sm text-gray-900 font-medium">#{{ comment.id }}</div>
+                                <div class="text-xs text-gray-500">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">
+                                    <div class="line-clamp-2">{{ comment.content }}</div>
+                                </div>
+                                {% if comment.parent_id %}
+                                <div class="mt-1 text-xs text-gray-500">
+                                    回复: {{ comment.parent.content|truncate(20) }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="hidden sm:table-cell px-6 py-4">
+                                <div class="flex items-center">
+                                    {% if comment.user %}
+                                        <img src="{{ comment.user.avatar }}" alt="avatar" class="w-6 h-6 rounded-full">
+                                        <a href="{{ url_for('user.author', id=comment.user.id) }}" 
+                                           class="ml-2 text-sm text-gray-900 hover:text-blue-600">
+                                            {{ comment.display_name }}
+                                        </a>
+                                    {% else %}
+                                        <div class="flex flex-col">
+                                            <span class="text-sm text-gray-900">{{ comment.guest_name or '游客' }}</span>
+                                            {% if comment.guest_email %}
+                                            <span class="text-xs text-gray-500">{{ comment.guest_email }}</span>
+                                            {% endif %}
+                                            {% if comment.guest_contact %}
+                                            <span class="text-xs text-gray-500">{{ comment.guest_contact }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="hidden sm:table-cell px-6 py-4">
+                                <div class="flex flex-col">
+                                    <a href="{{ url_for('blog.article', id=comment.article.id) }}"
+                                       class="text-sm text-gray-900 hover:text-blue-600 line-clamp-1">
+                                        {{ comment.article.title }}
+                                    </a>
+                                    <span class="text-xs text-gray-500">
+                                        作者: {{ comment.article.author.nickname or comment.article.author.username }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
+                                <div class="relative" x-data="{ open: false }">
+                                    <button @click="open = !open"
+                                            class="px-2 py-1 text-xs font-semibold rounded-full
+                                                   {% if comment.status == 'approved' %}
+                                                   bg-green-100 text-green-800 hover:bg-green-200
+                                                   {% elif comment.status == 'pending' %}
+                                                   bg-yellow-100 text-yellow-800 hover:bg-yellow-200
+                                                   {% else %}
+                                                   bg-red-100 text-red-800 hover:bg-red-200
+                                                   {% endif %}">
+                                        {{ {'approved': '已通过', 'pending': '待审核', 'rejected': '已拒绝'}[comment.status] }}
+                                        <svg class="inline-block w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </button>
+                                    
+                                    <!-- 下拉菜单 -->
+                                    <div x-show="open"
+                                         @click.away="open = false"
+                                         class="absolute z-10 mt-1 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                                        <div class="py-1">
+                                            <button onclick="updateCommentStatus({{ comment.id }}, 'approved')"
+                                                    class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">
+                                                标记为已通过
+                                            </button>
+                                            <button onclick="updateCommentStatus({{ comment.id }}, 'pending')"
+                                                    class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">
+                                                标记为待审核
+                                            </button>
+                                            <button onclick="updateCommentStatus({{ comment.id }}, 'rejected')"
+                                                    class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">
+                                                标记为已拒绝
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                                <div class="flex items-center space-x-4">
+                                    <button onclick="deleteComment({{ comment.id }})"
+                                            class="text-red-600 hover:text-red-900">
+                                        删除
+                                    </button>
+                                    <a href="{{ url_for('blog.article', id=comment.article.id) }}#comment-{{ comment.id }}"
+                                       target="_blank"
+                                       class="text-blue-600 hover:text-blue-900">
+                                        查看
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 分页 -->
+            {% if pagination.pages > 1 %}
+            <div class="px-6 py-4 border-t">
+                {% with endpoint='admin.comments', kwargs={'q': search_query, 'search_type': search_type} %}
+                {% include 'components/pagination.html' %}
+                {% endwith %}
+            </div>
+            {% endif %}
         </div>
-        
-        {% if pagination.pages > 1 %}
-        <div class="px-6 py-4 mt-4 border-t">
-            {% with endpoint='admin.comments', kwargs={'q': search_query, 'search_type': search_type} %}
-            {% include 'components/pagination.html' %}
-            {% endwith %}
+
+        <!-- 评论设置内容 -->
+        <div id="config-tab" class="{% if active_tab != 'config' %}hidden{% endif %} p-6">
+            <form id="commentConfigForm" class="space-y-6">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <label for="commentsPerPage" class="text-sm font-medium text-gray-700">
+                            每页显示评论数
+                        </label>
+                        <input type="number" id="commentsPerPage" name="comments_per_page" 
+                               value="{{ comment_config.comments_per_page }}"
+                               min="1" max="100"
+                               class="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" id="requireAudit" name="require_audit"
+                               {% if comment_config.require_audit %}checked{% endif %}
+                               class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <label for="requireAudit" class="ml-2 text-sm text-gray-700">
+                            所有评论需要审核
+                        </label>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" id="allowGuest" name="allow_guest"
+                               {% if comment_config.allow_guest %}checked{% endif %}
+                               class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <label for="allowGuest" class="ml-2 text-sm text-gray-700">
+                            允许游客评论
+                        </label>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" id="requireEmail" name="require_email"
+                               {% if comment_config.require_email %}checked{% endif %}
+                               class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <label for="requireEmail" class="ml-2 text-sm text-gray-700">
+                            必须填写邮箱
+                        </label>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" id="requireContact" name="require_contact"
+                               {% if comment_config.require_contact %}checked{% endif %}
+                               class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <label for="requireContact" class="ml-2 text-sm text-gray-700">
+                            必须填写联系方式
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="button" onclick="saveCommentConfig()"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        保存设置
+                    </button>
+                </div>
+            </form>
         </div>
-        {% endif %}
     </div>
 </div>
 
 <script>
+function switchTab(tab) {
+    // 更新 URL 参数
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tab);
+    window.history.pushState({}, '', url);
+    
+    // 切换 tab 显示
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        const isActive = btn.getAttribute('onclick').includes(tab);
+        
+        // 移除所有状态类
+        btn.classList.remove(
+            'border-blue-500', 'text-blue-600', 'bg-blue-50',
+            'border-transparent', 'text-gray-500'
+        );
+        
+        // 添加新的状态类
+        if (isActive) {
+            btn.classList.add('border-blue-500', 'text-blue-600', 'bg-blue-50');
+        } else {
+            btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300', 'hover:bg-gray-50');
+        }
+    });
+    
+    // 切换内容显示
+    document.getElementById('comments-tab').classList.toggle('hidden', tab !== 'comments');
+    document.getElementById('config-tab').classList.toggle('hidden', tab !== 'config');
+}
+
+function saveCommentConfig() {
+    const form = document.getElementById('commentConfigForm');
+    const formData = new FormData();
+    
+    // 获取所有设置值
+    formData.append('require_audit', document.getElementById('requireAudit').checked);
+    formData.append('allow_guest', document.getElementById('allowGuest').checked);
+    formData.append('require_email', document.getElementById('requireEmail').checked);
+    formData.append('require_contact', document.getElementById('requireContact').checked);
+    formData.append('comments_per_page', document.getElementById('commentsPerPage').value);
+    formData.append('csrf_token', form.querySelector('[name="csrf_token"]').value);
+    
+    fetch('/admin/comments/config', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert(data.error, 'error', '错误');
+        } else {
+            showAlert('评论设置已更新', 'success', '成功');
+            setTimeout(() => location.reload(), 500);  // 添加页面刷新
+        }
+    });
+}
+
 function deleteComment(commentId) {
     showAlert('确定要删除此评论吗？此操作不可恢复！', 'warning', '确认删除', function() {
         fetch(`/admin/comments/${commentId}`, {
@@ -148,5 +340,105 @@ function deleteComment(commentId) {
         });
     });
 }
+
+function approveComment(commentId) {
+    fetch(`/admin/comments/${commentId}/approve`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    }).then(response => {
+        if (response.ok) {
+            showAlert('评论已通过', 'success', '成功');
+            setTimeout(() => location.reload(), 200);
+        } else {
+            response.json().then(data => {
+                showAlert(data.error, 'error', '错误');
+            });
+        }
+    });
+}
+
+function rejectComment(commentId) {
+    fetch(`/admin/comments/${commentId}/reject`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    }).then(response => {
+        if (response.ok) {
+            showAlert('评论已拒绝', 'success', '成功');
+            setTimeout(() => location.reload(), 200);
+        } else {
+            response.json().then(data => {
+                showAlert(data.error, 'error', '错误');
+            });
+        }
+    });
+}
+
+function updateCommentStatus(commentId, status) {
+    fetch(`/admin/comments/${commentId}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ status: status })
+    }).then(response => {
+        if (response.ok) {
+            // 找到对应的状态按钮和下拉菜单
+            const statusBtn = document.querySelector(`button[onclick="updateCommentStatus(${commentId}, '${status}')"]`).closest('.relative');
+            const mainBtn = statusBtn.querySelector('button:first-child');
+            
+            // 更新状态按钮的样式和文本
+            const statusText = {
+                'approved': '已通过',
+                'pending': '待审核',
+                'rejected': '已拒绝'
+            }[status];
+            
+            const statusClasses = {
+                'approved': 'bg-green-100 text-green-800 hover:bg-green-200',
+                'pending': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
+                'rejected': 'bg-red-100 text-red-800 hover:bg-red-200'
+            }[status];
+            
+            // 移除所有可能的状态类
+            mainBtn.classList.remove(
+                'bg-green-100', 'text-green-800', 'hover:bg-green-200',
+                'bg-yellow-100', 'text-yellow-800', 'hover:bg-yellow-200',
+                'bg-red-100', 'text-red-800', 'hover:bg-red-200'
+            );
+            
+            // 添加新的状态类
+            mainBtn.classList.add(...statusClasses.split(' '));
+            
+            // 更新按钮文本
+            mainBtn.innerHTML = `
+                ${statusText}
+                <svg class="inline-block w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            `;
+            
+            // 关闭下拉菜单
+            statusBtn.__x.$data.open = false;
+            
+            showAlert('评论状态已更新', 'success', '成功');
+        } else {
+            response.json().then(data => {
+                showAlert(data.error, 'error', '错误');
+            });
+        }
+    });
+}
+
+// 初始化时根据 URL 参数切换 tab
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab') || 'comments';
+    switchTab(tab);
+});
 </script>
 {% endblock %} 

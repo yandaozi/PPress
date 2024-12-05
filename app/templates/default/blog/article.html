@@ -164,17 +164,78 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8">
         <h3 class="text-xl font-bold mb-6 text-gray-900 dark:text-white">评论</h3>
         
-        {% if current_user.is_authenticated %}
+        {% if current_user.is_authenticated or comment_config.allow_guest %}
         <!-- 评论表单 -->
-        <form action="{{ url_for('blog.add_comment', article_id=article.id) }}" method="post" class="mb-8">
+        <form action="{{ url_for('blog.add_comment', article_id=article.id) }}" method="post" class="mb-8 space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <textarea name="content" rows="4" 
-                      class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                      placeholder="写下你的评论..."></textarea>
-            <button type="submit" 
-                    class="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                发表评论
-            </button>
+            <input type="hidden" name="parent_id" id="parentCommentId">
+            <input type="hidden" name="reply_to_id" id="replyToCommentId">
+            
+            <!-- 游客信息表单 -->
+            {% if not current_user.is_authenticated and comment_config.allow_guest %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        昵称 <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="guest_name" required
+                           class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                
+                {% if comment_config.require_email %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        邮箱 <span class="text-red-500">*</span>
+                    </label>
+                    <input type="email" name="guest_email" required
+                           class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                {% endif %}
+                
+                {% if comment_config.require_contact %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        联系方式 <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="guest_contact" required
+                           class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                  focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- 评论内容 -->
+            <div>
+                <div id="replyingTo" class="mb-2 text-sm text-gray-500 dark:text-gray-400 hidden">
+                    回复: <span id="replyingToName"></span>
+                    <button type="button" onclick="cancelReply()" 
+                            class="ml-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-500">
+                        取消回复
+                    </button>
+                </div>
+                <textarea name="content" required rows="4"
+                          class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                 focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          placeholder="写下你的评论..."></textarea>
+            </div>
+            
+            {% if comment_config.require_audit %}
+            <p class="text-sm text-gray-500 dark:text-gray-400">评论将在审核后显示</p>
+            {% endif %}
+            
+            <div class="flex justify-end">
+                <button type="submit" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    发表评论
+                </button>
+            </div>
         </form>
         {% else %}
         <div class="mb-8 text-center text-gray-500 dark:text-gray-400">
@@ -184,39 +245,98 @@
         {% endif %}
         
         <!-- 评论列表 -->
-        {% for comment in article.comments %}
-        <div class="border-t border-gray-100 dark:border-gray-700 py-6 first:border-t-0">
-            <div class="flex items-center mb-2">
-                {% set commenter = get_user_info(comment.user) %}
-                <img src="{{ commenter.avatar }}" alt="avatar" 
-                     class="w-8 h-8 rounded-full mr-3">
-                <div>
-                    <div class="font-medium">
-                        {% if commenter.id %}
-                            <a href="{{ url_for('user.author', id=commenter.id) }}" 
-                               class="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
-                                {{ commenter.nickname }}
-                            </a>
-                        {% else %}
-                            <span class="font-medium text-gray-500 dark:text-gray-400">{{ commenter.nickname }}</span>
+        <div class="space-y-6">
+            {% if comment_data and comment_data.comments %}
+                {% for comment in comment_data.comments %}
+                    <div class="border-t border-gray-100 dark:border-gray-700 py-6 first:border-t-0" id="comment-{{ comment.id }}">
+                        <!-- 父评论内容 -->
+                        <div class="flex items-start space-x-3">
+                            <img src="{{ comment.user.avatar if comment.user else '/static/default_avatar.png' }}" 
+                                 alt="avatar" class="w-8 h-8 rounded-full">
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-2">
+                                        {% if comment.user %}
+                                        <a href="{{ url_for('user.author', id=comment.user.id) }}" 
+                                           class="font-medium text-gray-900 dark:text-white hover:text-blue-600">
+                                            {{ comment.user.nickname or comment.user.username }}
+                                        </a>
+                                        {% else %}
+                                        <span class="font-medium text-gray-500">{{ comment.guest_name or '游客' }}</span>
+                                        {% endif %}
+                                        <span class="text-xs text-gray-400">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                                    </div>
+                                    <div class="flex items-center space-x-4">
+                                        <button onclick="replyTo({{ comment.id }}, '{{ comment.display_name }}')"
+                                                class="text-sm text-blue-600 hover:text-blue-700">
+                                            回复
+                                        </button>
+                                        {% if current_user.is_authenticated and (current_user.id == comment.user_id or current_user.role == 'admin') %}
+                                        <button onclick="deleteComment({{ comment.id }})"
+                                                class="text-sm text-red-600 hover:text-red-700">
+                                            删除
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-gray-800 dark:text-gray-200">{{ comment.content }}</div>
+                            </div>
+                        </div>
+
+                        <!-- 回复列表 -->
+                        {% if comment.replies %}
+                        <div class="mt-4 ml-11 space-y-4">
+                            {% for reply in comment.replies %}
+                            <div class="flex items-start space-x-3" id="comment-{{ reply.id }}">
+                                <img src="{{ reply.user.avatar if reply.user else '/static/default_avatar.png' }}" 
+                                     alt="avatar" class="w-6 h-6 rounded-full">
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-2">
+                                            {% if reply.user %}
+                                            <a href="{{ url_for('user.author', id=reply.user.id) }}" 
+                                               class="font-medium text-gray-900 dark:text-white hover:text-blue-600">
+                                                {{ reply.user.nickname or reply.user.username }}
+                                            </a>
+                                            {% else %}
+                                            <span class="font-medium text-gray-500">{{ reply.guest_name or '游客' }}</span>
+                                            {% endif %}
+                                            <span class="text-xs text-gray-400">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                                        </div>
+                                        <div class="flex items-center space-x-4">
+                                            <button onclick="replyTo({{ comment.id }}, '{{ reply.display_name }}', {{ reply.id }})"
+                                                    class="text-sm text-blue-600 hover:text-blue-700">
+                                                回复
+                                            </button>
+                                            {% if current_user.is_authenticated and (current_user.id == reply.user_id or current_user.role == 'admin') %}
+                                            <button onclick="deleteComment({{ reply.id }})"
+                                                    class="text-sm text-red-600 hover:text-red-700">
+                                                删除
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 text-gray-800 dark:text-gray-200">{{ reply.content }}</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
                         {% endif %}
                     </div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">
-                        {{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}
-                    </div>
-                </div>
-                {% if current_user.id == comment.user_id or current_user.role == 'admin' %}
-                <button onclick="deleteComment({{ comment.id }})" 
-                        class="ml-auto text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300">
-                    删除
-                </button>
-                {% endif %}
-            </div>
-            <div class="text-gray-800 dark:text-gray-200">{{ comment.content }}</div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-8 text-gray-500">暂无评论</div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="text-center py-8 text-gray-500 dark:text-gray-400">暂无评论</div>
-        {% endfor %}
+
+        <!-- 分页 -->
+        {% if comment_data and comment_data.total_pages > 1 %}
+        <div class="mt-6">
+            {% with pagination=comment_data, endpoint='blog.article', kwargs={'id': article.id} %}
+            {% include 'components/pagination.html' %}
+            {% endwith %}
+        </div>
+        {% endif %}
     </div>
     {% else %}
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8">
@@ -228,6 +348,24 @@
 </div>
 
 <script>
+function replyTo(parentId, replyToName, replyToId = null) {
+    document.getElementById('parentCommentId').value = parentId;
+    document.getElementById('replyToCommentId').value = replyToId || '';
+    document.getElementById('replyingToName').textContent = replyToName;
+    document.getElementById('replyingTo').classList.remove('hidden');
+    
+    // 滚动到评论框
+    const commentForm = document.querySelector('form');
+    commentForm.scrollIntoView({ behavior: 'smooth' });
+    commentForm.querySelector('textarea').focus();
+}
+
+function cancelReply() {
+    document.getElementById('parentCommentId').value = '';
+    document.getElementById('replyToCommentId').value = '';
+    document.getElementById('replyingTo').classList.add('hidden');
+}
+
 function deleteComment(commentId) {
     if (confirm('确定要删除这条评论吗？')) {
         fetch(`/comment/${commentId}`, {
@@ -238,6 +376,10 @@ function deleteComment(commentId) {
         }).then(response => {
             if (response.ok) {
                 location.reload();
+            } else {
+                response.json().then(data => {
+                    alert(data.error || '删除失败');
+                });
             }
         });
     }

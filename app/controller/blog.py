@@ -5,6 +5,7 @@ from app.services.blog_service import BlogService
 from app.utils.common import get_categories_data
 from flask_login import current_user, login_required
 from functools import wraps
+from app.models import CommentConfig
 
 bp = Blueprint('blog', __name__)
 
@@ -66,6 +67,9 @@ def article(id):
     """文章详情路由"""
     try:
         password = request.args.get('password')  # 从 URL 参数获取密码
+        page = request.args.get('page', 1, type=int)  # 获取评论页码
+        
+        # 获取文章详情
         result = BlogService.get_article_detail(id, password, current_user)
         
         # 如果需要密码
@@ -82,15 +86,20 @@ def article(id):
         if current_user.is_authenticated:
             BlogService.record_view(current_user.id, id)
             
+        # 获取评论数据和配置
+        comment_data = BlogService.get_article_comments(id, current_user, page)
+        comment_config = CommentConfig.get_config()
+        
         return render_template('blog/article.html',
                              article=result,
+                             comment_data=comment_data,
+                             comment_config=comment_config,
+                             page=page,
                              **get_categories_data())
                              
-    except NotFound:
-        abort(404)  # 直接返回 404
     except Exception as e:
         current_app.logger.error(f"Article view error: {str(e)}")
-        abort(404)  # 其他错误也返回 404
+        abort(404)
 
 @bp.route('/search')
 @handle_view_errors
@@ -131,15 +140,27 @@ def tag(id):
                          **get_categories_data())
 
 @bp.route('/article/<int:article_id>/comment', methods=['POST'])
-@login_required
 @handle_view_errors
 def add_comment(article_id):
     """添加评论"""
+    data = {
+        'content': request.form.get('content'),
+        'parent_id': request.form.get('parent_id'),
+        'reply_to_id': request.form.get('reply_to_id'),
+        'guest_name': request.form.get('guest_name'),
+        'guest_email': request.form.get('guest_email'),
+        'guest_contact': request.form.get('guest_contact')
+    }
+    
+    # 获取用户ID(如果已登录)
+    user_id = current_user.id if current_user.is_authenticated else None
+    
     success, message = BlogService.add_comment(
-        article_id,
-        current_user.id,
-        request.form.get('content')
+        article_id=article_id,
+        user_id=user_id,
+        data=data
     )
+    
     flash(message)
     return redirect(url_for('blog.article', id=article_id))
 
@@ -147,7 +168,7 @@ def add_comment(article_id):
 @login_required
 @handle_view_errors
 def delete_comment(comment_id):
-    """删除评论"""
+    """删除��论"""
     success, message = BlogService.delete_comment(
         comment_id,
         current_user.id,
@@ -238,7 +259,7 @@ def upload_image():
     success, result = BlogService.upload_image(file, current_user.id)
     if success:
         return jsonify({
-            'location': result,  # TinyMCE 需要 location 字段
+            'location': result,  # TinyMCE 需 location 字段
             'url': result,       # 兼容其他情况
             'uploaded': True
         })

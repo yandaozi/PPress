@@ -1,6 +1,7 @@
 from flask import current_app
 
-from app.models import User, Article, Comment, ViewHistory, Category, Tag, Plugin, File, SiteConfig, Route
+from app.models import User, Article, Comment, ViewHistory, Category, Tag, Plugin, File, SiteConfig, Route, \
+    CommentConfig
 from app.models.article import article_categories
 from app.utils.cache_manager import cache_manager
 from app.plugins import plugin_manager
@@ -67,7 +68,7 @@ class AdminService:
                 'article_count': cat.article_count
             } for cat in Category.query.all()]
             
-            # 机标签
+            # 标签
             selected_tags = [{
                 'id': tag.id,
                 'name': tag.name,
@@ -263,32 +264,30 @@ class AdminService:
             return False, str(e)
 
     @staticmethod
-    def get_comments(page=1, search_type='', search_query=''):
+    def get_comments(page=1, search_type='content', search_query=''):
         """获取评论列表"""
         try:
-            # 构建基础查询
             query = Comment.query.options(
                 db.joinedload(Comment.user),
                 db.joinedload(Comment.article)
             )
             
+            # 搜索过滤
             if search_query:
-                if search_type == 'id':
+                if search_type == 'content':
+                    query = query.filter(Comment.content.ilike(f'%{search_query}%'))
+                elif search_type == 'id':
                     try:
                         comment_id = int(search_query)
                         query = query.filter(Comment.id == comment_id)
                     except ValueError:
                         return None, 'ID必须是数字'
                 elif search_type == 'author':
-                    query = query.join(User).filter(User.username.like(f'%{search_query}%'))
-                else:
-                    # 内容搜索
-                    query = query.filter(Comment.content.like(f'%{search_query}%'))
+                    query = query.join(User).filter(User.username.ilike(f'%{search_query}%'))
             
             # 分页
-            pagination = query.order_by(Comment.id.desc()).paginate(
-                page=page, per_page=10, error_out=False
-            )
+            pagination = query.order_by(Comment.created_at.desc())\
+                            .paginate(page=page, per_page=20, error_out=False)
             
             return pagination, None
             
@@ -331,7 +330,7 @@ class AdminService:
             
             db.session.commit()
             
-            # 清除配置缓存
+            # 除置缓存
             cache_manager.delete('site_config:*')
             
             return True, '配置已更新'
@@ -368,7 +367,7 @@ class AdminService:
                     except ValueError:
                         return None, 'ID必须是数字'
                 else:
-                    # 名称搜索 - 先精确后模糊
+                    # 名称搜索 - 先精确后模
                     exact_matches = query.filter(Category.name == search_query)
                     fuzzy_matches = query.filter(
                         Category.name.like(f'%{search_query}%'),
@@ -609,7 +608,7 @@ class AdminService:
             
             db.session.commit()
             
-            # 清除分类缓存
+            # 清除分缓存
             cache_manager.delete('admin:categories:*')
             cache_manager.delete('categories_*')
             
@@ -751,7 +750,7 @@ class AdminService:
             role = data.get('role')
             nickname = data.get('nickname', '').strip() or None
             
-            # 检查用户名和邮箱是否已存在
+            # 检查用户名和��箱是否已存在
             if username != user.username and User.query.filter_by(username=username).first():
                 return False, '用户名已存在', None
             if email != user.email and User.query.filter_by(email=email).first():
@@ -984,7 +983,7 @@ class AdminService:
                     db.session.commit()
                     return False, '插件加载失败'
             else:
-                # 禁用插件
+                # 禁插件
                 plugin_manager.unload_plugin(plugin_name)
                 status = '禁用'
 
@@ -1133,7 +1132,7 @@ class AdminService:
         try:
             file = File.query.get_or_404(file_id)
 
-            # 获取文件的物理路径
+            # 获取件的物理路径
             file_path = os.path.join(current_app.root_path, file.file_path.lstrip('/'))
 
             # 删除物理文件
@@ -1248,7 +1247,7 @@ class AdminService:
             misses = getattr(cache_manager, '_misses', 0)
             hit_rate = f"{(hits / (hits + misses) * 100):.1f}%" if hits + misses > 0 else "0%"
 
-            # 按类别统计缓存
+            # 按别统计缓存
             cache_categories = {
                 'index': len([k for k in cache_keys if 'index' in k]),
                 'article': len([k for k in cache_keys if 'article' in k]),
@@ -1310,7 +1309,7 @@ class AdminService:
 
     @staticmethod
     def clear_cache_by_category(category):
-        """按类别清除缓存"""
+        """按类别清除存"""
         try:
             from app.utils.cache_manager import cache_manager
             deleted_count = 0
@@ -1339,7 +1338,7 @@ class AdminService:
                     should_delete = True
                 elif category == 'custom_page' and 'custom_page' in key:
                     should_delete = True
-                elif category == 'route' and ('route' in key or 'routes' in key):  # 添加路由缓存处理
+                elif category == 'route' and ('route' in key or 'routes' in key):  # 添加路由缓处理
                     should_delete = True
                     # 如果清除路由缓存，需要刷新路由
                     if key == 'routes_last_refresh':
@@ -1373,7 +1372,7 @@ class AdminService:
             # 获取启用状态
             enabled = plugin_info.get('enabled', True)
 
-            # 更新数据库记录
+            # 更新数库记录
             db_plugin = Plugin.query.filter_by(directory=plugin_name).first()
             if db_plugin:
                 db_plugin.name = plugin_info['name']
@@ -1406,7 +1405,7 @@ class AdminService:
 
     @staticmethod
     def add_route(data):
-        """添加路由映射"""
+        """添加路由映��"""
         return route_manager.add_route(data)
 
     @staticmethod
@@ -1606,9 +1605,9 @@ class AdminService:
 
     @staticmethod
     def get_all_categories():
-        """获取所有分类(用于移动分类选择)"""
+        """获取所有分类(用于移动��类选择)"""
         try:
-            # 获取所有分类并按层级排序
+            # 获所有分类并按层级排序
             categories = Category.query.order_by(Category.sort_order).all()
             
             # 将分类对象转换为字典
@@ -1639,3 +1638,48 @@ class AdminService:
         except Exception as e:
             current_app.logger.error(f"Get all categories error: {str(e)}")
             return None, str(e)
+
+    @staticmethod
+    def update_comment_config(data):
+        """更新评论配置"""
+        try:
+            config = CommentConfig.get_config()
+            
+            config.require_audit = data.get('require_audit') == 'true'
+            config.require_email = data.get('require_email') == 'true'
+            config.require_contact = data.get('require_contact') == 'true'
+            config.allow_guest = data.get('allow_guest') == 'true'
+             # 添加分页设置
+            try:
+                comments_per_page = int(data.get('comments_per_page', 10))
+                config.comments_per_page = max(1, min(100, comments_per_page))  # 限制范围在1-100
+            except (TypeError, ValueError):
+                config.comments_per_page = 10  # 如果转换失败，使用默认值
+            
+            db.session.commit()
+            # 清除相关缓存
+            cache_manager.delete('comment_config')
+            return True, '评论设置已更新'
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Update comment config error: {str(e)}")
+            return False, f'更新失败: {str(e)}'
+
+    @staticmethod
+    def update_comment_status(comment_id, status):
+        """更新评论状态"""
+        try:
+            comment = Comment.query.get_or_404(comment_id)
+            comment.status = status
+            db.session.commit()
+            
+            # 清除相关缓存
+            cache_manager.delete(f'article:{comment.article_id}:*')
+            
+            return True, '评论状态已更新'
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Update comment status error: {str(e)}")
+            return False, f'更新失败: {str(e)}'

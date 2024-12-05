@@ -9,6 +9,7 @@ from app.services.admin_service import AdminService
 from app.models.custom_page import CustomPage
 from app.services.custom_page_service import CustomPageService
 from app.utils.custom_pages import custom_page_manager
+from app.models import CommentConfig
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -110,10 +111,15 @@ def comments():
         if not pagination:
             abort(500)
             
+        # 获取评论配置
+        comment_config = CommentConfig.get_config()
+        
         return render_template('admin/comments.html',
                              pagination=pagination,
                              search_type=request.args.get('search_type', ''),
-                             search_query=request.args.get('q', ''))
+                             search_query=request.args.get('q', ''),
+                             comment_config=comment_config,
+                             active_tab=request.args.get('tab', 'comments'))
                              
     except Exception as e:
         current_app.logger.error(f"Comments error: {str(e)}")
@@ -127,6 +133,21 @@ def delete_comment(comment_id):
     success, error = AdminService.delete_comment(comment_id)
     if not success:
         return jsonify({'error': error}), 400
+    return '', 204
+
+@bp.route('/comments/<int:comment_id>/status', methods=['POST'])
+@login_required
+@admin_required
+def update_comment_status(comment_id):
+    """更新评论状态"""
+    data = request.get_json()
+    status = data.get('status')
+    if status not in ['approved', 'pending', 'rejected']:
+        return jsonify({'error': '无效的状态值'}), 400
+
+    success, message = AdminService.update_comment_status(comment_id, status)
+    if not success:
+        return jsonify({'error': message}), 400
     return '', 204
 
 @bp.route('/users/<int:user_id>/toggle-role', methods=['POST'])
@@ -572,7 +593,7 @@ def delete_file(file_id):
         return jsonify({'error': error}), 400
     return '', 204
 
-# 添加一个模板上下文处理器
+# 添加一个模板上下文处器
 @bp.context_processor
 def utility_processor():
     def is_active_group(menu_items):
@@ -582,7 +603,7 @@ def utility_processor():
         return current_endpoint in menu_endpoints
     
     def is_current_menu(menu_items):
-        # 检查当��页面是否属于这个菜单组
+        # 检查当页面是否属于这个菜单组
         current_endpoint = request.endpoint
         return current_endpoint and any(current_endpoint == item[0] for item in menu_items)
     
@@ -886,3 +907,33 @@ def get_all_categories():
     if error:
         return jsonify({'error': error}), 400
     return jsonify(categories)
+
+@bp.route('/comments/config', methods=['POST'])
+@login_required
+@admin_required
+def update_comment_config():
+    """更新评论配置"""
+    success, message = AdminService.update_comment_config(request.form)
+    if not success:
+        return jsonify({'error': message}), 400
+    return jsonify({'message': message})
+
+@bp.route('/comments/<int:comment_id>/approve', methods=['POST'])
+@login_required
+@admin_required
+def approve_comment(comment_id):
+    """通过评论"""
+    success, message = AdminService.update_comment_status(comment_id, 'approved')
+    if not success:
+        return jsonify({'error': message}), 400
+    return '', 204
+
+@bp.route('/comments/<int:comment_id>/reject', methods=['POST'])
+@login_required
+@admin_required
+def reject_comment(comment_id):
+    """拒绝评论"""
+    success, message = AdminService.update_comment_status(comment_id, 'rejected')
+    if not success:
+        return jsonify({'error': message}), 400
+    return '', 204

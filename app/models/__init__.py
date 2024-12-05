@@ -9,6 +9,7 @@ from .plugin import Plugin
 from .file import File
 from .route import Route
 from .custom_page import CustomPage
+from .comment_config import CommentConfig
 
 __all__ = [
     'User',
@@ -16,6 +17,7 @@ __all__ = [
     'Tag',
     'Article',
     'Comment',
+    'CommentConfig',
     'ViewHistory',
     'SiteConfig',
     'Plugin',
