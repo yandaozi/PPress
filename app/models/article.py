@@ -217,28 +217,15 @@ def init_article_events():
     def article_tag_append(target, value, initiator):
         """添加标签时更新计数"""
         try:
-            # 获取当前会话
             session = object_session(target)
-            if session is None:
-                return  # 如果没有会话，说明可能是在初始化数据库，直接返回
-            
-            if not session.is_active:
+            if session is None or not session.is_active:
                 return
             
-            # 确保目标对象在会话中
-            if target not in session:
-                session.add(target)
-                
-            # 确保标签在会话中
-            if value not in session:
-                session.add(value)
-                
             # 更新计数
             if value.article_count is None:
                 value.article_count = 0
             value.article_count += 1
             
-            # 延迟提交，让外部控制事
             session.flush()
             
         except Exception as e:
@@ -249,24 +236,11 @@ def init_article_events():
         """移除标签时更新计数"""
         try:
             session = object_session(target)
-            if session is None:
+            if session is None or not session.is_active:
                 return
             
-            if not session.is_active:
-                return
-            
-            # 确保目标对象在会话中
-            if target not in session:
-                session.add(target)
-                
-            # 确保标签在会话中
-            if value not in session:
-                session.add(value)
-                
             # 更新计数
-            if value.article_count is None:
-                value.article_count = 0
-            if value.article_count > 0:
+            if value.article_count is not None and value.article_count > 0:
                 value.article_count -= 1
             
             session.flush()
@@ -279,10 +253,7 @@ def init_article_events():
         """标签集合被替换时更新计数"""
         try:
             session = object_session(target)
-            if session is None:
-                return
-            
-            if not session.is_active:
+            if session is None or not session.is_active:
                 return
             
             # 确保目标对象在会话中
@@ -292,21 +263,21 @@ def init_article_events():
             # 减少旧标签的计数
             if oldvalue is not NO_VALUE:
                 for tag in oldvalue:
-                    if tag not in session:
-                        session.add(tag)
-                    if tag.article_count is None:
-                        tag.article_count = 0
-                    if tag.article_count > 0:
-                        tag.article_count -= 1
+                    if tag not in value:  # 只处理被移除的标签
+                        if tag not in session:
+                            session.add(tag)
+                        if tag.article_count is not None and tag.article_count > 0:
+                            tag.article_count -= 1
             
             # 增加新标签的计数
             if value is not None:
                 for tag in value:
-                    if tag not in session:
-                        session.add(tag)
-                    if tag.article_count is None:
-                        tag.article_count = 0
-                    tag.article_count += 1
+                    if oldvalue is NO_VALUE or tag not in oldvalue:  # 只处理新增的标签
+                        if tag not in session:
+                            session.add(tag)
+                        if tag.article_count is None:
+                            tag.article_count = 0
+                        tag.article_count += 1
             
             session.flush()
             

@@ -1,4 +1,5 @@
 from app.models import Article, Category, Tag, Comment, ViewHistory, File, User, CommentConfig
+from app.models.article import article_tags, article_categories
 from sqlalchemy import func
 from datetime import datetime, timedelta
 
@@ -98,7 +99,7 @@ class BlogService:
                     )
                 )
             else:
-                # 未登录用户只能看到公开文章
+                # ��登录用户只能看到公开文章
                 query = query.filter(Article.status == Article.STATUS_PUBLIC)
             
             # 使用 union 合并主分类和多分类的文章
@@ -556,7 +557,7 @@ class BlogService:
             
             # 更新分类关联
             article.categories = categories
-            # 设置主分类（使用第一个选的分类作为主分类）
+            # 设置主分类（使用第一个选的类作为主分类）
             article.category_id = categories[0].id if categories else None
             
             # 新文章状态
@@ -570,7 +571,7 @@ class BlogService:
             # 更新评论设置
             article.allow_comment = data.get('allow_comment') == 'on'
             
-            # 处理标
+            # 处理标签
             tag_names = [name.strip() for name in data.get('tag_names', '').split() if name.strip()]
             new_tags = []
             
@@ -582,8 +583,25 @@ class BlogService:
                     db.session.add(tag)
                 new_tags.append(tag)
             
-            # 更新标签关联
-            article.tags = new_tags
+            try:
+                # 手动处理标签关联
+                if article_id:
+                    # 先清除所有现有的标签关联
+                    db.session.execute(
+                        article_tags.delete().where(
+                            article_tags.c.article_id == article_id
+                        )
+                    )
+                    db.session.flush()
+                
+                # 设置新的标签
+                article.tags = new_tags
+                db.session.flush()
+                
+            except Exception as e:
+                current_app.logger.error(f"Error updating article tags: {str(e)}")
+                db.session.rollback()
+                return False, f'更新标签失败: {str(e)}', None
             
             db.session.commit()
             
@@ -620,7 +638,7 @@ class BlogService:
             file_hash = hashlib.md5(file_content).hexdigest()
             file.seek(0)  # 重置文件指针
             
-            # 检查是否存在相同的文
+            # 检查是否存相同的文
             existing_file = File.query.filter_by(md5=file_hash).first()
             if existing_file:
                 return True, existing_file.file_path
@@ -678,7 +696,7 @@ class BlogService:
             
             # 清除相关缓存
             BlogService.clear_article_related_cache(article_id)
-            # 清除用户文章列表缓存
+            # 清除用户���章列表缓存
             cache_manager.delete(f'user:{user_id}:articles:*')
             
             return True, '文章已删除'
@@ -691,7 +709,7 @@ class BlogService:
     def clear_article_related_cache(article_id):
         """清除文章相关的所有缓存"""
         try:
-            # 获取文章信息以清除相关分类缓存
+            # 获取文章信息以清除相关类缓存
             article = Article.query.options(
                 db.joinedload(Article.categories)
             ).get(article_id)
@@ -718,7 +736,7 @@ class BlogService:
                         cache_patterns.append(f'category:{parent.id}:*')
                         parent = parent.parent
             
-            # 批量清除缓存
+            # 批量清��缓存
             for pattern in cache_patterns:
                 current_app.logger.info(f"Clearing cache pattern: {pattern}")  # 添加日志
                 cache_manager.delete(pattern)
