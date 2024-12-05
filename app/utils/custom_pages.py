@@ -111,7 +111,11 @@ class CustomPageManager:
             print("✓ 自定义页面路由初始化完成\n")
             
         except Exception as e:
-            print(f"✗ 初始化自定义页面路由失败: {str(e)}\n")
+            try:
+                print(f"✗ 初始化自定义页面路由失败: {str(e)}\n")
+            except UnicodeEncodeError as ex:
+                # 这里可以选择将特殊字符替换掉等操作，比如简单替换为空字符串
+                print(f" 初始化自定义页面路由失败: {str(e).encode('gbk', 'replace').decode('gbk')}\n")
             app.logger.error(f"Error initializing custom pages: {str(e)}")
 
     @staticmethod
