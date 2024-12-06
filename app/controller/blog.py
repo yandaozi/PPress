@@ -6,7 +6,8 @@ from app.utils.common import get_categories_data
 from flask_login import current_user, login_required
 from functools import wraps
 from app.models import CommentConfig
-from app.utils.article_url import ArticleUrlMapper
+from app.utils.article_url import ArticleUrlGenerator
+from app.models import Article
 
 bp = Blueprint('blog', __name__)
 
@@ -66,14 +67,13 @@ def category(id):
 def article(path):
     """文章详情页"""
     try:
-        current_app.logger.info(f"Accessing path: {path}")
         # 从路径中提取文章ID
-        article = ArticleUrlMapper.get_article_from_path(path)
-        current_app.logger.info(f"Article found: {article}")
-        if not article:
-            current_app.logger.error(f"No article found for path: {path}")
+        article_id = ArticleUrlGenerator.parse(path)
+        if not article_id:
             abort(404)
             
+        article = Article.query.get_or_404(article_id)
+        
         # 获取页码和密码
         page = request.args.get('page', 1, type=int)
         password = request.args.get('password')
@@ -182,7 +182,7 @@ def delete_comment(comment_id):
 @login_required
 @handle_view_errors
 def edit(id=None):
-    """编辑文章"""
+    """编辑文���"""
     if request.method == 'POST':
         # 验证必填字段
         required_fields = ['title', 'content']

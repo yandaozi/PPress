@@ -1,145 +1,131 @@
-import re
 from flask import current_app
-from app.models import SiteConfig, Category, Article
+from app.models import SiteConfig, Category
 from .id_encoder import IdEncoder
-from app import db
-from sqlalchemy.orm import joinedload
+from .cache_manager import cache_manager
 
-class ArticleUrlMapper:
-    """文章URL映射器"""
+class ArticleUrlGenerator:
+    """文章URL生成器"""
     _pattern_cache = None
-    _regex_cache = None
     _category_map = None
     
     @classmethod
-    def _get_category_map(cls):
-        """获取分类映射（缓存）"""
+    def _get_pattern(cls):
+        """获取URL模式(缓存)"""
+        if cls._pattern_cache is None:
+            cls._pattern_cache = SiteConfig.get_article_url_pattern()
+        return cls._pattern_cache
+    
+    @classmethod
+    def _get_category_key(cls, category_id):
+        """获取分类URL键(缓存)"""
         if cls._category_map is None:
             cls._category_map = {}
             categories = Category.query.all()
             for cat in categories:
                 cls._category_map[cat.id] = cat.slug if cat.use_slug else str(cat.id)
-        return cls._category_map
+        return cls._category_map.get(category_id)
 
     @classmethod
-    def get_pattern(cls):
-        """获取当前URL模式（缓存）"""
-        if cls._pattern_cache is None:
-            cls._pattern_cache = SiteConfig.get_article_url_pattern()
-        return cls._pattern_cache
-
-    @classmethod
-    def get_regex(cls):
-        """获取URL匹配正则（缓存）"""
-        if cls._regex_cache is None:
-            pattern = cls.get_pattern().lstrip('/')
-            
-            # 基本变量替换
-            replacements = {
-                '{id}': r'(?P<id>\d+)',
-                '{encodeid}': r'(?P<encodeid>[A-Za-z0-9_-]+)',
-                '{year}': r'\d{4}',
-                '{month}': r'\d{2}',
-                '{day}': r'\d{2}'
-            }
-            
-            # 分类匹配
-            if '{category}' in pattern:
-                category_values = set(cls._get_category_map().values())
-                replacements['{category}'] = f'(?P<category>{"|".join(map(re.escape, category_values))})'
-            
-            # 一次性替换所有变量
-            for key, value in replacements.items():
-                pattern = pattern.replace(key, value)
-            
-            cls._regex_cache = re.compile(f'^{pattern}$')
-        return cls._regex_cache
-
-    @classmethod
-    def generate_url(cls, article):
-        """生成文章URL"""
-        pattern = cls.get_pattern()
-        
+    def generate(cls, id, category_id=None, created_at=None):
+        """生成文章URL
+        :param id: 文章ID
+        :param category_id: 分类ID(可选)
+        :param created_at: 创建时间(可选)
+        """
         try:
-            # 基本变量
-            variables = {'id': article.id}
+            pattern = cls._get_pattern()
+            variables = {'id': id}
             
             # 加密ID
             if '{encodeid}' in pattern:
-                variables['encodeid'] = IdEncoder.encode(article.id)
+                variables['encodeid'] = IdEncoder.encode(id)
             
             # 分类
             if '{category}' in pattern:
-                # 使用新的会话查询文章和分类
-                article = Article.query.options(joinedload(Article.category)).get(article.id)
-                if not article or not article.category_id:
-                    return f'/id/{article.id}'
-                
-                category_map = cls._get_category_map()
-                if article.category_id not in category_map:
-                    return f'/id/{article.id}'
-                variables['category'] = category_map[article.category_id]
+                if not category_id:
+                    return f'/id/{id}'
+                category_key = cls._get_category_key(category_id)
+                if not category_key:
+                    return f'/id/{id}'
+                variables['category'] = category_key
             
             # 日期
-            if '{year}' in pattern or '{month}' in pattern or '{day}' in pattern:
-                dt = article.created_at
+            if any(x in pattern for x in ('{year}', '{month}', '{day}')):
+                if not created_at:
+                    return f'/id/{id}'
                 variables.update({
-                    'year': dt.strftime('%Y'),
-                    'month': dt.strftime('%m'),
-                    'day': dt.strftime('%d')
+                    'year': created_at.strftime('%Y'),
+                    'month': created_at.strftime('%m'),
+                    'day': created_at.strftime('%d')
                 })
             
             return '/' + pattern.lstrip('/').format(**variables)
             
         except Exception as e:
             current_app.logger.error(f"Error generating URL: {str(e)}")
-            return f'/id/{article.id}'
+            return f'/id/{id}'
 
     @classmethod
-    def get_article_from_path(cls, path):
-        """从路径中获取文章"""
+    def parse(cls, path):
+        """解析URL路径获取文章ID"""
         try:
-            match = cls.get_regex().match(path.lstrip('/'))
+            path = path.lstrip('/')
+            pattern = cls._get_pattern().lstrip('/')
+            
+            # 构建正则模式
+            regex_pattern = pattern
+            # 替换所有变量为对应的正则
+            replacements = {
+                '{id}': r'(?P<id>\d+)',
+                '{encodeid}': r'(?P<encodeid>[A-Za-z0-9_-]+)',
+                '{year}': r'\d{4}',
+                '{month}': r'\d{2}',
+                '{day}': r'\d{2}',
+                '{category}': r'(?P<category>[^/]+)'
+            }
+            
+            for var, regex in replacements.items():
+                regex_pattern = regex_pattern.replace(var, regex)
+            
+            # 编译正则表达式
+            import re
+            regex = re.compile(f'^{regex_pattern}$')
+            
+            # 匹配路径
+            match = regex.match(path)
             if not match:
                 return None
-                
-            groups = match.groupdict()
             
-            # 获取文章ID
-            article_id = None
-            if 'encodeid' in groups:
-                article_id = IdEncoder.decode(groups['encodeid'])
-            elif 'id' in groups:
-                article_id = int(groups['id'])
+            # 如果有分类，验证访问方式
+            if 'category' in match.groupdict():
+                category_value = match.group('category')
+                # 尝试作为ID解析
+                try:
+                    category_id = int(category_value)
+                    # 如果是数字，检查该分类是否禁用了ID访问
+                    category = Category.query.get(category_id)
+                    if category and category.use_slug:
+                        return None  # 该分类设置了使用slug访问，不允许用ID访问
+                except ValueError:
+                    # 如果不是数字，说明是slug，检查该分类是否启用了slug访问
+                    category = Category.query.filter_by(slug=category_value).first()
+                    if category and not category.use_slug:
+                        return None  # 该分类没有设置使用slug访问，不允许用slug访问
             
-            if not article_id:
-                return None
+            # 获取ID
+            if 'encodeid' in match.groupdict():
+                return IdEncoder.decode(match.group('encodeid'))
+            elif 'id' in match.groupdict():
+                return int(match.group('id'))
             
-            # 获取文章（使用 joinedload 预加载分类）
-            article = Article.query.options(joinedload(Article.category)).get(article_id)
-            if not article:
-                return None
-            
-            # 验证分类
-            if 'category' in groups:
-                if not article.category_id:
-                    return None
-                    
-                category_map = cls._get_category_map()
-                if article.category_id not in category_map:
-                    return None
-                if groups['category'] != category_map[article.category_id]:
-                    return None
-            
-            return article
+            return None
             
         except Exception as e:
-            current_app.logger.error(f"Error parsing article path: {str(e)}")
+            current_app.logger.error(f"Error parsing URL: {str(e)}")
             return None
 
     @classmethod
     def clear_cache(cls):
-        """清除所有缓存"""
+        """清除缓存"""
         cls._pattern_cache = None
-        cls._regex_cache = None
         cls._category_map = None

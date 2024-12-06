@@ -61,7 +61,7 @@
                             <div class="flex flex-col space-y-2">
                                 <!-- 标题 -->
                                 <div class="text-sm font-medium text-gray-900">
-                                    <a href="{{ ArticleUrlMapper.generate_url(article) }}" 
+                                    <a href="{{ ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at) }}" 
                                        class="hover:text-blue-600 transition-colors duration-200" target="_blank">
                                         {{ article.title }}
                                     </a>

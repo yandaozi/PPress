@@ -22,7 +22,7 @@ from threading import Lock
 
 from app.utils.route_manager import route_manager
 from sqlalchemy import text, update
-from app.utils.article_url import ArticleUrlMapper
+from app.utils.article_url import ArticleUrlGenerator
 from app.utils.id_encoder import IdEncoder
 
 def format_size(size):
@@ -101,7 +101,7 @@ class AdminService:
                         'avatar': comment.user.avatar if comment.user else '/static/default_avatar.png'
                     },
                     'article': comment.article,
-                    'article_url': ArticleUrlMapper.generate_url(comment.article),
+                    'article_url': ArticleUrlGenerator.generate(comment.article),
                     'action': '发表了评论',
                     'created_at': comment.created_at
                 })
@@ -115,7 +115,7 @@ class AdminService:
                         'avatar': article.author.avatar if article.author else '/static/default_avatar.png'
                     },
                     'article': article,
-                    'article_url': ArticleUrlMapper.generate_url(article),
+                    'article_url': ArticleUrlGenerator.generate(article),
                     'action': '发布了文章',
                     'created_at': article.created_at
                 })
@@ -511,7 +511,7 @@ class AdminService:
             
             # 如果修改了 use_slug 设置，清除 URL 映射缓存
             if 'use_slug' in data and data['use_slug'] != category.use_slug:
-                ArticleUrlMapper.clear_cache()
+                ArticleUrlGenerator.clear_cache()
             
             return True, '分类更新成功', {
                 'id': category.id,
@@ -1742,7 +1742,7 @@ class AdminService:
             cache_manager.delete('article_id_salt')
             cache_manager.delete('article_id_length')
             cache_manager.delete('article_id_salt_hash')
-            ArticleUrlMapper.clear_cache()
+            ArticleUrlGenerator.clear_cache()
             IdEncoder.clear_cache()
             
             return True, '文章URL模式更新成功'

@@ -8,7 +8,6 @@ import io
 from app.services.admin_service import AdminService
 from app.models.custom_page import CustomPage
 from app.services.custom_page_service import CustomPageService
-from app.utils.article_url import ArticleUrlMapper
 from app.utils.custom_pages import custom_page_manager
 from app.models import CommentConfig
 from app.models.site_config import SiteConfig
@@ -88,8 +87,7 @@ def articles():
         return render_template('admin/articles.html',
                              pagination=pagination,
                              search_type=request.args.get('search_type', ''),
-                             search_query=request.args.get('q', ''),
-                             ArticleUrlMapper=ArticleUrlMapper)
+                             search_query=request.args.get('q', ''))
                              
     except Exception as e:
         current_app.logger.error(f"Articles error: {str(e)}")

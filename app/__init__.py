@@ -11,7 +11,7 @@ from flask_caching import Cache
 from config.database import get_db_url, DB_TYPE
 from sqlalchemy import event
 from app.utils.custom_pages import custom_page_manager
-from app.utils.article_url import ArticleUrlMapper
+from app.utils.article_url import ArticleUrlGenerator
 
 cache = Cache()
 
@@ -266,6 +266,6 @@ def create_app(db_type=DB_TYPE, init_components=True):
         return CopyrightEncryptor.get_copyright()
 
     # 添加全局模板变量
-    app.jinja_env.globals['ArticleUrlMapper'] = ArticleUrlMapper
+    app.jinja_env.globals['ArticleUrlGenerator'] = ArticleUrlGenerator
 
     return app 
