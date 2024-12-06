@@ -1,5 +1,5 @@
 import re
-from flask import url_for
+from flask import url_for, current_app
 from app.models import SiteConfig
 
 class ArticleUrlMapper:
@@ -47,9 +47,29 @@ class ArticleUrlMapper:
         variables = {'id': article.id}
         
         if '{category}' in pattern:
-            variables['category'] = (article.category.slug 
-                                   if article.category.use_slug 
-                                   else article.category.id)
+            # 确保 category 已加载
+            from app import db
+            try:
+                # 尝试直接访问 category 属性，如果未加载会触发加载
+                if article.category:
+                    variables['category'] = (article.category.slug 
+                                           if article.category.use_slug 
+                                           else article.category.id)
+                else:
+                    variables['category'] = 'uncategorized'
+            except Exception:
+                # 如果出错，尝试刷新对象
+                try:
+                    db.session.refresh(article)
+                    if article.category:
+                        variables['category'] = (article.category.slug 
+                                               if article.category.use_slug 
+                                               else article.category.id)
+                    else:
+                        variables['category'] = 'uncategorized'
+                except Exception as e:
+                    current_app.logger.error(f"Error loading category: {str(e)}")
+                    variables['category'] = 'uncategorized'
         
         if any(x in pattern for x in ('{year}', '{month}', '{day}')):
             created_at = article.created_at
@@ -66,7 +86,8 @@ class ArticleUrlMapper:
             if not path.startswith('/'):
                 path = '/' + path
             return path
-        except Exception:
+        except Exception as e:
+            current_app.logger.error(f"Error generating URL: {str(e)}")
             return f'/id/{article.id}'
     
     @classmethod
