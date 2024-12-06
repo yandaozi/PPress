@@ -66,9 +66,12 @@ def category(id):
 def article(path):
     """文章详情页"""
     try:
+        current_app.logger.info(f"Accessing path: {path}")
         # 从路径中提取文章ID
         article = ArticleUrlMapper.get_article_from_path(path)
+        current_app.logger.info(f"Article found: {article}")
         if not article:
+            current_app.logger.error(f"No article found for path: {path}")
             abort(404)
             
         # 获取页码和密码

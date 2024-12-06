@@ -103,24 +103,37 @@ class ArticleUrlMapper:
         try:
             # 移除开头的斜杠
             path = path.lstrip('/')
+            current_app.logger.info(f"Processing path: {path}")
+            
             # 获取当前 URL 模式的正则表达式
             regex = cls.get_regex()
+            current_app.logger.info(f"Using regex pattern: {regex.pattern}")
+            
             # 匹配路径
             match = regex.match(path)
+            current_app.logger.info(f"Regex match result: {match}")
             
             if match:
-                if 'id' in match.groupdict():
+                current_app.logger.info(f"Match groups: {match.groupdict()}")
+                # 优先尝试获取加密ID
+                if 'encodeid' in match.groupdict():
+                    encoded_id = match.group('encodeid')
+                    current_app.logger.info(f"Found encoded ID: {encoded_id}")
+                    article_id = IdEncoder.decode(encoded_id)
+                    current_app.logger.info(f"Decoded article ID: {article_id}")
+                    if article_id:
+                        article = Article.query.get(article_id)
+                        current_app.logger.info(f"Found article: {article}")
+                        return article
+                # 如果没有加密ID或解密失败，尝试普通ID
+                elif 'id' in match.groupdict():
                     article_id = int(match.group('id'))
-                elif 'encodeid' in match.groupdict():
-                    article_id = IdEncoder.decode(match.group('encodeid'))
-                    if not article_id:
-                        return None
-                else:
-                    return None
+                    article = Article.query.get(article_id)
+                    current_app.logger.info(f"Found article by normal ID: {article}")
+                    return article
                     
-                return Article.query.get(article_id)
+            return None
                 
         except Exception as e:
             current_app.logger.error(f"Error parsing article path: {str(e)}")
-        
-        return None
+            return None

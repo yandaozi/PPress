@@ -23,6 +23,7 @@ from threading import Lock
 from app.utils.route_manager import route_manager
 from sqlalchemy import text, update
 from app.utils.article_url import ArticleUrlMapper
+from app.utils.id_encoder import IdEncoder
 
 def format_size(size):
     """格式化文件大小显示"""
@@ -205,7 +206,7 @@ class AdminService:
 
     @staticmethod
     def get_articles(page=1, search_type='', search_query=''):
-        """获取��章列表"""
+        """获取章列表"""
         try:
             # 构建基础查询
             query = Article.query
@@ -308,7 +309,7 @@ class AdminService:
             db.session.commit()
             
             # 清除相关缓存
-            cache_manager.delete(f'article:{article_id}')  # ���章详情缓存
+            cache_manager.delete(f'article:{article_id}')  # 章详情缓存
             cache_manager.delete('latest_comments')        # 最新评论缓存
             
             return True, None
@@ -368,7 +369,7 @@ class AdminService:
                         # ID搜索时直接返回匹配的分类
                         categories = [Category.query.get_or_404(category_id)]
                     except ValueError:
-                        return None, 'ID必须是数字'
+                        return None, 'ID必须���数字'
                 else:
                     # 名称搜索 - 先精确后模
                     exact_matches = query.filter(Category.name == search_query)
@@ -536,7 +537,7 @@ class AdminService:
             if not default_category:
                 return False, '默认分类不存在'
 
-            # 1. 获取所需要更新的分类ID
+            # 1. 获取所需��更新的分类ID
             affected_categories = set()
             affected_categories.add(default_category.id)  # 默认分类会接收文章
             if category.parent_id:
@@ -1046,7 +1047,7 @@ class AdminService:
 
                 # 检插件式是否正确
                 if not os.path.exists(os.path.join(temp_dir, 'plugin.json')):
-                    return False, '无效的��件格式'
+                    return False, '无效的件格式'
 
                 # 读取插件信
                 with open(os.path.join(temp_dir, 'plugin.json'), 'r', encoding='utf-8') as f:
@@ -1361,7 +1362,7 @@ class AdminService:
 
     @staticmethod
     def reload_plugin(plugin_name):
-        """重新加载插件"""
+        """���新加载插件"""
         try:
             # 读取插件信息
             plugin_dir = os.path.join(current_app.root_path, 'plugins', 'installed', plugin_name)
@@ -1736,7 +1737,9 @@ class AdminService:
             cache_manager.delete('article_url_pattern')
             cache_manager.delete('article_id_salt')
             cache_manager.delete('article_id_length')
+            cache_manager.delete('article_id_salt_hash')
             ArticleUrlMapper.clear_cache()
+            IdEncoder.clear_cache()
             
             return True, '文章URL模式更新成功'
             
