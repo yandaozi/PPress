@@ -150,7 +150,7 @@ class AdminService:
                         user_id = int(search_query)
                         query = query.filter(User.id == user_id)
                     except ValueError:
-                        return None, 'ID必须是数���'
+                        return None, 'ID必须是数'
                 else:
                     # 用名搜索 - 先精确后模糊
                     exact_matches = query.filter(User.username == search_query)
@@ -205,7 +205,7 @@ class AdminService:
 
     @staticmethod
     def get_articles(page=1, search_type='', search_query=''):
-        """获取文章列表"""
+        """获取��章列表"""
         try:
             # 构建基础查询
             query = Article.query
@@ -308,7 +308,7 @@ class AdminService:
             db.session.commit()
             
             # 清除相关缓存
-            cache_manager.delete(f'article:{article_id}')  # 文章详情缓存
+            cache_manager.delete(f'article:{article_id}')  # ���章详情缓存
             cache_manager.delete('latest_comments')        # 最新评论缓存
             
             return True, None
@@ -1005,7 +1005,7 @@ class AdminService:
             # 除开头和结尾的斜杠
             plugin_name = plugin_name.strip('/')
 
-            # 获取插件实
+            # 获插件实
             plugin = plugin_manager.get_plugin(plugin_name)
             if not plugin:
                 return False, '插件未加载或不存在'
@@ -1046,7 +1046,7 @@ class AdminService:
 
                 # 检插件式是否正确
                 if not os.path.exists(os.path.join(temp_dir, 'plugin.json')):
-                    return False, '无效的插件格式'
+                    return False, '无效的��件格式'
 
                 # 读取插件信
                 with open(os.path.join(temp_dir, 'plugin.json'), 'r', encoding='utf-8') as f:
@@ -1691,7 +1691,7 @@ class AdminService:
             return False, f'更新失败: {str(e)}'
 
     @staticmethod
-    def update_article_url_pattern(pattern_type, custom_pattern=None):
+    def update_article_url_pattern(pattern_type, custom_pattern=None, encode_settings=None):
         """更新文章URL模式"""
         try:
             if pattern_type == 'custom':
@@ -1710,10 +1710,32 @@ class AdminService:
                 db.session.add(config)
             
             config.value = pattern
+            
+            # 如果有加密设置，更新加密配置
+            if encode_settings:
+                salt = encode_settings.get('salt')
+                length = encode_settings.get('length')
+                
+                if salt:
+                    salt_config = SiteConfig.query.filter_by(key='article_id_salt').first()
+                    if not salt_config:
+                        salt_config = SiteConfig(key='article_id_salt')
+                        db.session.add(salt_config)
+                    salt_config.value = salt
+                
+                if length:
+                    length_config = SiteConfig.query.filter_by(key='article_id_length').first()
+                    if not length_config:
+                        length_config = SiteConfig(key='article_id_length')
+                        db.session.add(length_config)
+                    length_config.value = length
+            
             db.session.commit()
             
             # 清除缓存
             cache_manager.delete('article_url_pattern')
+            cache_manager.delete('article_id_salt')
+            cache_manager.delete('article_id_length')
             ArticleUrlMapper.clear_cache()
             
             return True, '文章URL模式更新成功'

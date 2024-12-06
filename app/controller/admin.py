@@ -767,7 +767,7 @@ def add_route():
 @login_required
 @admin_required
 def edit_route(id):
-    """编辑路由"""
+    """编��路由"""
     success, message = AdminService.update_route(id, request.form)
     flash(message)
     return redirect(url_for('admin.routes'))
@@ -962,7 +962,8 @@ def article_url_config():
         data = request.get_json()
         success, message = AdminService.update_article_url_pattern(
             data.get('pattern_type'),
-            data.get('custom_pattern')
+            data.get('custom_pattern'),
+            data.get('encode_settings')
         )
         if not success:
             return jsonify({'error': message}), 400
@@ -978,6 +979,7 @@ def article_url_config():
             pattern_type = key
             break
             
-    return render_template('admin/article_url_config.html',
+    return render_template('admin/article_url_settings.html',
                          pattern=pattern,
-                         pattern_type=pattern_type)
+                         pattern_type=pattern_type,
+                         site_config=SiteConfig)

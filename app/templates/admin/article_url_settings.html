@@ -68,6 +68,39 @@
                             </div>
                         </label>
                         
+                        <!-- 加密模式 -->
+                        <label class="flex items-start p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                            <input type="radio" name="pattern_type" value="encode" 
+                                   class="mt-1 form-radio text-blue-600" {% if current_pattern == 'p/{encodeid}' %}checked{% endif %}>
+                            <div class="ml-3 flex-1">
+                                <span class="block font-medium text-gray-900">加密模式</span>
+                                <span class="block mt-1 text-sm text-gray-500">p/{encodeid}</span>
+                                <div class="mt-2 text-xs text-gray-500">使用加密的文章ID，更安全美观</div>
+                                
+                                <!-- 加密设置 -->
+                                <div class="mt-3 {% if current_pattern != 'p/{encodeid}' %}hidden{% endif %}" id="encodeSettings">
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">加密密钥</label>
+                                            <input type="text" name="encode_salt" 
+                                                   class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                                   value="{{ site_config.get_config('article_id_salt', '') }}"
+                                                   placeholder="设置一个密钥增加安全性">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">ID长度</label>
+                                            <select name="encode_length" 
+                                                    class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                                                <option value="6" {% if site_config.get_config('article_id_length') == '6' %}selected{% endif %}>6位</option>
+                                                <option value="8" {% if site_config.get_config('article_id_length', '8') == '8' %}selected{% endif %}>8位</option>
+                                                <option value="10" {% if site_config.get_config('article_id_length') == '10' %}selected{% endif %}>10位</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                        
                         <!-- 自定义模式 -->
                         <label class="flex items-start p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
                             <input type="radio" name="pattern_type" value="custom" 
@@ -91,6 +124,7 @@
                                             <div class="mt-2 text-sm text-yellow-700">
                                                 <ul class="list-disc pl-5 space-y-1">
                                                     <li>{id} - 文章ID</li>
+                                                    <li>{encodeid} - 加密后的文章ID</li>
                                                     <li>{category} - 分类名称或别名</li>
                                                     <li>{year} - 发布年份</li>
                                                     <li>{month} - 发布月份</li>
@@ -121,13 +155,20 @@
 </div>
 
 <script>
-// 处理自定义模式输入框的启用/禁用
+// 处理模式切换
 document.querySelectorAll('input[name="pattern_type"]').forEach(radio => {
     radio.addEventListener('change', function() {
+        // 处理自定义模式输入框
         const customInput = document.querySelector('input[name="custom_pattern"]');
         customInput.disabled = this.value !== 'custom';
         if (this.value === 'custom' && !customInput.value) {
             customInput.focus();
+        }
+        
+        // 处理加密设置面板
+        const encodeSettings = document.getElementById('encodeSettings');
+        if (encodeSettings) {
+            encodeSettings.classList.toggle('hidden', this.value !== 'encode');
         }
     });
 });
@@ -139,7 +180,11 @@ document.getElementById('urlConfigForm').addEventListener('submit', function(e) 
     const formData = new FormData(this);
     const data = {
         pattern_type: formData.get('pattern_type'),
-        custom_pattern: formData.get('custom_pattern')
+        custom_pattern: formData.get('custom_pattern'),
+        encode_settings: {
+            salt: formData.get('encode_salt'),
+            length: formData.get('encode_length')
+        }
     };
     
     const submitButton = this.querySelector('button[type="submit"]');

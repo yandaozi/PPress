@@ -14,10 +14,11 @@ class SiteConfig(db.Model):
         'default': 'article/{id}',
         'date': '{year}/{month}/{day}/{id}',
         'category': '{category}/{id}',
-        'custom': None  # 自定义模式
+        'encode': 'p/{encodeid}',  # 添加加密模式
+        'custom': None
     }
     
-    DEFAULT_ARTICLE_URL_PATTERN = 'article/{id}'  # 修改默认模式
+    DEFAULT_ARTICLE_URL_PATTERN = 'article/{id}'
     
     @staticmethod
     def get_config(key, default=None):

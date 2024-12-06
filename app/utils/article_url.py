@@ -1,6 +1,7 @@
 import re
 from flask import url_for, current_app
 from app.models import SiteConfig
+from .id_encoder import IdEncoder
 
 class ArticleUrlMapper:
     """文章URL映射器"""
@@ -24,6 +25,7 @@ class ArticleUrlMapper:
             cls._regex_cache = re.compile(
                 '^' +  # 添加开头匹配
                 pattern.replace('{id}', '(?P<id>\d+)')
+                      .replace('{encodeid}', '(?P<encodeid>[A-Za-z0-9_-]+)')
                       .replace('{category}', '[^/]+')
                       .replace('{year}', '\d{4}')
                       .replace('{month}', '\d{2}')
@@ -45,6 +47,9 @@ class ArticleUrlMapper:
         
         # 预处理变量
         variables = {'id': article.id}
+        
+        if '{encodeid}' in pattern:
+            variables['encodeid'] = IdEncoder.encode(article.id)
         
         if '{category}' in pattern:
             # 确保 category 已加载
@@ -103,8 +108,16 @@ class ArticleUrlMapper:
             # 匹配路径
             match = regex.match(path)
             
-            if match and 'id' in match.groupdict():
-                article_id = int(match.group('id'))
+            if match:
+                if 'id' in match.groupdict():
+                    article_id = int(match.group('id'))
+                elif 'encodeid' in match.groupdict():
+                    article_id = IdEncoder.decode(match.group('encodeid'))
+                    if not article_id:
+                        return None
+                else:
+                    return None
+                    
                 return Article.query.get(article_id)
                 
         except Exception as e:
