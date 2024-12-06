@@ -6,6 +6,7 @@ from app.utils.common import get_categories_data
 from flask_login import current_user, login_required
 from functools import wraps
 from app.models import CommentConfig
+from app.utils.article_url import ArticleUrlMapper
 
 bp = Blueprint('blog', __name__)
 
@@ -61,19 +62,21 @@ def category(id):
                            latest_comments=BlogService.get_latest_comments(),
                            **get_categories_data())
 
-@bp.route('/article/<int:id>')
-@handle_view_errors
-def article(id):
-    """文章详情路由"""
+@bp.route('/<path:path>')
+def article(path):
+    """文章详情页"""
     try:
-        # 获取页码
+        # 从路径中提取文章ID
+        article = ArticleUrlMapper.get_article_from_path(path)
+        if not article:
+            abort(404)
+            
+        # 获取页码和密码
         page = request.args.get('page', 1, type=int)
-        
-        # 获取密码
         password = request.args.get('password')
         
         # 获取文章详情
-        result = BlogService.get_article_detail(id, password, current_user)
+        result = BlogService.get_article_detail(article.id, password, current_user)
         
         if isinstance(result, dict) and 'error' in result:
             flash(result['error'], 'error')
@@ -83,10 +86,9 @@ def article(id):
             return render_template('blog/password.html', article=result['article'])
             
         # 获取评论数据
-        comment_data = BlogService.get_article_comments(id, current_user, page)
+        comment_data = BlogService.get_article_comments(article.id, current_user, page)
         
-        # 渲染模板
-        return render_template('blog/article.html', 
+        return render_template('blog/article.html',
                              article=result,
                              comment_data=comment_data,
                              comment_config=CommentConfig.get_config())

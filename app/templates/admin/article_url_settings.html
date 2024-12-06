@@ -1,0 +1,128 @@
+{% extends theme_path('admin/base.html') %}
+
+{% block title %}文章URL设置{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="bg-white rounded-lg shadow-sm">
+        <!-- Tab 导航 -->
+        <div class="px-6 py-4 border-b">
+            <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center space-y-4 lg:space-y-0">
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('admin.routes', tab='routes') }}" 
+                       class="px-3 py-2 font-medium rounded-md text-gray-600 hover:text-gray-900">
+                        路由管理
+                    </a>
+                    <a href="{{ url_for('admin.routes', tab='article_url') }}"
+                       class="px-3 py-2 font-medium rounded-md bg-blue-100 text-blue-700">
+                        文章路由设置
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文章 URL 配置内容 -->
+        <div class="p-6">
+            <form id="urlConfigForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">当前URL模式: {{ current_pattern }}</label>
+                    <div class="space-y-4">
+                        <!-- 默认模式 -->
+                        <label class="flex items-start">
+                            <input type="radio" name="pattern_type" value="default" 
+                                   class="mt-1 form-radio" {% if current_pattern == 'article/{id}' %}checked{% endif %}>
+                            <div class="ml-3">
+                                <span class="block font-medium text-gray-700">默认模式</span>
+                                <span class="block text-sm text-gray-500">article/{id}</span>
+                            </div>
+                        </label>
+                        
+                        <!-- 日期模式 -->
+                        <label class="flex items-start">
+                            <input type="radio" name="pattern_type" value="date" 
+                                   class="mt-1 form-radio" {% if current_pattern == '{year}/{month}/{day}/{id}' %}checked{% endif %}>
+                            <div class="ml-3">
+                                <span class="block font-medium text-gray-700">日期模式</span>
+                                <span class="block text-sm text-gray-500">{year}/{month}/{day}/{id}</span>
+                            </div>
+                        </label>
+                        
+                        <!-- 分类模式 -->
+                        <label class="flex items-start">
+                            <input type="radio" name="pattern_type" value="category" 
+                                   class="mt-1 form-radio" {% if current_pattern == '{category}/{id}' %}checked{% endif %}>
+                            <div class="ml-3">
+                                <span class="block font-medium text-gray-700">分类模式</span>
+                                <span class="block text-sm text-gray-500">{category}/{id}</span>
+                            </div>
+                        </label>
+                        
+                        <!-- 自定义模式 -->
+                        <label class="flex items-start">
+                            <input type="radio" name="pattern_type" value="custom" 
+                                   class="mt-1 form-radio" {% if is_custom_pattern %}checked{% endif %}>
+                            <div class="ml-3 flex-1">
+                                <span class="block font-medium text-gray-700">自定义模式</span>
+                                <input type="text" name="custom_pattern" 
+                                       class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       placeholder="blog/{year}/{category}/{id}"
+                                       value="{{ current_pattern if is_custom_pattern else '' }}"
+                                       {% if not is_custom_pattern %}disabled{% endif %}>
+                                <p class="mt-1 text-sm text-gray-500">
+                                    可用变量：{id}（文章id）, {category}（分类）, {year}（年）, {month}（月）, {day}（日）<br>
+                                    开头不要带 /
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="pt-4 border-t">
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                        保存设置
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// 处理自定义模式输入框的启用/禁用
+document.querySelectorAll('input[name="pattern_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const customInput = document.querySelector('input[name="custom_pattern"]');
+        customInput.disabled = this.value !== 'custom';
+    });
+});
+
+// 处理表单提交
+document.getElementById('urlConfigForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        pattern_type: formData.get('pattern_type'),
+        custom_pattern: formData.get('custom_pattern')
+    };
+    
+    fetch('/admin/article-url-config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert(data.error, 'error', '错误');
+        } else {
+            showAlert(data.message, 'success', '成功');
+        }
+    });
+});
+</script>
+{% endblock %} 

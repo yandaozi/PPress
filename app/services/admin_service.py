@@ -22,6 +22,7 @@ from threading import Lock
 
 from app.utils.route_manager import route_manager
 from sqlalchemy import text, update
+from app.utils.article_url import ArticleUrlMapper
 
 def format_size(size):
     """格式化文件大小显示"""
@@ -99,6 +100,7 @@ class AdminService:
                         'avatar': comment.user.avatar if comment.user else '/static/default_avatar.png'
                     },
                     'article': comment.article,
+                    'article_url': ArticleUrlMapper.generate_url(comment.article),
                     'action': '发表了评论',
                     'created_at': comment.created_at
                 })
@@ -112,6 +114,7 @@ class AdminService:
                         'avatar': article.author.avatar if article.author else '/static/default_avatar.png'
                     },
                     'article': article,
+                    'article_url': ArticleUrlMapper.generate_url(article),
                     'action': '发布了文章',
                     'created_at': article.created_at
                 })
@@ -147,7 +150,7 @@ class AdminService:
                         user_id = int(search_query)
                         query = query.filter(User.id == user_id)
                     except ValueError:
-                        return None, 'ID必须是数字'
+                        return None, 'ID必须是数���'
                 else:
                     # 用名搜索 - 先精确后模糊
                     exact_matches = query.filter(User.username == search_query)
@@ -533,7 +536,7 @@ class AdminService:
             if not default_category:
                 return False, '默认分类不存在'
 
-            # 1. 获取所���需要更新的分类ID
+            # 1. 获取所需要更新的分类ID
             affected_categories = set()
             affected_categories.add(default_category.id)  # 默认分类会接收文章
             if category.parent_id:
@@ -957,7 +960,7 @@ class AdminService:
                 import shutil
                 shutil.rmtree(plugin_path)
 
-            # 从据库中删除插件记���
+            # 从据库中删除插件记
             db.session.delete(plugin_record)
             db.session.commit()
 
@@ -997,7 +1000,7 @@ class AdminService:
 
     @staticmethod
     def save_plugin_settings(plugin_name, form_data):
-        """保存插件设"""
+        """保存插设"""
         try:
             # 除开头和结尾的斜杠
             plugin_name = plugin_name.strip('/')
@@ -1072,7 +1075,7 @@ class AdminService:
                 if os.path.exists(plugin_zip):
                     os.remove(plugin_zip)
 
-                # 导入插件模块获取默配
+                # 导入插件模块取默配
                 module = import_module(f'app.plugins.installed.{directory}')
                 plugin_class = getattr(module, plugin_info.get('plugin_class', 'Plugin'))
                 plugin = plugin_class()
@@ -1218,7 +1221,7 @@ class AdminService:
             # 检查是否有设置模板
             settings_html = plugin.get_settings_template()
             if not settings_html:
-                return False, '插���没有设页面'
+                return False, '插没有设页面'
 
             return True, '插件有设置页面'
 
@@ -1417,7 +1420,7 @@ class AdminService:
 
     @staticmethod
     def delete_route(route_id):
-        """删除路由"""
+        """删除由"""
         return route_manager.delete_route(route_id)
 
     @staticmethod
@@ -1686,3 +1689,35 @@ class AdminService:
             db.session.rollback()
             current_app.logger.error(f"Update comment status error: {str(e)}")
             return False, f'更新失败: {str(e)}'
+
+    @staticmethod
+    def update_article_url_pattern(pattern_type, custom_pattern=None):
+        """更新文章URL模式"""
+        try:
+            if pattern_type == 'custom':
+                if not custom_pattern:
+                    return False, '自定义模式需要提供模式字符串'
+                pattern = custom_pattern
+            else:
+                pattern = SiteConfig.ARTICLE_URL_PATTERNS.get(pattern_type)
+                if not pattern:
+                    return False, '不支持的URL模式类型'
+            
+            # 更新配置
+            config = SiteConfig.query.filter_by(key='article_url_pattern').first()
+            if not config:
+                config = SiteConfig(key='article_url_pattern')
+                db.session.add(config)
+            
+            config.value = pattern
+            db.session.commit()
+            
+            # 清除缓存
+            cache_manager.delete('article_url_pattern')
+            ArticleUrlMapper.clear_cache()
+            
+            return True, '文章URL模式更新成功'
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, str(e)

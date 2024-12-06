@@ -7,6 +7,16 @@
     <div class="bg-white rounded-lg shadow-sm">
         <div class="px-6 py-4 border-b">
             <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center space-y-4 lg:space-y-0">
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('admin.routes', tab='routes') }}" 
+                       class="px-3 py-2 font-medium rounded-md {% if not request.args.get('tab') or request.args.get('tab') == 'routes' %}bg-blue-100 text-blue-700{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                        路由管理
+                    </a>
+                    <a href="{{ url_for('admin.routes', tab='article_url') }}"
+                       class="px-3 py-2 font-medium rounded-md {% if request.args.get('tab') == 'article_url' %}bg-blue-100 text-blue-700{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                        文章URL设置
+                    </a>
+                </div>
                 <h2 class="text-xl font-bold">路由管理</h2>
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full lg:w-auto">
                     <form method="get" class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 flex-1">

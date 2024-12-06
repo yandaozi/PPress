@@ -8,8 +8,10 @@ import io
 from app.services.admin_service import AdminService
 from app.models.custom_page import CustomPage
 from app.services.custom_page_service import CustomPageService
+from app.utils.article_url import ArticleUrlMapper
 from app.utils.custom_pages import custom_page_manager
 from app.models import CommentConfig
+from app.models.site_config import SiteConfig
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -86,7 +88,8 @@ def articles():
         return render_template('admin/articles.html',
                              pagination=pagination,
                              search_type=request.args.get('search_type', ''),
-                             search_query=request.args.get('q', ''))
+                             search_query=request.args.get('q', ''),
+                             ArticleUrlMapper=ArticleUrlMapper)
                              
     except Exception as e:
         current_app.logger.error(f"Articles error: {str(e)}")
@@ -717,6 +720,22 @@ def clear_cache(key):
 def routes():
     """路由管理"""
     try:
+        # 如果是文章URL配置tab，使用单独的模板
+        if request.args.get('tab') == 'article_url':
+            # 获取当前文章 URL 模式
+            current_pattern = SiteConfig.get_article_url_pattern()
+            # 判断是否是预定义模式
+            is_custom_pattern = True
+            for pattern in SiteConfig.ARTICLE_URL_PATTERNS.values():
+                if pattern and pattern == current_pattern:
+                    is_custom_pattern = False
+                    break
+                    
+            return render_template('admin/article_url_settings.html',  # 使用新模板
+                                 current_pattern=current_pattern,
+                                 is_custom_pattern=is_custom_pattern)
+        
+        # 原有的路由管理代码
         pagination, error = AdminService.get_routes(
             page=request.args.get('page', 1, type=int),
             search_query=request.args.get('q', '').strip()
@@ -724,20 +743,16 @@ def routes():
         
         if error:
             flash(error)
-            return redirect(url_for('admin.dashboard'))
-            
-        # 获取可用端点
-        available_endpoints = AdminService.get_available_endpoints()
+            return redirect(url_for('admin.routes'))
             
         return render_template('admin/routes.html',
                              pagination=pagination,
                              search_query=request.args.get('q', ''),
-                             available_endpoints=available_endpoints)
+                             available_endpoints=AdminService.get_available_endpoints())
                              
     except Exception as e:
         current_app.logger.error(f"Routes error: {str(e)}")
-        flash('路由管理加载失败')
-        return redirect(url_for('admin.dashboard'))
+        abort(500)
 
 @bp.route('/routes/add', methods=['POST'])
 @login_required
@@ -937,3 +952,32 @@ def reject_comment(comment_id):
     if not success:
         return jsonify({'error': message}), 400
     return '', 204
+
+@bp.route('/article-url-config', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def article_url_config():
+    """文章URL配置"""
+    if request.method == 'POST':
+        data = request.get_json()
+        success, message = AdminService.update_article_url_pattern(
+            data.get('pattern_type'),
+            data.get('custom_pattern')
+        )
+        if not success:
+            return jsonify({'error': message}), 400
+        return jsonify({'message': message})
+        
+    # 获取当前配置
+    pattern = SiteConfig.get_article_url_pattern()
+    
+    # 判断当前模式类型
+    pattern_type = 'custom'
+    for key, value in SiteConfig.ARTICLE_URL_PATTERNS.items():
+        if value == pattern:
+            pattern_type = key
+            break
+            
+    return render_template('admin/article_url_config.html',
+                         pattern=pattern,
+                         pattern_type=pattern_type)
