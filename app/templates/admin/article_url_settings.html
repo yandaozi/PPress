@@ -1,6 +1,6 @@
 {% extends theme_path('admin/base.html') %}
 
-{% block title %}文章URL设置{% endblock %}
+{% block title %}文章路由设置{% endblock %}
 
 {% block content %}
 <div class="p-6">
@@ -23,63 +23,95 @@
 
         <!-- 文章 URL 配置内容 -->
         <div class="p-6">
-            <form id="urlConfigForm" class="space-y-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">当前URL模式: {{ current_pattern }}</label>
-                    <div class="space-y-4">
+            <!-- 当前模式显示 -->
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="text-sm text-gray-600">当前文章URL模式:</div>
+                <div class="mt-1 font-mono text-blue-600">{{ current_pattern }}</div>
+            </div>
+
+            <form id="urlConfigForm" class="space-y-8">
+                <div class="space-y-6">
+                    <!-- 预设模式选择 -->
+                    <div class="bg-white rounded-lg border border-gray-200 divide-y">
                         <!-- 默认模式 -->
-                        <label class="flex items-start">
+                        <label class="flex items-start p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
                             <input type="radio" name="pattern_type" value="default" 
-                                   class="mt-1 form-radio" {% if current_pattern == 'article/{id}' %}checked{% endif %}>
-                            <div class="ml-3">
-                                <span class="block font-medium text-gray-700">默认模式</span>
-                                <span class="block text-sm text-gray-500">article/{id}</span>
+                                   class="mt-1 form-radio text-blue-600" {% if current_pattern == 'article/{id}' %}checked{% endif %}>
+                            <div class="ml-3 flex-1">
+                                <span class="block font-medium text-gray-900">默认模式</span>
+                                <span class="block mt-1 text-sm text-gray-500">article/{id}</span>
+                                <span class="mt-2 inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                                    推荐
+                                </span>
                             </div>
                         </label>
                         
                         <!-- 日期模式 -->
-                        <label class="flex items-start">
+                        <label class="flex items-start p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
                             <input type="radio" name="pattern_type" value="date" 
-                                   class="mt-1 form-radio" {% if current_pattern == '{year}/{month}/{day}/{id}' %}checked{% endif %}>
-                            <div class="ml-3">
-                                <span class="block font-medium text-gray-700">日期模式</span>
-                                <span class="block text-sm text-gray-500">{year}/{month}/{day}/{id}</span>
+                                   class="mt-1 form-radio text-blue-600" {% if current_pattern == '{year}/{month}/{day}/{id}' %}checked{% endif %}>
+                            <div class="ml-3 flex-1">
+                                <span class="block font-medium text-gray-900">日期模式</span>
+                                <span class="block mt-1 text-sm text-gray-500">{year}/{month}/{day}/{id}</span>
+                                <div class="mt-2 text-xs text-gray-500">适合按时间归档的博客</div>
                             </div>
                         </label>
                         
                         <!-- 分类模式 -->
-                        <label class="flex items-start">
+                        <label class="flex items-start p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
                             <input type="radio" name="pattern_type" value="category" 
-                                   class="mt-1 form-radio" {% if current_pattern == '{category}/{id}' %}checked{% endif %}>
-                            <div class="ml-3">
-                                <span class="block font-medium text-gray-700">分类模式</span>
-                                <span class="block text-sm text-gray-500">{category}/{id}</span>
+                                   class="mt-1 form-radio text-blue-600" {% if current_pattern == '{category}/{id}' %}checked{% endif %}>
+                            <div class="ml-3 flex-1">
+                                <span class="block font-medium text-gray-900">分类模式</span>
+                                <span class="block mt-1 text-sm text-gray-500">{category}/{id}</span>
+                                <div class="mt-2 text-xs text-gray-500">适合内容分类明确的网站</div>
                             </div>
                         </label>
                         
                         <!-- 自定义模式 -->
-                        <label class="flex items-start">
+                        <label class="flex items-start p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
                             <input type="radio" name="pattern_type" value="custom" 
-                                   class="mt-1 form-radio" {% if is_custom_pattern %}checked{% endif %}>
+                                   class="mt-1 form-radio text-blue-600" {% if is_custom_pattern %}checked{% endif %}>
                             <div class="ml-3 flex-1">
-                                <span class="block font-medium text-gray-700">自定义模式</span>
+                                <span class="block font-medium text-gray-900">自定义模式</span>
                                 <input type="text" name="custom_pattern" 
-                                       class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       class="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
                                        placeholder="blog/{year}/{category}/{id}"
                                        value="{{ current_pattern if is_custom_pattern else '' }}"
                                        {% if not is_custom_pattern %}disabled{% endif %}>
-                                <p class="mt-1 text-sm text-gray-500">
-                                    可用变量：{id}（文章id）, {category}（分类）, {year}（年）, {month}（月）, {day}（日）<br>
-                                    开头不要带 /
-                                </p>
+                                <div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                                    <div class="flex">
+                                        <div class="flex-shrink-0">
+                                            <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3">
+                                            <h3 class="text-sm font-medium text-yellow-800">可用变量说明</h3>
+                                            <div class="mt-2 text-sm text-yellow-700">
+                                                <ul class="list-disc pl-5 space-y-1">
+                                                    <li>{id} - 文章ID</li>
+                                                    <li>{category} - 分类名称或别名</li>
+                                                    <li>{year} - 发布年份</li>
+                                                    <li>{month} - 发布月份</li>
+                                                    <li>{day} - 发布日期</li>
+                                                </ul>
+                                                <p class="mt-2">注意：开头不要带 /</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </label>
                     </div>
                 </div>
                 
-                <div class="pt-4 border-t">
+                <div class="pt-6 border-t flex justify-end">
                     <button type="submit" 
-                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
                         保存设置
                     </button>
                 </div>
@@ -94,6 +126,9 @@ document.querySelectorAll('input[name="pattern_type"]').forEach(radio => {
     radio.addEventListener('change', function() {
         const customInput = document.querySelector('input[name="custom_pattern"]');
         customInput.disabled = this.value !== 'custom';
+        if (this.value === 'custom' && !customInput.value) {
+            customInput.focus();
+        }
     });
 });
 
@@ -106,6 +141,10 @@ document.getElementById('urlConfigForm').addEventListener('submit', function(e) 
         pattern_type: formData.get('pattern_type'),
         custom_pattern: formData.get('custom_pattern')
     };
+    
+    const submitButton = this.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>保存中...';
     
     fetch('/admin/article-url-config', {
         method: 'POST',
@@ -121,7 +160,12 @@ document.getElementById('urlConfigForm').addEventListener('submit', function(e) 
             showAlert(data.error, 'error', '错误');
         } else {
             showAlert(data.message, 'success', '成功');
+            setTimeout(() => location.reload(), 1000);
         }
+    })
+    .finally(() => {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>保存设置';
     });
 });
 </script>
