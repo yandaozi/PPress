@@ -52,29 +52,21 @@ class ArticleUrlMapper:
             variables['encodeid'] = IdEncoder.encode(article.id)
         
         if '{category}' in pattern:
-            # 确保 category 已加载
-            from app import db
             try:
-                # 尝试直接访问 category 属性，如果未加载会触发加载
+                # 使用新的 session 查询分类信息
+                from app import db
+                from app.models import Article
+                article = db.session.merge(article)  # 确保对象在当前session中
+                
                 if article.category:
                     variables['category'] = (article.category.slug 
                                            if article.category.use_slug 
                                            else article.category.id)
                 else:
                     variables['category'] = 'uncategorized'
-            except Exception:
-                # 如果出错，尝试刷新对象
-                try:
-                    db.session.refresh(article)
-                    if article.category:
-                        variables['category'] = (article.category.slug 
-                                               if article.category.use_slug 
-                                               else article.category.id)
-                    else:
-                        variables['category'] = 'uncategorized'
-                except Exception as e:
-                    current_app.logger.error(f"Error loading category: {str(e)}")
-                    variables['category'] = 'uncategorized'
+            except Exception as e:
+                current_app.logger.error(f"Error loading category: {str(e)}")
+                variables['category'] = 'uncategorized'
         
         if any(x in pattern for x in ('{year}', '{month}', '{day}')):
             created_at = article.created_at
@@ -85,9 +77,7 @@ class ArticleUrlMapper:
             })
         
         try:
-            # 直接生成路径，不使用 url_for
             path = pattern.format(**variables)
-            # 确保路径以 / 开头
             if not path.startswith('/'):
                 path = '/' + path
             return path
@@ -98,7 +88,7 @@ class ArticleUrlMapper:
     @classmethod
     def get_article_from_path(cls, path):
         """从路径中获取文章"""
-        from app.models import Article
+        from app.models import Article, Category
         
         try:
             # 移除开头的斜杠
@@ -115,22 +105,40 @@ class ArticleUrlMapper:
             
             if match:
                 current_app.logger.info(f"Match groups: {match.groupdict()}")
+                
+                # 获取文章ID
+                article_id = None
+                
                 # 优先尝试获取加密ID
                 if 'encodeid' in match.groupdict():
                     encoded_id = match.group('encodeid')
-                    current_app.logger.info(f"Found encoded ID: {encoded_id}")
                     article_id = IdEncoder.decode(encoded_id)
-                    current_app.logger.info(f"Decoded article ID: {article_id}")
-                    if article_id:
-                        article = Article.query.get(article_id)
-                        current_app.logger.info(f"Found article: {article}")
-                        return article
-                # 如果没有加密ID或解密失败，尝试普通ID
+                # 尝试普通ID
                 elif 'id' in match.groupdict():
                     article_id = int(match.group('id'))
+                
+                # 如果有分类信息，验证分类是否匹配
+                if article_id and 'category' in match.groupdict():
+                    category_slug = match.group('category')
                     article = Article.query.get(article_id)
-                    current_app.logger.info(f"Found article by normal ID: {article}")
-                    return article
+                    
+                    if article:
+                        # 检查分类是否匹配
+                        if category_slug == 'uncategorized':
+                            if article.category is not None:
+                                return None
+                        else:
+                            # 通过 slug 或 id 查找分类
+                            category = Category.query.filter(
+                                (Category.slug == category_slug) | 
+                                (Category.id == category_slug)
+                            ).first()
+                            
+                            if not category or article.category_id != category.id:
+                                return None
+                
+                if article_id:
+                    return Article.query.get(article_id)
                     
             return None
                 
