@@ -94,7 +94,7 @@ class CustomPageManager:
             with app.app_context():
                 pages = CustomPage.query.filter_by(enabled=True).all()
                 app.config['CUSTOM_PAGES'] = {p.route: p.key for p in pages}
-                print(f"✓ 已加载 {len(pages)} 个自定义页面路由")
+                print(f"ok 已加载 {len(pages)} 个自定义页面路由")
             
             # 注册内部处理路由
             @app.route('/custom_page/<path:page_key>')
@@ -108,11 +108,11 @@ class CustomPageManager:
                     return login_required(lambda: render_custom_page(page))()
                 return render_custom_page(page)
                 
-            print("✓ 自定义页面路由初始化完成\n")
+            print("ok 自定义页面路由初始化完成\n")
             
         except Exception as e:
             try:
-                print(f"✗ 初始化自定义页面路由失败: {str(e)}\n")
+                print(f"X 初始化自定义页面路由失败: {str(e)}\n")
             except UnicodeEncodeError as ex:
                 # 这里可以选择将特殊字符替换掉等操作，比如简单替换为空字符串
                 print(f" 初始化自定义页面路由失败: {str(e).encode('gbk', 'replace').decode('gbk')}\n")
@@ -126,9 +126,9 @@ class CustomPageManager:
             with app.app_context():
                 pages = CustomPage.query.filter_by(enabled=True).all()
                 app.config['CUSTOM_PAGES'] = {p.route: p.key for p in pages}
-            print(f"✓ 已更新路由映射: {page.route} -> {page.key}")
+            print(f"ok 已更新路由映射: {page.route} -> {page.key}")
         except Exception as e:
-            print(f"✗ 添加路由失败: {str(e)}")
+            print(f"x 添加路由失败: {str(e)}")
             app.logger.error(f"Error adding page route: {str(e)}")
 
     @staticmethod
@@ -139,9 +139,9 @@ class CustomPageManager:
             with app.app_context():
                 pages = CustomPage.query.filter_by(enabled=True).all()
                 app.config['CUSTOM_PAGES'] = {p.route: p.key for p in pages}
-            print(f"✓ 已更新路由映射: {page.route} -> {page.key}")
+            print(f"ok 已更新路由映射: {page.route} -> {page.key}")
         except Exception as e:
-            print(f"✗ 更新路由失败: {str(e)}")
+            print(f"x 更新路由失败: {str(e)}")
             app.logger.error(f"Error updating page route: {str(e)}")
 
 # 创建全局实例
