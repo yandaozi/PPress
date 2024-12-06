@@ -43,7 +43,7 @@
         <div class="flex items-center space-x-2">
             {% if article.main_category %}
                 <!-- 主分类 -->
-                <a href="{{ url_for('blog.category', id=article.main_category.id) }}" 
+                <a href="{{ url_for('blog.category', id=article.main_category.slug if article.main_category.use_slug else article.main_category.id) }}"
                    class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">
                     {{ article.main_category.name }}
                 </a>
@@ -52,7 +52,7 @@
                 {% for category in article.categories %}
                     {% if category != article.main_category %}
                         <span class="text-gray-400 dark:text-gray-500">/</span>
-                        <a href="{{ url_for('blog.category', id=category.id) }}" 
+                        <a href="{{ url_for('blog.category', id=category.slug if category.use_slug else category.id) }}"
                            class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">
                             {{ category.name }}
                         </a>
