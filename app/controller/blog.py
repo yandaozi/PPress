@@ -146,26 +146,39 @@ def tag(id):
 @handle_view_errors
 def add_comment(article_id):
     """添加评论"""
-    data = {
-        'content': request.form.get('content'),
-        'parent_id': request.form.get('parent_id'),
-        'reply_to_id': request.form.get('reply_to_id'),
-        'guest_name': request.form.get('guest_name'),
-        'guest_email': request.form.get('guest_email'),
-        'guest_contact': request.form.get('guest_contact')
-    }
-    
-    # 获取用户ID(如果已登录)
-    user_id = current_user.id if current_user.is_authenticated else None
-    
-    success, message = BlogService.add_comment(
-        article_id=article_id,
-        user_id=user_id,
-        data=data
-    )
-    
-    flash(message)
-    return redirect(ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at))
+    try:
+        # 获取文章对象
+        article = Article.query.get_or_404(article_id)
+        
+        data = {
+            'content': request.form.get('content'),
+            'parent_id': request.form.get('parent_id'),
+            'reply_to_id': request.form.get('reply_to_id'),
+            'guest_name': request.form.get('guest_name'),
+            'guest_email': request.form.get('guest_email'),
+            'guest_contact': request.form.get('guest_contact')
+        }
+        
+        # 获取用户ID(如果已登录)
+        user_id = current_user.id if current_user.is_authenticated else None
+        
+        success, message = BlogService.add_comment(
+            article_id=article_id,
+            user_id=user_id,
+            data=data
+        )
+        
+        flash(message)
+        # 使用文章对象生成URL
+        return redirect(ArticleUrlGenerator.generate(
+            article.id, 
+            article.category_id, 
+            article.created_at
+        ))
+        
+    except Exception as e:
+        current_app.logger.error(f"add_comment error: {str(e)}")
+        abort(500)
 
 @bp.route('/comment/<int:comment_id>', methods=['DELETE'])
 @login_required

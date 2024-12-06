@@ -172,7 +172,7 @@ def delete_user(user_id):
         return jsonify({'error': error}), 400
     return '', 204
 
-@bp.route('/articles/<int:article_id>', methods=['DELETE'])
+@bp.route('/article/<int:article_id>', methods=['DELETE'])
 @login_required
 @admin_required
 def delete_article(article_id):
