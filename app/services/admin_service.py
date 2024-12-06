@@ -369,7 +369,7 @@ class AdminService:
                         # ID搜索时直接返回匹配的分类
                         categories = [Category.query.get_or_404(category_id)]
                     except ValueError:
-                        return None, 'ID必须���数字'
+                        return None, 'ID必须是数字'
                 else:
                     # 名称搜索 - 先精确后模
                     exact_matches = query.filter(Category.name == search_query)
@@ -509,6 +509,10 @@ class AdminService:
             cache_manager.delete('admin:categories:*')
             cache_manager.delete('categories_*')
             
+            # 如果修改了 use_slug 设置，清除 URL 映射缓存
+            if 'use_slug' in data and data['use_slug'] != category.use_slug:
+                ArticleUrlMapper.clear_cache()
+            
             return True, '分类更新成功', {
                 'id': category.id,
                 'name': category.name,
@@ -537,7 +541,7 @@ class AdminService:
             if not default_category:
                 return False, '默认分类不存在'
 
-            # 1. 获取所需��更新的分类ID
+            # 1. 获取所需更新的分类ID
             affected_categories = set()
             affected_categories.add(default_category.id)  # 默认分类会接收文章
             if category.parent_id:
@@ -1083,7 +1087,7 @@ class AdminService:
                 default_config = plugin.default_settings if hasattr(plugin, 'default_settings') else {}
 
                 # 获取启用状态
-                enabled = plugin_info.get('enabled', True)  # 如果未指定，默认为启用
+                enabled = plugin_info.get('enabled', True)  # 如果未指定，默认为启���
 
                 # 添加到数据库
                 Plugin.add_plugin(plugin_info, directory, enabled=enabled, config=default_config)
@@ -1362,7 +1366,7 @@ class AdminService:
 
     @staticmethod
     def reload_plugin(plugin_name):
-        """���新加载插件"""
+        """新加载插件"""
         try:
             # 读取插件信息
             plugin_dir = os.path.join(current_app.root_path, 'plugins', 'installed', plugin_name)
