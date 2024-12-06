@@ -1087,7 +1087,7 @@ class AdminService:
                 default_config = plugin.default_settings if hasattr(plugin, 'default_settings') else {}
 
                 # 获取启用状态
-                enabled = plugin_info.get('enabled', True)  # 如果未指定，默认为启���
+                enabled = plugin_info.get('enabled', True)  # 如果未指定，默认为启
 
                 # 添加到数据库
                 Plugin.add_plugin(plugin_info, directory, enabled=enabled, config=default_config)
@@ -1750,3 +1750,70 @@ class AdminService:
         except Exception as e:
             db.session.rollback()
             return False, str(e)
+
+    @staticmethod
+    def reload_plugin_list():
+        """重新加载插件列表"""
+        try:
+            # 获取已安装插件目录
+            installed_dir = os.path.join(current_app.root_path, 'plugins', 'installed')
+            if not os.path.exists(installed_dir):
+                return True, '没有发现新插件'
+            
+            # 获取已安装的插件目录列表
+            installed_plugins = {p.directory for p in Plugin.query.all()}
+            new_plugins = 0
+            
+            # 遍历插件目录
+            for plugin_dir in os.listdir(installed_dir):
+                # 跳过已安装的插件
+                if plugin_dir in installed_plugins:
+                    continue
+                
+                plugin_path = os.path.join(installed_dir, plugin_dir)
+                if not os.path.isdir(plugin_path):
+                    continue
+                
+                # 检查插件信息文件
+                info_file = os.path.join(plugin_path, 'plugin.json')
+                if not os.path.exists(info_file):
+                    continue
+                
+                try:
+                    # 读取插件信息
+                    with open(info_file, 'r', encoding='utf-8') as f:
+                        plugin_info = json.load(f)
+                    
+                    # 导入插件模块获取默认配置
+                    module = import_module(f'app.plugins.installed.{plugin_dir}')
+                    plugin_class = getattr(module, plugin_info.get('plugin_class', 'Plugin'))
+                    plugin = plugin_class()
+                    default_config = plugin.default_settings if hasattr(plugin, 'default_settings') else {}
+                    
+                    # 添加到数据库
+                    Plugin.add_plugin(
+                        plugin_info, 
+                        plugin_dir,
+                        enabled=plugin_info.get('enabled', True),
+                        config=default_config
+                    )
+                    
+                    # 如果插件默认启用,立即加载它
+                    if plugin_info.get('enabled', True):
+                        plugin_manager.load_plugin(plugin_dir)
+                    
+                    new_plugins += 1
+                    
+                except Exception as e:
+                    current_app.logger.error(f"Error loading plugin {plugin_dir}: {str(e)}")
+                    continue
+                
+            db.session.commit()
+            
+            if new_plugins > 0:
+                return True, f'发现并安装了 {new_plugins} 个新插件'
+            return True, '没有发现新插件'
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, f'重载插件列表失败: {str(e)}'

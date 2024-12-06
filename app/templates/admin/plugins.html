@@ -8,7 +8,7 @@
         <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mb-6">
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white self-start sm:self-center">插件管理</h2>
             
-            <div class="flex items-center w-full sm:w-auto">
+            <div class="flex items-center w-full sm:w-auto space-x-4">
                 <form action="{{ url_for('admin.plugins') }}" method="get" class="flex items-center w-full sm:w-auto">
                     <div class="relative flex-1 sm:flex-none">
                         <input type="text" 
@@ -23,6 +23,16 @@
                         </button>
                     </div>
                 </form>
+                
+                <button onclick="reloadPluginList()" 
+                        class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
+                    </svg>
+                    重载列表
+                </button>
             </div>
         </div>
         
@@ -174,4 +184,31 @@
         </div>
     </div>
 </div>
+<script>
+function reloadPluginList() {
+    showAlert('确定要重新加载插件列表吗？', 'warning', '确认重载', function() {
+        // 显示加载提示
+        showAlert('正在重新加载插件列表...', 'info', '加载中', null, false);
+        
+        fetch('{{ url_for("admin.reload_plugin_list") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showAlert(data.message, 'success', '成功');
+                setTimeout(() => location.reload(), 200);
+            } else {
+                showAlert(data.message, 'error', '错误');
+            }
+        })
+        .catch(error => {
+            showAlert('重载插件列表失败', 'error', '错误');
+        });
+    });
+}
+</script>
 {% endblock %}

@@ -981,3 +981,14 @@ def article_url_config():
                          pattern=pattern,
                          pattern_type=pattern_type,
                          site_config=SiteConfig)
+
+@bp.route('/plugins/reload-list', methods=['POST'])
+@login_required
+@admin_required
+def reload_plugin_list():
+    """重新加载插件列表"""
+    success, message = AdminService.reload_plugin_list()
+    return jsonify({
+        'status': 'success' if success else 'error',
+        'message': message
+    })
