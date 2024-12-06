@@ -41,7 +41,7 @@ def index():
                          latest_comments=BlogService.get_latest_comments(),
                          **get_categories_data())
 
-@bp.route('/category/<int:id>')
+@bp.route('/category/<id>')
 @handle_view_errors
 def category(id):
     """分类文章列表"""

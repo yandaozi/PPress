@@ -73,8 +73,14 @@ class BlogService:
     def get_category_articles(category_id, page=1, user=None):
         """获取分类文章列表"""
         def query_articles():
-            # 取当前分类
-            category = Category.query.get_or_404(category_id)
+            # 尝试通过 id 或 slug 获取分类
+            try:
+                # 尝试将 id 转换为整数
+                id_num = int(category_id)
+                category = Category.query.get_or_404(id_num)
+            except ValueError:
+                # 如果转换失败，则通过 slug 查找
+                category = Category.query.filter_by(slug=category_id).first_or_404()
             
             # 构建查询
             query = Article.query.options(
@@ -99,12 +105,12 @@ class BlogService:
                     )
                 )
             else:
-                # ��登录用户只能看到公开文章
+                # 未登录用户只能看到公开文章
                 query = query.filter(Article.status == Article.STATUS_PUBLIC)
             
             # 使用 union 合并主分类和多分类的文章
-            main_category_articles = query.filter(Article.category_id == category_id)
-            multi_category_articles = query.join(article_categories).filter(article_categories.c.category_id == category_id)
+            main_category_articles = query.filter(Article.category_id == category.id)
+            multi_category_articles = query.join(article_categories).filter(article_categories.c.category_id == category.id)
             
             # 合并查询结果
             combined_query = main_category_articles.union(multi_category_articles)
@@ -541,7 +547,7 @@ class BlogService:
             new_status = data.get('status', Article.STATUS_PUBLIC)
             article.status = new_status
 
-            # 更新基本信息
+            # 更新��本信息
             article.title = data['title'].strip()
             article.content = data['content']
             
@@ -696,7 +702,7 @@ class BlogService:
             
             # 清除相关缓存
             BlogService.clear_article_related_cache(article_id)
-            # 清除用户���章列表缓存
+            # 清除用户章列表缓存
             cache_manager.delete(f'user:{user_id}:articles:*')
             
             return True, '文章已删除'
@@ -736,7 +742,7 @@ class BlogService:
                         cache_patterns.append(f'category:{parent.id}:*')
                         parent = parent.parent
             
-            # 批量清��缓存
+            # 批量清除缓存
             for pattern in cache_patterns:
                 current_app.logger.info(f"Clearing cache pattern: {pattern}")  # 添加日志
                 cache_manager.delete(pattern)

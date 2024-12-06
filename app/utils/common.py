@@ -33,10 +33,7 @@ def get_categories_data():
                     if not hasattr(parent, '_children'):
                         parent._children = []
                     parent._children.append(category)
-        
-        # 调试输出时只输出基本信息
-        debug_tree = [(c.name, [child.name for child in getattr(c, '_children', [])]) for c in tree]
-        current_app.logger.debug(f"Debug - Tree structure: {debug_tree}")
+
         
         return {
             'categories': tree,
