@@ -57,7 +57,7 @@ class AdminService:
                 'template_folder': os.path.basename(current_app.template_folder),
                 'debug_mode': current_app.debug,
                 'environment': 'Development' if current_app.debug else 'Production',
-                'app_version': current_app.config.get('VERSION', '0.0.2'),
+                'app_version': current_app.config.get('VERSION', '0.0.9'),
                 'operating_system': f"{platform.system()} {platform.release()}"
             }
             

@@ -1,9 +1,0 @@
-{
-    "name": "Article Stats",
-    "description": "为文章提供阅读时长估算、字数统计等功能",
-    "version": "1.0.0",
-    "author": "言道子",
-    "author_url": "https://gitee.com/fojie",
-    "plugin_class": "Plugin",
-    "enabled": true
-} 

@@ -1,5 +1,8 @@
 import base64
 import os
+
+from slugify import slugify
+
 from app import create_app, db
 from app.models import User, Article, Tag, Category, SiteConfig
 from datetime import datetime
@@ -98,6 +101,7 @@ def init_db(db_type='mysql'):
         # 创建管理员用户
         admin = User(
             username='admin',
+            nickname=f'昵称_admin',
             email='ponyj@qq.com',
             role='admin'
         )
@@ -113,6 +117,13 @@ def init_db(db_type='mysql'):
             name='示例分类',
             description='PPress 示例分类'
         )
+        category = Category(
+            name='示例分类',
+            slug=slugify('示例分类'),  # 添加 slug
+            description='PPress 示例分类',
+            sort_order=1  # 添加排序
+        )
+
         db.session.add(category)
         
         # 提交以获取ID

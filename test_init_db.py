@@ -16,10 +16,10 @@ COPYRIGHT_INFO = base64.b64decode(
 
 def check_db_lock():
     """检查数据库锁"""
-    # if os.path.exists(LOCK_FILE):
-    #     print("\n检测到数据库锁文件！这是为了防止意外重置数据库的安全机制！")
-    #     print(f"如果确定要重新初始化数据库，请先删除以下文件：{os.path.abspath(LOCK_FILE)}")
-    #     return True
+    if os.path.exists(LOCK_FILE):
+        print("\n检测到数据库锁文件！这是为了防止意外重置数据库的安全机制！")
+        print(f"如果确定要重新初始化数据库，请先删除以下文件：{os.path.abspath(LOCK_FILE)}")
+        return True
     return False
 
 def update_db_config(db_type):
@@ -105,6 +105,7 @@ def init_db(db_type='mysql'):
         # 创建管理员用户
         admin = User(
             username='admin',
+            nickname='昵称_admin',
             email='575732022@qq.com',
             role='admin'
         )
@@ -116,6 +117,7 @@ def init_db(db_type='mysql'):
         for i in range(25):
             user = User(
                 username=f'user{i}',
+                nickname=f'昵称_user{i}',
                 email=f'user{i}@example.com',
                 password_hash=generate_password_hash(f'user{i}123'),
                 role='user'
@@ -180,26 +182,7 @@ def init_db(db_type='mysql'):
 
         # 初始化插件表
         default_plugins = [
-            {
-                'name': 'Article Stats',
-                'directory': 'article_stats',
-                'description': '为文章提供阅读时长估算、字数统计等功能',
-                'version': '1.0.0',
-                'author': '言道子',
-                'author_url': 'https://gitee.com/fojie',
-                'enabled': True,
-                'config': {
-                    'enabled': True,
-                    'show_word_count': True,
-                    'show_read_time': True,
-                    'show_code_blocks': True,
-                    'show_images': True,
-                    'words_per_minute': {
-                        'chinese': 300,
-                        'english': 200
-                    }
-                }
-            }
+
         ]
 
         for plugin_info in default_plugins:
