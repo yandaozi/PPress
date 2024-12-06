@@ -7,6 +7,8 @@ class ArticleUrlGenerator:
     """文章URL生成器"""
     _pattern_cache = None
     _category_map = None
+    _regex_cache = {}  # 正则缓存
+    _category_validation_cache = {}  # 分类验证缓存
     
     @classmethod
     def _get_pattern(cls):
@@ -26,12 +28,25 @@ class ArticleUrlGenerator:
         return cls._category_map.get(category_id)
 
     @classmethod
+    def _validate_category(cls, category_value):
+        """验证分类访问方式(缓存)"""
+        if category_value in cls._category_validation_cache:
+            return cls._category_validation_cache[category_value]
+            
+        try:
+            category_id = int(category_value)
+            category = Category.query.get(category_id)
+            result = not (category and category.use_slug)
+        except ValueError:
+            category = Category.query.filter_by(slug=category_value).first()
+            result = bool(category and category.use_slug)
+            
+        cls._category_validation_cache[category_value] = result
+        return result
+
+    @classmethod
     def generate(cls, id, category_id=None, created_at=None):
-        """生成文章URL
-        :param id: 文章ID
-        :param category_id: 分类ID(可选)
-        :param created_at: 创建时间(可选)
-        """
+        """生成文章URL"""
         try:
             pattern = cls._get_pattern()
             variables = {'id': id}
@@ -72,45 +87,33 @@ class ArticleUrlGenerator:
             path = path.lstrip('/')
             pattern = cls._get_pattern().lstrip('/')
             
-            # 构建正则模式
-            regex_pattern = pattern
-            # 替换所有变量为对应的正则
-            replacements = {
-                '{id}': r'(?P<id>\d+)',
-                '{encodeid}': r'(?P<encodeid>[A-Za-z0-9_-]+)',
-                '{year}': r'\d{4}',
-                '{month}': r'\d{2}',
-                '{day}': r'\d{2}',
-                '{category}': r'(?P<category>[^/]+)'
-            }
+            # 使用缓存的正则表达式
+            if pattern not in cls._regex_cache:
+                regex_pattern = pattern
+                replacements = {
+                    '{id}': r'(?P<id>\d+)',
+                    '{encodeid}': r'(?P<encodeid>[A-Za-z0-9_-]+)',
+                    '{year}': r'\d{4}',
+                    '{month}': r'\d{2}',
+                    '{day}': r'\d{2}',
+                    '{category}': r'(?P<category>[^/]+)'
+                }
+                
+                for var, regex in replacements.items():
+                    regex_pattern = regex_pattern.replace(var, regex)
+                
+                import re
+                cls._regex_cache[pattern] = re.compile(f'^{regex_pattern}$')
             
-            for var, regex in replacements.items():
-                regex_pattern = regex_pattern.replace(var, regex)
-            
-            # 编译正则表达式
-            import re
-            regex = re.compile(f'^{regex_pattern}$')
-            
-            # 匹配路径
-            match = regex.match(path)
+            match = cls._regex_cache[pattern].match(path)
             if not match:
                 return None
             
             # 如果有分类，验证访问方式
             if 'category' in match.groupdict():
                 category_value = match.group('category')
-                # 尝试作为ID解析
-                try:
-                    category_id = int(category_value)
-                    # 如果是数字，检查该分类是否禁用了ID访问
-                    category = Category.query.get(category_id)
-                    if category and category.use_slug:
-                        return None  # 该分类设置了使用slug访问，不允许用ID访问
-                except ValueError:
-                    # 如果不是数字，说明是slug，检查该分类是否启用了slug访问
-                    category = Category.query.filter_by(slug=category_value).first()
-                    if category and not category.use_slug:
-                        return None  # 该分类没有设置使用slug访问，不允许用slug访问
+                if not cls._validate_category(category_value):
+                    return None
             
             # 获取ID
             if 'encodeid' in match.groupdict():
@@ -126,6 +129,8 @@ class ArticleUrlGenerator:
 
     @classmethod
     def clear_cache(cls):
-        """清除缓存"""
+        """清除所有缓存"""
         cls._pattern_cache = None
         cls._category_map = None
+        cls._regex_cache.clear()
+        cls._category_validation_cache.clear()
