@@ -16,6 +16,7 @@ class Category(db.Model):
     article_count = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    use_slug = db.Column(db.Boolean, default=False)
     
     parent = db.relationship('Category', remote_side=[id], backref=db.backref('children', lazy='dynamic'))
     

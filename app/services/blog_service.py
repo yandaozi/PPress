@@ -78,9 +78,15 @@ class BlogService:
                 # 尝试将 id 转换为整数
                 id_num = int(category_id)
                 category = Category.query.get_or_404(id_num)
+                # 如果设置为使用 slug 访问但使用 ID 访问，返回 404
+                if category.use_slug:
+                    abort(404)
             except ValueError:
                 # 如果转换失败，则通过 slug 查找
                 category = Category.query.filter_by(slug=category_id).first_or_404()
+                # 如果设置为使用 ID 访问但使用 slug 访问，返回 404
+                if not category.use_slug:
+                    abort(404)
             
             # 构建查询
             query = Article.query.options(
@@ -485,7 +491,7 @@ class BlogService:
             
             # 检查权限
             if not is_admin and comment.user_id != user_id:
-                return False, '没有权删除此评论'
+                return False, '没有权��除此评论'
             
             # 删除评论及其所有回复
             Comment.query.filter(
@@ -547,7 +553,7 @@ class BlogService:
             new_status = data.get('status', Article.STATUS_PUBLIC)
             article.status = new_status
 
-            # 更新��本信息
+            # 更新本信息
             article.title = data['title'].strip()
             article.content = data['content']
             

@@ -47,6 +47,7 @@
                         <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">别名</th>
                         <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">描述</th>
                         <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">文章数</th>
+                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">访问方式</th>
                         <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                     </tr>
                 </thead>
@@ -75,11 +76,29 @@
                                 <div>别名: {{ category.slug }}</div>
                                 <div>描述: {{ category.description or '无' }}</div>
                                 <div>文章数: {{ category.article_count }}</div>
+                                <div>访问方式: 
+                                    {% if category.use_slug %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">使用别名</span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">使用 ID</span>
+                                    {% endif %}
+                                </div>
                             </div>
                         </td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-500">{{ category.slug }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-500">{{ category.description or '无' }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ category.article_count }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm">
+                            {% if category.use_slug %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                使用别名
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                使用 ID
+                            </span>
+                            {% endif %}
+                        </td>
                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
                             <div class="flex items-center space-x-3">
                                 <button onclick="showAddChildModal({{ category.id }})" 
@@ -140,6 +159,17 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">排序</label>
                 <input type="number" name="sort_order" value="0"
                        class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">访问方式</label>
+                <div class="flex items-center">
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" name="use_slug" class="form-checkbox"
+                               {% if category and category.use_slug %}checked{% endif %}>
+                        <span class="ml-2">使用别名(slug)访问</span>
+                    </label>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">启用后只能通过别名访问，禁用后只能通过 ID 访问</p>
             </div>
         </form>
         <div class="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
@@ -285,6 +315,7 @@ function showEditCategoryModal(categoryId) {
             form.description.value = category.description || '';
             form.sort_order.value = category.sort_order;
             form.parentId.value = category.parent_id || '';
+            form.querySelector('[name="use_slug"]').checked = category.use_slug;
             
             document.getElementById('modalTitle').textContent = '编辑分类';
             document.getElementById('categoryModal').classList.remove('hidden');
@@ -306,7 +337,7 @@ function showMoveCategoryModal(categoryId) {
             
             function addOptions(categories, level = 0) {
                 categories.forEach(category => {
-                    // 不能移动到自己或自己的子分类下
+                    // 不能移动到自己的子分类下
                     if (category.id != categoryId) {
                         const option = document.createElement('option');
                         option.value = category.id;

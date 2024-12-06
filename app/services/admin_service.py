@@ -445,7 +445,8 @@ class AdminService:
                 slug=slug,
                 description=data.get('description'),
                 parent_id=data.get('parent_id', type=int),
-                sort_order=data.get('sort_order', type=int, default=0)
+                sort_order=data.get('sort_order', type=int, default=0),
+                use_slug=data.get('use_slug') == 'on'
             )
             
             db.session.add(category)
@@ -492,6 +493,7 @@ class AdminService:
             # 更新其他字段
             category.name = data['name']
             category.description = data.get('description')
+            category.use_slug = data.get('use_slug') == 'on'
             # 只在明确提供 parent_id 时更新
             if 'parent_id' in data:
                 category.parent_id = data.get('parent_id', type=int)
@@ -531,7 +533,7 @@ class AdminService:
             if not default_category:
                 return False, '默认分类不存在'
 
-            # 1. 获取所有需要更新的分类ID
+            # 1. 获取所���需要更新的分类ID
             affected_categories = set()
             affected_categories.add(default_category.id)  # 默认分类会接收文章
             if category.parent_id:
@@ -750,7 +752,7 @@ class AdminService:
             role = data.get('role')
             nickname = data.get('nickname', '').strip() or None
             
-            # 检查用户名和��箱是否已存在
+            # 检查用户名和箱是否已存在
             if username != user.username and User.query.filter_by(username=username).first():
                 return False, '用户名已存在', None
             if email != user.email and User.query.filter_by(email=email).first():
@@ -955,7 +957,7 @@ class AdminService:
                 import shutil
                 shutil.rmtree(plugin_path)
 
-            # 从据库中删除插件记录
+            # 从据库中删除插件记���
             db.session.delete(plugin_record)
             db.session.commit()
 
@@ -1027,7 +1029,7 @@ class AdminService:
             if not file.filename.endswith('.zip'):
                 return False, '只支持 zip 式的插件包'
 
-            # 创建时目录
+            # 创建目录
             temp_dir = tempfile.mkdtemp()
             zip_path = os.path.join(temp_dir, file.filename)
 
@@ -1060,7 +1062,7 @@ class AdminService:
                 plugin_dir = os.path.join(current_app.root_path, 'plugins', 'installed', directory)
 
                 if os.path.exists(plugin_dir):
-                    return False, '插件目录已存在'
+                    return False, '插件目已存在'
 
                 # 复制文件到插件目录
                 shutil.copytree(temp_dir, plugin_dir)
@@ -1139,7 +1141,7 @@ class AdminService:
             if os.path.exists(file_path):
                 os.remove(file_path)
 
-                # 如果文件所在目录为空，除目录
+                # 如果文件所目录为空，除目录
                 directory = os.path.dirname(file_path)
                 if not os.listdir(directory):
                     os.rmdir(directory)
@@ -1216,7 +1218,7 @@ class AdminService:
             # 检查是否有设置模板
             settings_html = plugin.get_settings_template()
             if not settings_html:
-                return False, '插件没有设页面'
+                return False, '插���没有设页面'
 
             return True, '插件有设置页面'
 
@@ -1405,7 +1407,7 @@ class AdminService:
 
     @staticmethod
     def add_route(data):
-        """添加路由映��"""
+        """添加路由映"""
         return route_manager.add_route(data)
 
     @staticmethod
@@ -1597,7 +1599,8 @@ class AdminService:
                 'slug': category.slug,
                 'description': category.description,
                 'parent_id': category.parent_id,
-                'sort_order': category.sort_order
+                'sort_order': category.sort_order,
+                'use_slug': category.use_slug
             }
         except Exception as e:
             current_app.logger.error(f"Get category error: {str(e)}")
@@ -1605,7 +1608,7 @@ class AdminService:
 
     @staticmethod
     def get_all_categories():
-        """获取所有分类(用于移动��类选择)"""
+        """获取所有分类(用于移动类选择)"""
         try:
             # 获所有分类并按层级排序
             categories = Category.query.order_by(Category.sort_order).all()
