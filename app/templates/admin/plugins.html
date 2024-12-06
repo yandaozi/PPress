@@ -23,16 +23,6 @@
                         </button>
                     </div>
                 </form>
-                
-                <button onclick="reloadPluginList()" 
-                        class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                        </path>
-                    </svg>
-                    重载列表
-                </button>
             </div>
         </div>
         
@@ -41,20 +31,32 @@
                 共 {{ pagination.total }} 个插件
             </div>
             
-            <form action="{{ url_for('admin.upload_plugin') }}" 
-                  method="post" 
-                  enctype="multipart/form-data" 
-                  class="flex items-center" 
-                  onsubmit="event.preventDefault(); handleFormSubmit(this); return false;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="file" name="plugin" accept=".zip" class="hidden" id="plugin-file">
-                <label for="plugin-file" class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors duration-200">
+            <div class="flex items-center space-x-4">
+                <button onclick="reloadPluginList()"
+                        class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
                     </svg>
-                    上传插件
-                </label>
-            </form>
+                    重载列表
+                </button>
+
+                <form action="{{ url_for('admin.upload_plugin') }}" 
+                      method="post" 
+                      enctype="multipart/form-data" 
+                      class="flex items-center" 
+                      onsubmit="event.preventDefault(); handleFormSubmit(this); return false;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="file" name="plugin" accept=".zip" class="hidden" id="plugin-file">
+                    <label for="plugin-file" class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors duration-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        上传插件
+                    </label>
+                </form>
+            </div>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
