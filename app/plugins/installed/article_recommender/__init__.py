@@ -1,5 +1,5 @@
 from flask import jsonify, render_template_string, current_app, url_for, send_from_directory
-from app import db
+from app import db, ArticleUrlGenerator
 from app.plugins import PluginBase
 from app.models import Article, Tag
 from sqlalchemy import func
@@ -68,7 +68,7 @@ class Plugin(PluginBase):
             'summary': article.content[:100] if article.content else '',
             'category': article.category.name,
             'tags': [tag.name for tag in article.tags],
-            'url': url_for('blog.article', id=article.id)
+            'url': ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at) 
         } for article in related_articles]
 
     def init_app(self, app):

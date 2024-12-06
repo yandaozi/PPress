@@ -124,7 +124,7 @@
                             </td>
                             <td class="hidden sm:table-cell px-6 py-4">
                                 <div class="flex flex-col">
-                                    <a href="{{ url_for('blog.article', id=comment.article.id) }}"
+                                    <a href="{{ ArticleUrlGenerator.generate(comment.article.id, comment.article.category_id, comment.article.created_at) }}"
                                        class="text-sm text-gray-900 hover:text-blue-600 line-clamp-1">
                                         {{ comment.article.title }}
                                     </a>
@@ -177,7 +177,7 @@
                                             class="text-red-600 hover:text-red-900">
                                         删除
                                     </button>
-                                    <a href="{{ url_for('blog.article', id=comment.article.id) }}#comment-{{ comment.id }}"
+                                    <a href="{{ ArticleUrlGenerator.generate(comment.article.id, comment.article.category_id, comment.article.created_at) }}#comment-{{ comment.id }}"
                                        target="_blank"
                                        class="text-blue-600 hover:text-blue-900">
                                         查看

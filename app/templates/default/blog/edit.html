@@ -170,7 +170,7 @@
 
             <!-- 操作按钮 -->
             <div class="flex justify-end space-x-4">
-                <a href="{{ url_for('blog.article', id=article.id) if article else url_for('blog.index') }}"
+                <a href="{{ ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at) if article else url_for('blog.index') }}"
                    class="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300">
                     取消
                 </a>

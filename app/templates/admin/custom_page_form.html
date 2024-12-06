@@ -29,7 +29,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">页面内容</label>
                         <textarea id="editor" name="content">{{ page.content|safe if page and page.content else '' }}</textarea>
-                        {{ render_tinymce(selector='#editor', height=500) }}
+                        {{ render_tinymce(selector='#editor', height=350) }}
                     </div>
 
                     <!-- 自定义字段 -->

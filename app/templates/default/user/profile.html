@@ -77,7 +77,7 @@
                         <div class="border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0 last:pb-0">
                             <div class="flex justify-between items-start">
                                 <div class="flex-1 min-w-0 mr-4">
-                                    <a href="{{ url_for('blog.article', id=history.article.id) }}" 
+                                    <a href="{{ ArticleUrlGenerator.generate(history.article.id, history.article.category_id, history.article.created_at) }}" 
                                        class="text-lg font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 block truncate">
                                         {{ history.article.title }}
                                     </a>

@@ -9,7 +9,6 @@ class Plugin(PluginBase):
     # 默认设置
     default_settings = {
         'language': 'zh_CN',
-        'height': 450,
         'plugins': [
             'advlist', 'anchor', 'autolink', 'autoresize', 'autosave',
             'charmap', 'code', 'codesample', 'directionality', 'emoticons',
@@ -61,7 +60,7 @@ class Plugin(PluginBase):
         
         app.jinja_env.globals['render_tinymce'] = render_editor
     
-    def _render_editor(self, selector='#content', **kwargs):
+    def _render_editor(self, selector='#content', height=450, **kwargs):
         """渲染编辑器的具体实现"""
         try:
             # 合并配置
@@ -70,6 +69,7 @@ class Plugin(PluginBase):
             config.update(settings)
             config.update(kwargs)
             config['selector'] = selector
+            config['height'] = height
             
             # 获取静态文件URL
             static_url = url_for('tinymce_editor_static', filename='').rstrip('/')
@@ -118,7 +118,6 @@ class Plugin(PluginBase):
         try:
             settings = {
                 'language': 'zh_CN',
-                'height': int(form_data.get('height', 350)),
                 'branding': False,
                 'plugins': form_data.getlist('plugins[]'),
                 'image_dimensions': False,

@@ -99,7 +99,7 @@
                     {% for article in articles.items %}
                     <div class="border-b border-gray-100 dark:border-gray-700 pb-6 last:border-0 last:pb-0">
                         <h3 class="text-xl font-bold mb-2">
-                            <a href="{{ url_for('blog.article', id=article.id) }}" 
+                            <a href="{{ ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at) }}" 
                                class="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
                                 {{ article.title }}
                             </a>

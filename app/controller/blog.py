@@ -90,6 +90,10 @@ def article(path):
             
         # 获取评论数据
         comment_data = BlogService.get_article_comments(article.id, current_user, page)
+
+        # 记录浏览历史（如果用户已登录）
+        if current_user.is_authenticated:
+            BlogService.record_view(current_user.id, article.id)
         
         return render_template('blog/article.html',
                              article=result,
@@ -161,7 +165,7 @@ def add_comment(article_id):
     )
     
     flash(message)
-    return redirect(url_for('blog.article', id=article_id))
+    return redirect(ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at))
 
 @bp.route('/comment/<int:comment_id>', methods=['DELETE'])
 @login_required
@@ -204,7 +208,7 @@ def edit(id=None):
         )
         flash(message)
         if success:
-            return redirect(url_for('blog.article', id=article.id))
+            return redirect(ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at))
         return redirect(url_for('blog.edit', id=id))
     
     # 获取文章用于编辑

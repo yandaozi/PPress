@@ -61,7 +61,7 @@
                         </div>
                         <div class="sm:hidden mt-1 text-xs text-gray-500 space-y-1">
                             <div class="line-clamp-1">
-                                <a href="{{ url_for('blog.article', id=history.article.id) }}" 
+                                <a href="{{ ArticleUrlGenerator.generate(history.article.id, history.article.category_id, history.article.created_at) }}" 
                                    class="text-blue-600 hover:text-blue-900">
                                     {{ history.article.title }}
                                 </a>
@@ -70,7 +70,7 @@
                         </div>
                     </td>
                     <td class="hidden sm:table-cell px-6 py-4">
-                        <a href="{{ url_for('blog.article', id=history.article.id) }}" 
+                        <a href="{{ ArticleUrlGenerator.generate(history.article.id, history.article.category_id, history.article.created_at) }}" 
                            class="text-sm text-blue-600 hover:text-blue-900" target="_blank">
                             {{ history.article.title }}
                         </a>
