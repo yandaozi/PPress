@@ -204,10 +204,36 @@ class ThemeManager:
             if not os.path.exists(os.path.join(theme_dir, 'preview.png')):
                 return False, '缺少必需文件: preview.png'
             
-            # 复制主题模板目录
+            # 检查主题是否已存在
             target_theme_dir = os.path.join(current_app.root_path, 'templates', theme_id)
             if os.path.exists(target_theme_dir):
-                shutil.rmtree(target_theme_dir)
+                # 读取已安装主题的版本
+                installed_version = None
+                installed_json = os.path.join(target_theme_dir, 'theme.json')
+                if os.path.exists(installed_json):
+                    try:
+                        with open(installed_json, 'r', encoding='utf-8') as f:
+                            installed_info = json.load(f)
+                            installed_version = installed_info.get('version')
+                    except:
+                        pass
+                    
+                # 读取要安装的主题版本
+                new_version = None
+                with open(os.path.join(theme_dir, 'theme.json'), 'r', encoding='utf-8') as f:
+                    new_info = json.load(f)
+                    new_version = new_info.get('version')
+                    
+                # 如果版本相同，提示已存在
+                if installed_version == new_version:
+                    return False, f'主题 {theme_id} (v{installed_version}) 已存在，无需重复安装'
+                # 如果版本不同，提示更新
+                elif installed_version:
+                    return False, f'主题 {theme_id} 已存在(v{installed_version})，如需更新请先卸载'
+                else:
+                    return False, f'主题 {theme_id} 已存在，如需更新请先卸载'
+            
+            # 复制主题模板目录
             shutil.copytree(theme_dir, target_theme_dir)
             
             # 如果存在静态资源，也复制过去
