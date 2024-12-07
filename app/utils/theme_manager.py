@@ -102,7 +102,18 @@ class ThemeManager:
                     with open(config_file, 'r', encoding='utf-8') as f:
                         config = json.load(f)
                         theme_info.update(config)
-                        theme_info['has_settings'] = bool(config.get('settings'))
+                        # 如果主题配置中有 settings 字段，则认为有设置
+                        theme_info['has_settings'] = isinstance(config.get('settings'), dict)
+                        
+                        # 检查数据库中是否存在设置
+                        db_settings = ThemeSettings.get_settings(theme_id)
+                        if not db_settings and theme_info['has_settings']:
+                            # 如果数据库中没有设置但theme.json中有默认设置，则初始化
+                            ThemeSettings.save_settings(theme_id, config['settings'])
+                            db_settings = config['settings']
+                        
+                        if db_settings:
+                            theme_info['settings'] = db_settings
                 except Exception as e:
                     current_app.logger.error(f'Failed to load theme config: {str(e)}')
             
@@ -110,10 +121,6 @@ class ThemeManager:
             settings_file = os.path.join(theme_dir, 'theme_settings', 'settings.html')
             if os.path.exists(settings_file):
                 theme_info['settings_enabled'] = True
-            
-            # 获取设置值
-            if theme_info['has_settings'] and theme_info['settings_enabled']:
-                theme_info['settings'] = ThemeSettings.get_settings(theme_id)
             
             return theme_info
         except Exception as e:
@@ -283,7 +290,7 @@ class ThemeManager:
                                               os.path.relpath(file_path, theme_dir))
                         zf.write(file_path, arc_name)
                 
-                # 如果存在静态资源���录，也打包进去
+                # 如果存在静态资源目录，也打包进去
                 if os.path.exists(static_dir):
                     for root, dirs, files in os.walk(static_dir):
                         for file in files:

@@ -4,5 +4,11 @@
     "version": "1.0.1",
     "author": "言道子",
     "website": "https://gitee.com/fojie/PPress",
-    "settings": true
+    "settings": {
+        "qq": "575732563",
+        "wx": "weixin",
+        "email": "ponyj@qq.com",
+        "github_url": "https://github.com/kzmnlz/flask-iosblog",
+        "gitee_url": "https://gitee.com/fojie/PPress"
+    }
 } 
