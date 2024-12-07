@@ -1026,7 +1026,7 @@ class AdminService:
 
     @staticmethod
     def upload_plugin(file):
-        """上传件"""
+        """上传插件"""
         try:
             if not file:
                 return False, '没有上传文件'
@@ -1035,9 +1035,9 @@ class AdminService:
                 return False, '没有选择文件'
 
             if not file.filename.endswith('.zip'):
-                return False, '只支持 zip 式的插件包'
+                return False, '只支持 zip 格式的插件包'
 
-            # 创建目录
+            # 创建临时目录
             temp_dir = tempfile.mkdtemp()
             zip_path = os.path.join(temp_dir, file.filename)
 
@@ -1047,56 +1047,60 @@ class AdminService:
 
                 # 解压文件
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    # 获取zip中的第一级目录名作为插件目录名
+                    plugin_dir = None
+                    for name in zip_ref.namelist():
+                        if name.endswith('/'):  # 是目录
+                            if '/' not in name[:-1]:  # 只取第一级目录
+                                plugin_dir = name[:-1]
+                                break
+                    
+                    if not plugin_dir:
+                        return False, '无效的插件格式:缺少插件目录'
+
+                    # 检查插件格式是否正确
+                    if not f'{plugin_dir}/plugin.json' in zip_ref.namelist():
+                        return False, '无效的插件格式:缺少plugin.json'
+
+                    # 解压到临时目录
                     zip_ref.extractall(temp_dir)
 
-                # 检插件式是否正确
-                if not os.path.exists(os.path.join(temp_dir, 'plugin.json')):
-                    return False, '无效的件格式'
-
-                # 读取插件信
-                with open(os.path.join(temp_dir, 'plugin.json'), 'r', encoding='utf-8') as f:
+                # 读取插件信息
+                plugin_info_path = os.path.join(temp_dir, plugin_dir, 'plugin.json')
+                with open(plugin_info_path, 'r', encoding='utf-8') as f:
                     plugin_info = json.load(f)
 
-                plugin_name = plugin_info.get('name')
-                if not plugin_name:
-                    return False, '插件信息不完整'
-
                 # 检查插件是否已存在
-                if Plugin.query.filter_by(name=plugin_name).first():
-                    return False, '插件存在'
+                if Plugin.query.filter_by(name=plugin_info['name']).first():
+                    return False, '插件已存在'
 
-                # 生成目录名
-                directory = plugin_info.get('directory', plugin_name.lower().replace(' ', '_'))
-                plugin_dir = os.path.join(current_app.root_path, 'plugins', 'installed', directory)
+                # 复制插件目录到安装目录
+                plugin_install_dir = os.path.join(current_app.root_path, 'plugins', 'installed')
+                target_dir = os.path.join(plugin_install_dir, plugin_dir)
 
-                if os.path.exists(plugin_dir):
-                    return False, '插件目已存在'
+                if os.path.exists(target_dir):
+                    return False, '插件目录已存在'
 
-                # 复制文件到插件目录
-                shutil.copytree(temp_dir, plugin_dir)
+                # 复制整个插件目录
+                shutil.copytree(os.path.join(temp_dir, plugin_dir), target_dir)
 
-                # 删除插件目录下的zip文件
-                plugin_zip = os.path.join(plugin_dir, file.filename)
-                if os.path.exists(plugin_zip):
-                    os.remove(plugin_zip)
-
-                # 导入插件模块取默配
-                module = import_module(f'app.plugins.installed.{directory}')
+                # 导入插件模块获取默认配置
+                module = import_module(f'app.plugins.installed.{plugin_dir}')
                 plugin_class = getattr(module, plugin_info.get('plugin_class', 'Plugin'))
                 plugin = plugin_class()
                 default_config = plugin.default_settings if hasattr(plugin, 'default_settings') else {}
 
                 # 获取启用状态
-                enabled = plugin_info.get('enabled', True)  # 如果未指定，默认为启
+                enabled = plugin_info.get('enabled', True)
 
                 # 添加到数据库
-                Plugin.add_plugin(plugin_info, directory, enabled=enabled, config=default_config)
+                Plugin.add_plugin(plugin_info, plugin_dir, enabled=enabled, config=default_config)
 
-                # 如果插件默认启用，则立加载它
+                # 如果插件默认启用，则立即加载它
                 if enabled:
-                    plugin_manager.load_plugin(directory)
+                    plugin_manager.load_plugin(plugin_dir)
 
-                return True, f'插件 {plugin_name} 安装成功！(默认状态：{"启用" if enabled else "禁用"})'
+                return True, f'插件 {plugin_info["name"]} 安装成功！(默认状态：{"启用" if enabled else "禁用"})'
 
             finally:
                 # 清理临时目录
@@ -1168,18 +1172,40 @@ class AdminService:
     def export_plugin(plugin_name):
         """导出插件"""
         try:
-            # 从数据库取插件记录
+            # 从数据库获取插件记录
             plugin_record = Plugin.query.filter_by(name=plugin_name).first_or_404()
             plugin_dir = plugin_record.directory
 
-            # 获取插件实例
-            plugin = plugin_manager.get_plugin(plugin_dir)
-            if not plugin:
-                return False, '插件未加载', None, None
+            # 获取插件的实际目录路径
+            installed_dir = os.path.join(current_app.root_path, 'plugins', 'installed')
+            plugin_path = os.path.join(installed_dir, plugin_dir)
 
-            content, filename = plugin.export_plugin()
+            # 创建临时zip文件
+            temp_file = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
+            temp_file.close()
 
-            return True, None, content, filename
+            try:
+                # 创建zip文件,直接压缩整个插件目录
+                with zipfile.ZipFile(temp_file.name, 'w', zipfile.ZIP_DEFLATED) as zf:
+                    # 将整个插件目录添加到zip中
+                    zf.write(plugin_path, plugin_dir)
+                    # 递归添加目录下的所有文件
+                    for root, dirs, files in os.walk(plugin_path):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.join(plugin_dir, os.path.relpath(file_path, plugin_path))
+                            zf.write(file_path, arcname)
+
+                # 读取zip文件内容
+                with open(temp_file.name, 'rb') as f:
+                    content = f.read()
+
+                return True, None, content, f'{plugin_dir}.zip'
+
+            finally:
+                # 清理临时文件
+                if os.path.exists(temp_file.name):
+                    os.unlink(temp_file.name)
 
         except Exception as e:
             current_app.logger.error(f'Export plugin error: {str(e)}')
