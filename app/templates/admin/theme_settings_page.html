@@ -3,14 +3,23 @@
 {% block title %}主题设置 - {{ theme.name }}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto py-6">
+<div class="max-w-7xl mx-auto py-6">
     <div class="bg-white rounded-lg shadow-sm">
         <!-- 头部 -->
         <div class="px-6 py-4 border-b border-gray-200">
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl font-bold">{{ theme.name }} - 主题设置</h2>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
+                <div class="flex items-center">
+                    <a href="{{ url_for('admin.themes') }}" 
+                       class="mr-3 text-gray-600 hover:text-gray-900 sm:hidden">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </a>
+                    <h2 class="text-xl font-bold truncate">{{ theme.name }} - 主题设置</h2>
+                </div>
+                
                 <a href="{{ url_for('admin.themes') }}" 
-                   class="text-gray-600 hover:text-gray-900">
+                   class="hidden sm:inline-block text-gray-600 hover:text-gray-900">
                     返回主题列表
                 </a>
             </div>
