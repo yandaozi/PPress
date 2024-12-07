@@ -450,7 +450,8 @@ class AdminService:
                 description=data.get('description'),
                 parent_id=data.get('parent_id', type=int),
                 sort_order=data.get('sort_order', type=int, default=0),
-                use_slug=data.get('use_slug') == 'on'
+                use_slug=data.get('use_slug') == 'on',
+                template=data.get('template', '')
             )
             
             db.session.add(category)
@@ -498,6 +499,7 @@ class AdminService:
             category.name = data['name']
             category.description = data.get('description')
             category.use_slug = data.get('use_slug') == 'on'
+            category.template = data.get('template', '')  # 更新模板字段
             # 只在明确提供 parent_id 时更新
             if 'parent_id' in data:
                 category.parent_id = data.get('parent_id', type=int)
@@ -519,7 +521,8 @@ class AdminService:
                 'slug': category.slug,
                 'description': category.description,
                 'parent_id': category.parent_id,
-                'sort_order': category.sort_order
+                'sort_order': category.sort_order,
+                'template': category.template  # 返回模板信息
             }
             
         except Exception as e:
@@ -1634,7 +1637,8 @@ class AdminService:
                 'description': category.description,
                 'parent_id': category.parent_id,
                 'sort_order': category.sort_order,
-                'use_slug': category.use_slug
+                'use_slug': category.use_slug,
+                'template': category.template
             }
         except Exception as e:
             current_app.logger.error(f"Get category error: {str(e)}")
@@ -1843,3 +1847,30 @@ class AdminService:
         except Exception as e:
             db.session.rollback()
             return False, f'重载插件列表失败: {str(e)}'
+
+    @staticmethod
+    def get_available_category_templates():
+        """获取当前主题下可用的分类模板"""
+        try:
+            from app.models.site_config import SiteConfig
+            current_theme = SiteConfig.get_config('site_theme', 'default')
+            
+            # 获取主题目录下的 category 文件夹
+            category_dir = os.path.join(
+                current_app.root_path,
+                'templates',
+                current_theme,
+                'category'
+            )
+            
+            templates = []
+            if os.path.exists(category_dir):
+                for file in os.listdir(category_dir):
+                    if file.endswith('.html'):
+                        # 只返回文件名，不包含路径
+                        templates.append(file)
+                    
+            return templates
+        except Exception as e:
+            current_app.logger.error(f"Error getting category templates: {str(e)}")
+            return []

@@ -222,17 +222,14 @@ def categories():
             search_query=request.args.get('q', '').strip()
         )
         
-        if error:
-            flash(error)
-            return redirect(url_for('admin.categories'))
-            
-        if not pagination:
-            abort(500)
-            
+        # 获取可用的分类模板
+        available_templates = AdminService.get_available_category_templates()
+        
         return render_template('admin/categories.html',
                              pagination=pagination,
                              search_type=request.args.get('search_type', ''),
-                             search_query=request.args.get('q', ''))
+                             search_query=request.args.get('q', ''),
+                             available_templates=available_templates)
                              
     except Exception as e:
         current_app.logger.error(f"Categories error: {str(e)}")

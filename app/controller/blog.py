@@ -47,21 +47,29 @@ def index():
 @handle_view_errors
 def category(id):
     """分类文章列表"""
-    data = BlogService.get_category_articles(
-        id,
-        request.args.get('page', 1, type=int),
-        current_user
-    )
-    return render_template('blog/index.html',
-                           articles=data['pagination'],
-                           current_category=data['current_category'],
-                           endpoint='blog.category',
-                           hot_articles_today=BlogService.get_hot_articles_today(),
-                           hot_articles_week=BlogService.get_hot_articles_week(),
-                           random_articles=BlogService.get_random_articles(),
-                           random_tags=BlogService.get_random_tags(),
-                           latest_comments=BlogService.get_latest_comments(),
-                           **get_categories_data())
+    try:
+        data = BlogService.get_category_articles(
+            id,
+            request.args.get('page', 1, type=int),
+            current_user
+        )
+        
+        # 使用分类指定的模板或默认模板
+        template = data.get('template', 'blog/index.html')
+        
+        return render_template(template,
+                             articles=data['pagination'],
+                             current_category=data['current_category'],
+                             endpoint='blog.category',
+                             hot_articles_today=BlogService.get_hot_articles_today(),
+                             hot_articles_week=BlogService.get_hot_articles_week(),
+                             random_articles=BlogService.get_random_articles(),
+                             random_tags=BlogService.get_random_tags(),
+                             latest_comments=BlogService.get_latest_comments(),
+                             **get_categories_data())
+    except Exception as e:
+        current_app.logger.error(f"category error: {str(e)}")
+        abort(500)
 
 @bp.route('/<path:path>')
 def article(path):
@@ -199,7 +207,7 @@ def delete_comment(comment_id):
 @login_required
 @handle_view_errors
 def edit(id=None):
-    """编辑文���"""
+    """编辑文章"""
     if request.method == 'POST':
         # 验证必填字段
         required_fields = ['title', 'content']

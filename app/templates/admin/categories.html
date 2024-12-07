@@ -171,6 +171,19 @@
                 </div>
                 <p class="mt-1 text-xs text-gray-500">启用后只能通过别名访问，禁用后只能通过 ID 访问</p>
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">分类模板</label>
+                <select name="template" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-0">
+                    <option value="">使用默认模板</option>
+                    {% for template in available_templates %}
+                    <option value="{{ template }}" {% if category and category.template == template %}selected{% endif %}>
+                        {{ template }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <p class="mt-1 text-xs text-gray-500">可以为分类选择特定的模板，留空则使用默认模板</p>
+            </div>
         </form>
         <div class="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
             <button onclick="hideCategoryModal()"
@@ -316,6 +329,7 @@ function showEditCategoryModal(categoryId) {
             form.sort_order.value = category.sort_order;
             form.parentId.value = category.parent_id || '';
             form.querySelector('[name="use_slug"]').checked = category.use_slug;
+            form.querySelector('[name="template"]').value = category.template || '';
             
             document.getElementById('modalTitle').textContent = '编辑分类';
             document.getElementById('categoryModal').classList.remove('hidden');

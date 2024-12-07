@@ -17,6 +17,7 @@ class Category(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     use_slug = db.Column(db.Boolean, default=False)
+    template = db.Column(db.String(100))  # 存储模板名称
     
     parent = db.relationship('Category', remote_side=[id], backref=db.backref('children', lazy='dynamic'))
     

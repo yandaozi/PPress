@@ -1,0 +1,150 @@
+{% extends theme_path('base.html') %}
+
+{% block title %}DIY - {{ current_category.name }}{% endblock %}
+
+{% block meta %}
+    {% if current_category %}
+        <meta name="keywords" content="{{ current_category.name }},{{ site_config.get_config('site_keywords', 'PPress,技术,博客') }}">
+        <meta name="description" content="浏览{{ current_category.name }}分类下的所有文章 - {{ site_config.get_config('site_description', '分享技术知识和经验') }}">
+    {% else %}
+        {{ super() }}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-screen-xl mx-auto px-4">
+    <!-- 文章列表 -->
+    <div class="lg:col-span-8">
+        <div class="space-y-6">
+            {% for article in articles.items %}
+            <article class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden transition-colors duration-200">
+                <div class="p-4 sm:p-6">
+                    <h2 class="text-xl font-bold mb-2">
+                        <a href="{{ ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at) }}" 
+                           class="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+                            {{ article.title }}
+                        </a>
+                    </h2>
+                    <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        {% set author = get_author_info(article) %}
+                        <div class="flex items-center flex-shrink-0">
+                            <img src="{{ author.avatar }}" alt="avatar" class="w-8 h-8 rounded-full">
+                            {% if author.id %}
+                                <a href="{{ url_for('user.author', id=author.id) }}" 
+                                   class="ml-2 text-sm font-medium dark:text-white text-gray-900 hover:text-blue-600">
+                                    {{ author.nickname }}
+                                </a>
+                            {% else %}
+                                <span class="ml-2 text-sm text-gray-500">{{ author.nickname }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="hidden sm:flex items-center">
+                            <span class="mx-2">•</span>
+                            <span>{{ article.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            <span class="mx-2">•</span>
+                            <span>{{ article.view_count }} 阅读</span>
+                        </div>
+                    </div>
+                    <div class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+                        {{ article.content|striptags|truncate(200) }}
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-4">
+                        <a href="{{ ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at) }}" 
+                           class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
+                            阅读全文
+                        </a>
+                        {% if article.tags %}
+                        <div class="flex flex-wrap items-center gap-2">
+                            {% for tag in article.tags %}
+                            <a href="{{ url_for('blog.tag', id=tag.id) }}" 
+                               class="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+                                #{{ tag.name }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+            {% else %}
+            <div class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                <p class="text-gray-500 dark:text-gray-400">暂无文章</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- 分页 -->
+        {% if articles.pages > 1 %}
+        <div class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+            {% with endpoint=endpoint|default('blog.index'), kwargs={'id': current_category.id} if current_category else {} %}
+            {% include theme_path('components/pagination.html') %}
+            {% endwith %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 侧边栏 -->
+    <div class="lg:col-span-4 space-y-6">
+        <!-- 今日热门 -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">今日热门</h2>
+            <div class="space-y-3">
+                {% for article, views in hot_articles_today %}
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-blue-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+                        </svg>
+                        <a href="{{ ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at) }}"
+                           class="flex-1 text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 truncate">
+                            {{ article.title }}
+                        </a>
+                        <span class="text-xs text-gray-500">{{ views }} 阅读</span>
+                    </div>
+                {% else %}
+                    <p class="text-gray-500 dark:text-gray-400 text-center py-4">暂无数据</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 本周热门 -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">本周热门</h2>
+            <div class="space-y-3">
+                {% for article, views in hot_articles_week %}
+                    <div class="flex items-center group hover:bg-gray-50 dark:hover:bg-gray-700/50 -mx-2 px-2 py-1.5 rounded-lg transition-colors duration-200">
+                        <span class="w-5 h-5 text-blue-500/75 dark:text-blue-400/75 font-medium text-xs flex items-center justify-center">
+                            {{ loop.index }}
+                        </span>
+                        <a href="{{ ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at) }}"
+                           class="flex-1 text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate ml-2">
+                            {{ article.title }}
+                        </a>
+                        <span class="text-xs text-gray-400 dark:text-gray-500 ml-2">{{ views }} 阅读</span>
+                    </div>
+                {% else %}
+                    <p class="text-gray-500 dark:text-gray-400 text-center py-4">暂无数据</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 标签云 -->
+        <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">标签云</h2>
+            <div class="flex flex-wrap gap-2">
+                {% for tag in random_tags %}
+                <a href="{{ url_for('blog.tag', id=tag.id) }}" 
+                   class="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200">
+                    {{ tag.name }}
+                </a>
+                {% else %}
+                <p class="text-gray-500 dark:text-gray-400 text-center w-full">暂无标签</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %} 

@@ -1,4 +1,4 @@
-from app.models import Article, Category, Tag, Comment, ViewHistory, File, User, CommentConfig
+from app.models import Article, Category, Tag, Comment, ViewHistory, File, User, CommentConfig, SiteConfig
 from app.models.article import article_tags, article_categories
 from sqlalchemy import func
 from datetime import datetime, timedelta
@@ -126,9 +126,29 @@ class BlogService:
                 .order_by(Article.created_at.desc())\
                 .paginate(page=page, per_page=10, error_out=False)
             
+            # 获取分类的自定义模板
+            template = None
+            if category.template:
+                # 构建完整的模板路径
+                template = f'category/{category.template}'
+                # 检查模板是否存在
+                template_path = os.path.join(
+                    current_app.root_path,
+                    'templates',
+                    SiteConfig.get_config('site_theme', 'default'),
+                    template
+                )
+                if not os.path.exists(template_path):
+                    template = None
+            
+            # 如果没有自定义模板或模板不存在，使用默认模板
+            if not template:
+                template = 'blog/index.html'
+            
             return {
                 'pagination': paginated,
-                'current_category': category
+                'current_category': category,
+                'template': template  # 返回模板信息
             }
         
         return cache_manager.get(
@@ -491,7 +511,7 @@ class BlogService:
             
             # 检查权限
             if not is_admin and comment.user_id != user_id:
-                return False, '没有权��除此评论'
+                return False, '没有权限删除此评论'
             
             # 删除评论及其所有回复
             Comment.query.filter(
@@ -526,9 +546,9 @@ class BlogService:
             # 验分类
             category_ids = data.getlist('categories')  # 获取多个分类ID
             if not category_ids:
-                return False, '请至少择一个分类', None
+                return False, '请至少选择一个分类', None
             
-            # 验证分类ID的效性
+            # 验证分类ID的有效性
             try:
                 category_ids = [int(cid) for cid in category_ids]
                 categories = Category.query.filter(Category.id.in_(category_ids)).all()
@@ -650,7 +670,7 @@ class BlogService:
             file_hash = hashlib.md5(file_content).hexdigest()
             file.seek(0)  # 重置文件指针
             
-            # 检查是否存相同的文
+            # 检查是否存在相同的文件
             existing_file = File.query.filter_by(md5=file_hash).first()
             if existing_file:
                 return True, existing_file.file_path
@@ -664,7 +684,7 @@ class BlogService:
             upload_folder = os.path.join(current_app.static_folder, 'uploads', 'images', date_path)
             os.makedirs(upload_folder, exist_ok=True)
             
-            # 保存件
+            # 保存文件
             file_path = os.path.join(upload_folder, filename)
             file.save(file_path)
             
@@ -726,13 +746,13 @@ class BlogService:
                 db.joinedload(Article.categories)
             ).get(article_id)
             
-            # 础缓存式
+            # 基础缓存式
             cache_patterns = [
-                f'article:{article_id}*',     # 所有用户的文章详情存（注意*前不加:）
+                f'article:{article_id}*',     # 所有用户的文章详情缓存（注意*前不加:）
                 'index:articles:*',           # 首页文章列表缓存
                 'hot_articles:*',             # 热门文章缓存
                 'random_articles',            # 随机文章缓存
-                'search:*',                   # 搜索果缓存
+                'search:*',                   # 搜索结果缓存
                 'tag:*',                      # 标签相关缓存
                 'search_suggestions:*',       # 搜索建议缓存
                 'search_tags:*'               # 搜索标签缓存
