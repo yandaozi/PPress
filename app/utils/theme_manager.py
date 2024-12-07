@@ -339,6 +339,16 @@ class ThemeManager:
             if os.path.exists(static_dir):
                 shutil.rmtree(static_dir)
             
+            # 删除数据库中的主题设置
+            try:
+                theme_settings = ThemeSettings.query.filter_by(theme=theme_id).first()
+                if theme_settings:
+                    from app.extensions import db
+                    db.session.delete(theme_settings)
+                    db.session.commit()
+            except Exception as e:
+                current_app.logger.error(f"Error deleting theme settings from database: {str(e)}")
+            
             return True, '主题卸载成功'
             
         except Exception as e:
