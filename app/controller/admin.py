@@ -446,11 +446,24 @@ def clear_user_history(user_id):
 def themes():
     """主题管理"""
     try:
-        themes = ThemeManager.get_available_themes()
-        current_theme = SiteConfig.get_config('site_theme', 'default')
+        # 直接获取完整的主题信息
+        themes_dir = os.path.join(current_app.root_path, 'templates')
+        themes = []
         
-        # 获取完整的主题信息
-        themes = [ThemeManager.get_theme_info(theme['id']) for theme in themes]
+        # 定义需要排除的目录
+        exclude_dirs = {'admin', 'errors', 'components', 'email'}
+        
+        for theme_id in os.listdir(themes_dir):
+            # 排除特殊目录和非主题目录
+            if (theme_id not in exclude_dirs and 
+                os.path.isdir(os.path.join(themes_dir, theme_id)) and
+                os.path.exists(os.path.join(themes_dir, theme_id, 'theme.json'))):
+                
+                theme_info = ThemeManager.get_theme_info(theme_id)
+                if theme_info:
+                    themes.append(theme_info)
+        
+        current_theme = SiteConfig.get_config('site_theme', 'default')
         
         return render_template('admin/themes.html',
                              themes=themes,
@@ -1050,7 +1063,7 @@ def upload_theme():
         return jsonify({'status': 'error', 'message': '没有选择文件'})
         
     if not file.filename.endswith('.zip'):
-        return jsonify({'status': 'error', 'message': '只支持zip格式的主题包'})
+        return jsonify({'status': 'error', 'message': '只支持zip格式的主题���'})
         
     success, message = ThemeManager.install_theme(file)
     return jsonify({

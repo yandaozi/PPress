@@ -86,10 +86,6 @@ class ThemeManager:
         """获取主题信息"""
         try:
             theme_dir = os.path.join(current_app.root_path, 'templates', theme_id)
-            current_app.logger.debug(f"Checking theme directory: {theme_dir}")
-            
-            settings_file = os.path.join(theme_dir, 'theme_settings', 'settings.html')
-            current_app.logger.debug(f"Settings file exists: {os.path.exists(settings_file)}")
             
             # 读取主题配置
             config_file = os.path.join(theme_dir, 'theme.json')
@@ -97,7 +93,8 @@ class ThemeManager:
                 'id': theme_id,
                 'name': theme_id.title(),
                 'preview': url_for('admin.theme_preview_image', theme=theme_id),
-                'has_settings': False  # 默认设置为 False
+                'has_settings': False,
+                'settings_enabled': False
             }
             
             if os.path.exists(config_file):
@@ -105,7 +102,6 @@ class ThemeManager:
                     with open(config_file, 'r', encoding='utf-8') as f:
                         config = json.load(f)
                         theme_info.update(config)
-                        # 如果主题配置中有 settings 字段，则认为有设置
                         theme_info['has_settings'] = bool(config.get('settings'))
                 except Exception as e:
                     current_app.logger.error(f'Failed to load theme config: {str(e)}')
@@ -113,13 +109,12 @@ class ThemeManager:
             # 检查是否有设置文件
             settings_file = os.path.join(theme_dir, 'theme_settings', 'settings.html')
             if os.path.exists(settings_file):
-                theme_info['has_settings'] = True
+                theme_info['settings_enabled'] = True
             
             # 获取设置值
-            if theme_info['has_settings']:
+            if theme_info['has_settings'] and theme_info['settings_enabled']:
                 theme_info['settings'] = ThemeSettings.get_settings(theme_id)
             
-            current_app.logger.debug(f"Theme info: {theme_info}")
             return theme_info
         except Exception as e:
             current_app.logger.error(f"Error in get_theme_info: {str(e)}")
@@ -179,60 +174,95 @@ class ThemeManager:
     @staticmethod
     def install_theme(zip_file):
         """安装主题"""
+        temp_dir = None
         try:
             temp_dir = tempfile.mkdtemp()
-            try:
-                # 解压文件
-                with zipfile.ZipFile(zip_file, 'r') as z:
-                    z.extractall(temp_dir)
-                
-                # 验证主题结构
-                valid, error = ThemeManager.validate_theme_structure(temp_dir)
-                if not valid:
-                    return False, error
-                
-                # 读取主题信息
-                with open(os.path.join(temp_dir, 'theme.json'), 'r', encoding='utf-8') as f:
-                    theme_info = json.load(f)
-                
-                theme_id = theme_info.get('id', '').lower()
-                if not theme_id:
-                    return False, '主题ID不能为空'
-                
-                # 复制到主题目录
-                theme_dir = os.path.join(current_app.root_path, 'templates', theme_id)
-                if os.path.exists(theme_dir):
-                    shutil.rmtree(theme_dir)
-                shutil.copytree(temp_dir, theme_dir)
-                
-                return True, '主题安装成功'
-                
-            finally:
-                shutil.rmtree(temp_dir)
-                
+            
+            # 解压文件
+            with zipfile.ZipFile(zip_file, 'r') as z:
+                z.extractall(temp_dir)
+            
+            # 检查主题目录结构
+            templates_dir = os.path.join(temp_dir, 'templates')
+            static_dir = os.path.join(temp_dir, 'static')
+            
+            if not os.path.exists(templates_dir):
+                return False, '无效的主题包：缺少templates目录'
+            
+            # 获取主题ID（templates目录下的第一个目录）
+            theme_dirs = [d for d in os.listdir(templates_dir) 
+                         if os.path.isdir(os.path.join(templates_dir, d))]
+            if not theme_dirs:
+                return False, '无效的主题包：未找到主题目录'
+            
+            theme_id = theme_dirs[0]
+            theme_dir = os.path.join(templates_dir, theme_id)
+            
+            # 验证必需文件
+            if not os.path.exists(os.path.join(theme_dir, 'theme.json')):
+                return False, '缺少必需文件: theme.json'
+            if not os.path.exists(os.path.join(theme_dir, 'preview.png')):
+                return False, '缺少必需文件: preview.png'
+            
+            # 复制主题模板目录
+            target_theme_dir = os.path.join(current_app.root_path, 'templates', theme_id)
+            if os.path.exists(target_theme_dir):
+                shutil.rmtree(target_theme_dir)
+            shutil.copytree(theme_dir, target_theme_dir)
+            
+            # 如果存在静态资源，也复制过去
+            theme_static_dir = os.path.join(static_dir, theme_id)
+            if os.path.exists(theme_static_dir):
+                target_static_dir = os.path.join(current_app.root_path, 'static', theme_id)
+                if os.path.exists(target_static_dir):
+                    shutil.rmtree(target_static_dir)
+                shutil.copytree(theme_static_dir, target_static_dir)
+            
+            return True, '主题安装成功'
+            
         except Exception as e:
             return False, f'安装失败: {str(e)}'
+            
+        finally:
+            if temp_dir and os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
 
     @staticmethod
     def export_theme(theme_id):
         """导出主题"""
         temp_file = None
         try:
+            # 检查主题目录
             theme_dir = os.path.join(current_app.root_path, 'templates', theme_id)
             if not os.path.exists(theme_dir):
                 return False, '主题不存在', None, None
             
+            # 检查静态资源目录
+            static_dir = os.path.join(current_app.root_path, 'static', theme_id)
+            
             # 创建临时文件
             temp_file = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
-            temp_file.close()  # 立即关闭文件
+            temp_file.close()
             
             # 创建zip文件
             with zipfile.ZipFile(temp_file.name, 'w', zipfile.ZIP_DEFLATED) as zf:
+                # 打包主题模板目录
                 for root, dirs, files in os.walk(theme_dir):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        arc_name = os.path.relpath(file_path, theme_dir)
+                        # 计算相对路径，保持目录结构
+                        arc_name = os.path.join('templates', theme_id, 
+                                              os.path.relpath(file_path, theme_dir))
                         zf.write(file_path, arc_name)
+                
+                # 如果存在静态资源目录，也打包进去
+                if os.path.exists(static_dir):
+                    for root, dirs, files in os.walk(static_dir):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            arc_name = os.path.join('static', theme_id,
+                                                  os.path.relpath(file_path, static_dir))
+                            zf.write(file_path, arc_name)
             
             # 读取zip文件内容
             with open(temp_file.name, 'rb') as f:
@@ -245,7 +275,6 @@ class ThemeManager:
             return False, str(e), None, None
             
         finally:
-            # 确保临时文件被删除
             if temp_file and os.path.exists(temp_file.name):
                 try:
                     os.unlink(temp_file.name)
