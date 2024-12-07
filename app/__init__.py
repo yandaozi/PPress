@@ -268,4 +268,17 @@ def create_app(db_type=DB_TYPE, init_components=True):
     # 添加全局模板变量
     app.jinja_env.globals['ArticleUrlGenerator'] = ArticleUrlGenerator
 
+    # 添加主题设置上下文处理器
+    @app.context_processor
+    def inject_theme_settings():
+        from app.utils.theme_manager import ThemeManager
+        from app.models.site_config import SiteConfig
+        
+        def get_theme_settings():
+            current_theme = SiteConfig.get_config('site_theme', 'default')
+            theme_info = ThemeManager.get_theme_info(current_theme)
+            return theme_info
+            
+        return {'theme': get_theme_settings()}
+
     return app 

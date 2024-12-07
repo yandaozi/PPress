@@ -5,33 +5,126 @@
 {% block content %}
 <div class="max-w-7xl mx-auto py-6">
     <div class="bg-white rounded-lg shadow-sm p-6">
-        <h2 class="text-2xl font-bold mb-6">主题管理</h2>
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">主题管理</h2>
+            
+            <div class="flex items-center space-x-4">
+                <!-- 上传主题按钮 -->
+                <form action="{{ url_for('admin.upload_theme') }}" 
+                      method="post" 
+                      enctype="multipart/form-data" 
+                      class="flex items-center">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="file" name="theme" accept=".zip" class="hidden" id="theme-file" 
+                           onchange="handleThemeUpload(this.form)">
+                    <label for="theme-file" class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors duration-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        上传主题
+                    </label>
+                </form>
+            </div>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for theme in themes %}
             <div class="border rounded-lg overflow-hidden {% if theme.id == current_theme %}ring-2 ring-blue-500{% endif %}">
                 <img src="{{ theme.preview }}" alt="{{ theme.name }}" class="w-full h-48 object-cover">
                 <div class="p-4">
-                    <h3 class="text-lg font-bold mb-2">{{ theme.name }}</h3>
-                    <p class="text-gray-600 text-sm mb-4">{{ theme.description }}</p>
-                    {% if theme.id == current_theme %}
-                    <button disabled class="w-full px-4 py-2 bg-gray-100 text-gray-500 rounded-lg">
-                        当前使用中
-                    </button>
-                    {% else %}
-                    <form method="post" action="{{ url_for('admin.change_theme') }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="theme" value="{{ theme.id }}">
-                        <button type="submit" 
-                                class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                            使用此主题
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold">{{ theme.name }}</h3>
+                        <p class="text-gray-600 text-sm mt-1">{{ theme.description }}</p>
+                        
+                        <!-- 主题信息 -->
+                        <div class="mt-2 text-sm text-gray-500 space-y-1">
+                            <div>版本: {{ theme.version }}</div>
+                            <div>
+                                作者: 
+                                {% if theme.website %}
+                                <a href="{{ theme.website }}" target="_blank" class="text-blue-600 hover:underline">{{ theme.author }}</a>
+                                {% else %}
+                                {{ theme.author }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2">
+                        {% if theme.id == current_theme %}
+                        <button disabled class="flex-1 px-4 py-2 bg-gray-100 text-gray-500 rounded-lg">
+                            当前使用中
                         </button>
-                    </form>
-                    {% endif %}
+                        {% else %}
+                        <form method="post" action="{{ url_for('admin.change_theme') }}" class="flex-1">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="theme" value="{{ theme.id }}">
+                            <button type="submit" 
+                                    class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                使用此主题
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        <!-- 主题设置按钮 -->
+                        {% if theme.has_settings %}
+                        <a href="{{ url_for('admin.theme_settings_page', theme_id=theme.id) }}"
+                           class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center">
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            设置
+                        </a>
+                        {% endif %}
+                        
+                        <!-- 导出主题按钮 -->
+                        <a href="{{ url_for('admin.export_theme', theme_id=theme.id) }}"
+                           class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center"
+                           download>
+                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            导出
+                        </a>
+                    </div>
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
 </div>
+
+<script>
+function handleThemeUpload(form) {
+    const fileInput = form.querySelector('input[type="file"]');
+    if (!fileInput.files.length) {
+        return;
+    }
+    
+    showAlert('正在上传主题...', 'info', null, null, false);
+    
+    const formData = new FormData(form);
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showAlert(data.message, 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('上传失败', 'error');
+    });
+}
+</script>
 {% endblock %} 

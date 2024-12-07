@@ -1,6 +1,6 @@
 import os
 
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, send_file, current_app, abort
+from flask import Blueprint, render_template, render_template_string, request, flash, redirect, url_for, jsonify, send_file, current_app, abort
 from flask_login import login_required, current_user
 from functools import wraps
 import json
@@ -11,6 +11,8 @@ from app.services.custom_page_service import CustomPageService
 from app.utils.custom_pages import custom_page_manager
 from app.models import CommentConfig
 from app.models.site_config import SiteConfig
+from app.utils.theme_manager import ThemeManager
+from app.models.theme_settings import ThemeSettings
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -444,19 +446,19 @@ def clear_user_history(user_id):
 def themes():
     """主题管理"""
     try:
-        data, error = AdminService.get_themes()
-        if error:
-            flash(error)
-            return redirect(url_for('admin.dashboard'))
-            
-        if not data:
-            abort(500)
-            
-        return render_template('admin/themes.html', **data)
+        themes = ThemeManager.get_available_themes()
+        current_theme = SiteConfig.get_config('site_theme', 'default')
         
+        # 获取完整的主题信息
+        themes = [ThemeManager.get_theme_info(theme['id']) for theme in themes]
+        
+        return render_template('admin/themes.html',
+                             themes=themes,
+                             current_theme=current_theme)
     except Exception as e:
         current_app.logger.error(f"Themes error: {str(e)}")
-        abort(500)
+        flash('获取主题列表失败')
+        return redirect(url_for('admin.dashboard'))
 
 @bp.route('/change-theme', methods=['POST'])
 @login_required
@@ -722,7 +724,7 @@ def routes():
         if request.args.get('tab') == 'article_url':
             # 获取当前文章 URL 模式
             current_pattern = SiteConfig.get_article_url_pattern()
-            # 判断是否是预定义模式
+            # 断是否是预定义模式
             is_custom_pattern = True
             for pattern in SiteConfig.ARTICLE_URL_PATTERNS.values():
                 if pattern and pattern == current_pattern:
@@ -765,7 +767,7 @@ def add_route():
 @login_required
 @admin_required
 def edit_route(id):
-    """编��路由"""
+    """编辑路由"""
     success, message = AdminService.update_route(id, request.form)
     flash(message)
     return redirect(url_for('admin.routes'))
@@ -992,3 +994,102 @@ def reload_plugin_list():
         'status': 'success' if success else 'error',
         'message': message
     })
+
+@bp.route('/themes/<theme_id>/settings/page')
+@login_required
+@admin_required
+def theme_settings_page(theme_id):
+    """主题设置页面"""
+    # 获取主题信息
+    theme_info = ThemeManager.get_theme_info(theme_id)
+    if not theme_info:
+        flash('主题不存在')
+        return redirect(url_for('admin.themes'))
+        
+    # 获取主题设置
+    settings = ThemeSettings.get_settings(theme_id)
+    
+    # 获取设置模板
+    settings_html = ThemeManager.get_theme_settings_template(theme_id)
+    if not settings_html:
+        flash('此主题没有设置页面')
+        return redirect(url_for('admin.themes'))
+        
+    # 先渲染设置模板
+    rendered_settings = render_template_string(
+        settings_html,
+        settings=settings
+    )
+        
+    # 再渲染整个页面
+    return render_template('admin/theme_settings_page.html',
+                         theme=theme_info,
+                         settings_html=rendered_settings)
+
+@bp.route('/themes/<theme_id>/settings/save', methods=['POST'])
+@login_required
+@admin_required
+def save_theme_settings(theme_id):
+    """保存主题设置"""
+    success, message = ThemeManager.save_theme_settings(theme_id, request.form.to_dict())
+    return jsonify({
+        'status': 'success' if success else 'error',
+        'message': message
+    })
+
+@bp.route('/themes/upload', methods=['POST'])
+@login_required
+@admin_required
+def upload_theme():
+    """上传主题"""
+    if 'theme' not in request.files:
+        return jsonify({'status': 'error', 'message': '没有上传文件'})
+        
+    file = request.files['theme']
+    if not file.filename:
+        return jsonify({'status': 'error', 'message': '没有选择文件'})
+        
+    if not file.filename.endswith('.zip'):
+        return jsonify({'status': 'error', 'message': '只支持zip格式的主题包'})
+        
+    success, message = ThemeManager.install_theme(file)
+    return jsonify({
+        'status': 'success' if success else 'error',
+        'message': message
+    })
+
+@bp.route('/themes/<theme_id>/export')
+@login_required
+@admin_required
+def export_theme(theme_id):
+    """导出主题"""
+    success, error, content, filename = ThemeManager.export_theme(theme_id)
+    
+    if not success:
+        flash(error, 'error')
+        return redirect(url_for('admin.themes'))
+        
+    response = send_file(
+        io.BytesIO(content),
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=filename
+    )
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["Pragma"] = "no-cache"
+    return response
+
+@bp.route('/themes/<theme>/preview_image')
+@login_required
+@admin_required
+def theme_preview_image(theme):
+    """主题预览图"""
+    preview_path = os.path.join(
+        current_app.root_path, 
+        'templates', 
+        theme, 
+        'preview.png'
+    )
+    if os.path.exists(preview_path):
+        return send_file(preview_path, mimetype='image/png')
+    return send_file('static/default_theme_preview.png', mimetype='image/png')

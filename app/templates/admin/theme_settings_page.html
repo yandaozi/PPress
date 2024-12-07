@@ -1,0 +1,71 @@
+{% extends theme_path('admin/base.html') %}
+
+{% block title %}主题设置 - {{ theme.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6">
+    <div class="bg-white rounded-lg shadow-sm">
+        <!-- 头部 -->
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold">{{ theme.name }} - 主题设置</h2>
+                <a href="{{ url_for('admin.themes') }}" 
+                   class="text-gray-600 hover:text-gray-900">
+                    返回主题列表
+                </a>
+            </div>
+        </div>
+
+        <!-- 设置表单 -->
+        <div class="p-6">
+            <form id="settingsForm" onsubmit="return saveSettings(event)">
+                {{ settings_html|safe }}
+                
+                <div class="mt-6 flex justify-end space-x-4">
+                    <a href="{{ url_for('admin.themes') }}"
+                       class="px-4 py-2 text-gray-700 hover:text-gray-900">
+                        取消
+                    </a>
+                    <button type="submit"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        保存设置
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveSettings(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('settingsForm');
+    const formData = new FormData(form);
+    
+    showAlert('正在保存设置...', 'info', null, null, false);
+    
+    fetch('{{ url_for("admin.save_theme_settings", theme_id=theme.id) }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showAlert(data.message, 'success');
+            setTimeout(() => location.reload(), 400);
+        } else {
+            showAlert(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('保存失败', 'error');
+    });
+    
+    return false;
+}
+</script>
+{% endblock %} 

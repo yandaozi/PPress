@@ -415,18 +415,27 @@
     <div class="max-w-7xl mx-auto px-4 py-8">
         <div class="flex flex-col items-center">
             <div class="text-gray-500 dark:text-gray-400 mb-2">
-                {{ site_config.get_config('footer_text', '© 2024 PPress 版权所有') }}
+                {{ site_config.get_config('footer_text') }}
             </div>
-            {% if site_config.get_config('icp_number') %}
-            <div class="text-gray-400 dark:text-gray-500 text-sm">
-                {{ site_config.get_config('icp_number') }}
+
+            {% if theme.settings.email %}
+            <div class="text-gray-400 dark:text-gray-500 text-sm mt-2">
+                联系我们：{{ site_config.get_config('contact_email') }}，QQ：{{ theme.settings.qq }}
             </div>
             {% endif %}
-            <div class="text-gray-400 dark:text-gray-500 text-sm mt-2">
-                联系我们：{{ site_config.get_config('contact_email', 'ponyj@qq.com') }}
-            </div>
-            <div class="text-gray-400 dark:text-gray-500 text-sm mt-2">
-                <a href="https://gitee.com/fojie/PPress">https://gitee.com/fojie/PPress</a>
+
+            <div class="flex space-x-4 mt-4">
+                {% if theme.settings.github_url %}
+                <a href="{{ theme.settings.github_url }}" target="_blank" class="text-gray-400 hover:text-gray-500">
+                    GitHub
+                </a>
+                {% endif %}
+                
+                {% if theme.settings.gitee_url %}
+                <a href="{{ theme.settings.gitee_url }}" target="_blank" class="text-gray-400 hover:text-gray-500">
+                    Gitee
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>
