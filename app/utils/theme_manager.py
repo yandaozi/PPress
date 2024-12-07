@@ -227,11 +227,13 @@ class ThemeManager:
                 # 如果版本相同，提示已存在
                 if installed_version == new_version:
                     return False, f'主题 {theme_id} (v{installed_version}) 已存在，无需重复安装'
-                # 如果版本不同，提示更新
-                elif installed_version:
-                    return False, f'主题 {theme_id} 已存在(v{installed_version})，如需更新请先卸载'
-                else:
-                    return False, f'主题 {theme_id} 已存在，如需更新请先卸载'
+                
+                # 版本不同，删除旧版本
+                shutil.rmtree(target_theme_dir)
+                # 删除旧的静态资源
+                target_static_dir = os.path.join(current_app.root_path, 'static', theme_id)
+                if os.path.exists(target_static_dir):
+                    shutil.rmtree(target_static_dir)
             
             # 复制主题模板目录
             shutil.copytree(theme_dir, target_theme_dir)
@@ -281,7 +283,7 @@ class ThemeManager:
                                               os.path.relpath(file_path, theme_dir))
                         zf.write(file_path, arc_name)
                 
-                # 如果存在静态资源目录，也打包进去
+                # 如果存在静态资源���录，也打包进去
                 if os.path.exists(static_dir):
                     for root, dirs, files in os.walk(static_dir):
                         for file in files:
@@ -306,3 +308,32 @@ class ThemeManager:
                     os.unlink(temp_file.name)
                 except Exception as e:
                     current_app.logger.error(f"Error deleting temp file: {str(e)}")
+
+    @staticmethod
+    def uninstall_theme(theme_id):
+        """卸载主题"""
+        try:
+            # 不允许卸载 default 主题
+            if theme_id == 'default':
+                return False, '默认主题不能卸载'
+            
+            # 检查主题是否是当前使用的主题
+            current_theme = SiteConfig.get_config('site_theme', 'default')
+            if theme_id == current_theme:
+                return False, '不能卸载正在使用的主题'
+            
+            # 删除主题目录
+            theme_dir = os.path.join(current_app.root_path, 'templates', theme_id)
+            if os.path.exists(theme_dir):
+                shutil.rmtree(theme_dir)
+            
+            # 删除静态资源目录
+            static_dir = os.path.join(current_app.root_path, 'static', theme_id)
+            if os.path.exists(static_dir):
+                shutil.rmtree(static_dir)
+            
+            return True, '主题卸载成功'
+            
+        except Exception as e:
+            current_app.logger.error(f"Error uninstalling theme: {str(e)}")
+            return False, f'卸载失败: {str(e)}'

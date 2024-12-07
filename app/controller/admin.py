@@ -1063,7 +1063,7 @@ def upload_theme():
         return jsonify({'status': 'error', 'message': '没有选择文件'})
         
     if not file.filename.endswith('.zip'):
-        return jsonify({'status': 'error', 'message': '只支持zip格式的主题���'})
+        return jsonify({'status': 'error', 'message': '只支持zip格式的主题'})
         
     success, message = ThemeManager.install_theme(file)
     return jsonify({
@@ -1106,3 +1106,14 @@ def theme_preview_image(theme):
     if os.path.exists(preview_path):
         return send_file(preview_path, mimetype='image/png')
     return send_file('static/default_theme_preview.png', mimetype='image/png')
+
+@bp.route('/themes/<theme_id>/uninstall', methods=['POST'])
+@login_required
+@admin_required
+def uninstall_theme(theme_id):
+    """卸载主题"""
+    success, message = ThemeManager.uninstall_theme(theme_id)
+    return jsonify({
+        'status': 'success' if success else 'error',
+        'message': message
+    })
