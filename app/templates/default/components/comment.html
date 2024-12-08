@@ -171,7 +171,11 @@
         <!-- 分页 -->
         {% if comment_data and comment_data.pages > 1 %}
             <div class="mt-6">
-                {% with pagination=comment_data, endpoint='blog.article', kwargs={'id': article.id} %}
+                {% with pagination=comment_data, 
+                        endpoint='blog.article', 
+                        kwargs={
+                            'path': ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at).lstrip('/')
+                        } %}
                     {% include 'components/pagination.html' %}
                 {% endwith %}
             </div>
