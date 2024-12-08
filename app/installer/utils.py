@@ -22,22 +22,13 @@ class Installer:
             
             # 如果是 MySQL,更新 MySQL 配置
             if config['db_type'] == 'mysql':
-                mysql_config = {
-                    'host': config['mysql_host'],
-                    'port': config['mysql_port'],
-                    'database': config['mysql_database'],
-                    'user': config['mysql_user'],
-                    'password': config['mysql_password'],
-                    'charset': 'utf8mb4'
-                }
-                
-                # 更新 MySQL 配置
                 mysql_config_str = "MYSQL_CONFIG = {\n"
-                for key, value in mysql_config.items():
-                    if key == 'port':
-                        mysql_config_str += f"    '{key}': {value},\n"
-                    else:
-                        mysql_config_str += f"    '{key}': '{value}',\n"
+                mysql_config_str += f"    'host': '{config['host']}',\n"
+                mysql_config_str += f"    'port': {config['port']},\n"
+                mysql_config_str += f"    'database': '{config['database']}',\n"
+                mysql_config_str += f"    'user': '{config['user']}',\n"
+                mysql_config_str += f"    'password': '{config['password']}',\n"
+                mysql_config_str += "    'charset': 'utf8mb4'\n"
                 mysql_config_str += "}"
                 
                 content = re.sub(
