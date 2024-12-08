@@ -1,3 +1,5 @@
+import base64
+
 from flask import render_template, request, redirect, url_for, current_app
 from . import bp
 from .utils import Installer
@@ -67,6 +69,7 @@ def install():
             # 创建管理员账号
             admin = User(
                 username='admin',
+                nickname=f'昵称_admin',
                 email='ponyj@qq.com',
                 role='admin'
             )
@@ -110,11 +113,13 @@ def install():
             
             # 初始化网站配置
             site_configs = [
-                SiteConfig(key='site_name', value=site_name),
-                SiteConfig(key='site_description', value='基于 Flask 的博客系统'),
-                SiteConfig(key='site_keywords', value='PPress,技术,博客'),
-                SiteConfig(key='site_theme', value='default'),
-                SiteConfig(key='article_url_pattern', value='article/{id}')
+                SiteConfig(key='site_name', value=site_name, description='网站名称'),
+                SiteConfig(key='site_keywords', value='PPress,技术,博客', description= '网站关键词'),
+                SiteConfig(key='site_description', value='基于 Flask 的博客系统', description= '网站描述'),
+                SiteConfig(key='contact_email', value='ponyj@qq.com', description= '网站描述'),
+                SiteConfig(key='footer_text', value='© 2024 PPress 版权所有', description= '网站描述'),
+                SiteConfig(key='site_theme', value='default', description= '网站主题'),
+                SiteConfig(key='article_url_pattern', value='article/{id}'),
             ]
             db.session.bulk_save_objects(site_configs)
             
@@ -132,7 +137,9 @@ def install():
             
             # 创建安装锁文件
             with open(os.path.join(current_app.root_path, '..', 'ppress_db.lock'), 'w', encoding='utf-8') as f:
-                f.write('installed')
+                f.write(base64.b64decode(
+                    'UFByZXNzIC0gRmxhc2sgQ29udGVudCBNYW5hZ2VtZW50IFN5c3RlbQrniYjmnYPmiYDmnIkgKGMpIDIwMjQg6KiA6YGT5a2QCuS9nOiAhVFR77yaNTc1NzMyNTYzCumhueebruWcsOWdgO+8mmh0dHBzOi8vZ2l0ZWUuY29tL2ZvamllL1BQcmVzcw=='
+                ).decode('utf-8'))
             
             # 清理安装文件
             success, error = Installer.cleanup_installer()

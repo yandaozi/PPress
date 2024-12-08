@@ -12,7 +12,7 @@ from config.database import MYSQL_CONFIG
 LOCK_FILE = 'ppress_db.lock'
 COPYRIGHT_INFO = base64.b64decode(
     'UFByZXNzIC0gRmxhc2sgQ29udGVudCBNYW5hZ2VtZW50IFN5c3RlbQrniYjmnYPmiYDmnIkgKGMpIDIwMjQg6KiA6YGT5a2QCuS9nOiAhVFR77yaNTc1NzMyNTYzCumhueebruWcsOWdgO+8mmh0dHBzOi8vZ2l0ZWUuY29tL2ZvamllL1BQcmVzcw=='
-).decode('utf-8') # MIT Info pls do not delete. :)
+).decode('utf-8')
 
 def check_db_lock():
     """检查数据库锁"""
