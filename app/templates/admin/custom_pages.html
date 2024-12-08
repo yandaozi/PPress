@@ -23,6 +23,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">路由</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">需要登录</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">评论</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
                     </tr>
                 </thead>
@@ -45,6 +46,13 @@
                             <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">{{ page.status_text }}</span>
                             {% else %}
                             <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">{{ page.status_text }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if page.allow_comment %}
+                            <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">允许</span>
+                            {% else %}
+                            <span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">禁止</span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4">

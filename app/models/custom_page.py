@@ -22,6 +22,9 @@ class CustomPage(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
+    # 新增评论相关字段
+    allow_comment = db.Column(db.Boolean, default=True, comment='是否允许评论')
+    
     @property
     def status_text(self):
         """获取状态文本"""

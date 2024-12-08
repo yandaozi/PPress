@@ -829,7 +829,8 @@ def add_custom_page():
             'content': request.form.get('content', ''),
             'fields': json.loads(request.form.get('fields', '{}')),
             'require_login': request.form.get('require_login') == 'true',
-            'status': int(request.form.get('status', CustomPage.STATUS_PUBLIC))
+            'status': int(request.form.get('status', CustomPage.STATUS_PUBLIC)),
+            'allow_comment': request.form.get('allow_comment') == 'true'
         }
         
         success, message, page = CustomPageService.add_page(data)
@@ -895,7 +896,8 @@ def update_custom_page(id):
             'content': request.form.get('content', ''),
             'fields': json.loads(request.form.get('fields', '{}')),
             'require_login': request.form.get('require_login') == 'true',
-            'status': int(request.form.get('status', CustomPage.STATUS_PUBLIC))
+            'status': int(request.form.get('status', CustomPage.STATUS_PUBLIC)),
+            'allow_comment': request.form.get('allow_comment') == 'true'
         }
         
         success, message, _ = CustomPageService.edit_page(id, data)

@@ -108,6 +108,14 @@
                             <label for="require_login" class="ml-2 text-sm text-gray-700">需要登录</label>
                         </div>
 
+                        <!-- 添加评论开关 -->
+                        <div class="flex items-center">
+                            <input type="checkbox" name="allow_comment" id="allow_comment"
+                                   {% if not page or page.allow_comment %}checked{% endif %}
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="allow_comment" class="ml-2 text-sm text-gray-700">允许评论</label>
+                        </div>
+
                         <!-- 页面状态 -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">页面状态</label>
@@ -178,8 +186,15 @@ document.getElementById('pageForm').onsubmit = function(e) {
     });
     formData.set('fields', JSON.stringify(fields));
     
+    // 获取复选框的值
+    const allowComment = document.getElementById('allow_comment').checked;
+    formData.set('allow_comment', allowComment.toString());  // 转换为字符串 'true' 或 'false'
+    
     // 获取需要登录选项
-    formData.set('require_login', document.getElementById('require_login').checked);
+    formData.set('require_login', document.getElementById('require_login').checked.toString());
+    
+    // 添加调试日志
+    console.log('allow_comment value:', allowComment);
     
     // 获取状态值 - 确保是整数
     const statusSelect = document.querySelector('select[name="status"]');

@@ -62,6 +62,13 @@ class CustomPageService:
             # 如果未指定路由,使用默认规则
             route = data.get('route') or f'/custom/{data["key"]}'
             
+            # 修改这里,正确处理布尔值
+            allow_comment = data.get('allow_comment')
+            if isinstance(allow_comment, str):
+                allow_comment = allow_comment.lower() in ('true', 'on', '1', 'yes')
+            else:
+                allow_comment = bool(allow_comment)  # 处理其他类型的值
+            
             page = CustomPage(
                 key=data['key'],
                 title=data['title'],
@@ -70,7 +77,8 @@ class CustomPageService:
                 content=data.get('content', ''),
                 fields=data.get('fields', {}),
                 require_login=data.get('require_login', False),
-                status=data.get('status', 'public')
+                status=data.get('status', CustomPage.STATUS_PUBLIC),
+                allow_comment=allow_comment
             )
             
             db.session.add(page)
@@ -124,6 +132,13 @@ class CustomPageService:
                     return False, '页面标识已存在', None
                 page.key = data['key']
             
+            # 修改这里,正确处理布尔值
+            allow_comment = data.get('allow_comment')
+            if isinstance(allow_comment, str):
+                allow_comment = allow_comment.lower() in ('true', 'on', '1', 'yes')
+            else:
+                allow_comment = bool(allow_comment)  # 处理其他类型的值
+            
             page.title = data['title']
             page.template = data['template']
             page.route = data.get('route') or f'/custom/{page.key}'
@@ -131,6 +146,7 @@ class CustomPageService:
             page.fields = data.get('fields', {})
             page.require_login = data.get('require_login', False)
             page.status = int(data.get('status', CustomPage.STATUS_PUBLIC))
+            page.allow_comment = allow_comment
             
             db.session.commit()
             
@@ -197,17 +213,25 @@ class CustomPageService:
                     return False, '页面标识已存在', None
                 page.key = data['key']
             
+            # 修改这里,使用相同的布尔值处理逻辑
+            allow_comment = data.get('allow_comment')
+            if isinstance(allow_comment, str):
+                allow_comment = allow_comment.lower() in ('true', 'on', '1', 'yes')
+            else:
+                allow_comment = bool(allow_comment)
+            
             page.title = data['title']
             page.template = data['template']
             page.route = data.get('route') or f'/custom/{page.key}'
             page.content = data.get('content', '')
             page.fields = data.get('fields', {})
             page.require_login = data.get('require_login', False)
-            page.status = data.get('status', 'public')
+            page.status = int(data.get('status', CustomPage.STATUS_PUBLIC))
+            page.allow_comment = allow_comment  # 使用处理后的值
             
             db.session.commit()
             
-            # 清除旧的缓存
+            # 清除缓存
             CustomPageService._clear_page_cache(page)
             if old_key != page.key:
                 cache_manager.delete(f'custom_page_data:{old_key}:*')

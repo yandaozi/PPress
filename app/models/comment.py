@@ -6,7 +6,8 @@ class Comment(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    article_id = db.Column(db.Integer, db.ForeignKey('articles.id', ondelete='CASCADE'))
+    article_id = db.Column(db.Integer, db.ForeignKey('articles.id', ondelete='CASCADE'), nullable=True)
+    custom_page_id = db.Column(db.Integer, db.ForeignKey('custom_pages.id', ondelete='CASCADE'), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     created_at = db.Column(db.DateTime, default=datetime.now)
     
@@ -21,6 +22,7 @@ class Comment(db.Model):
     
     # 关系定义
     article = db.relationship('Article', backref=db.backref('comments', lazy=True, cascade='all, delete'))
+    custom_page = db.relationship('CustomPage', backref=db.backref('comments', lazy=True, cascade='all, delete'))
     user = db.relationship('User', back_populates='comments', lazy='joined')
     
     # 简化关系定义
