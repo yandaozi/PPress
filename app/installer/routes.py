@@ -1,6 +1,7 @@
 from flask import render_template, request, redirect, url_for, current_app
 
 from app.installer import bp
+from app.installer.utils import Installer
 from app.models import User, Tag, Category, Article, SiteConfig, CommentConfig
 from app.extensions import db
 from datetime import datetime
