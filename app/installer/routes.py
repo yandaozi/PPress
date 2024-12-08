@@ -1,5 +1,4 @@
 from flask import render_template, request, redirect, url_for, current_app
-
 from app.installer import bp
 from app.installer.utils import Installer
 from app.models import User, Tag, Category, Article, SiteConfig, CommentConfig
@@ -8,6 +7,7 @@ from datetime import datetime
 import os
 import pymysql
 import base64
+from config.database import MYSQL_CONFIG
 
 @bp.route('/install', methods=['GET', 'POST'])
 def install():
@@ -22,56 +22,48 @@ def install():
 
     if request.method == 'POST':
         try:
-            # 只获取网站名称和数据库类型
             site_name = request.form.get('site_name')
             db_type = request.form.get('db_type')
 
             # MySQL 配置
             if db_type == 'mysql':
+                # 获取表单中的 MySQL 配置
                 mysql_config = {
                     'db_type': db_type,
-                    'mysql_host': request.form.get('mysql_host'),
-                    'mysql_port': int(request.form.get('mysql_port', 3306)),
-                    'mysql_database': request.form.get('mysql_database'),
-                    'mysql_user': request.form.get('mysql_user'),
-                    'mysql_password': request.form.get('mysql_password')
+                    'host': request.form.get('mysql_host'),
+                    'port': int(request.form.get('mysql_port', 3306)),
+                    'database': request.form.get('mysql_database'),
+                    'user': request.form.get('mysql_user'),
+                    'password': request.form.get('mysql_password'),
+                    'charset': 'utf8mb4'
                 }
-
-                # 测试连接并创建数据库
+                
                 try:
-                    # 先连接 MySQL 服务器
+                    # 连接MySQL并创建数据库
                     conn = pymysql.connect(
-                        host=mysql_config['mysql_host'],
-                        port=mysql_config['mysql_port'],
-                        user=mysql_config['mysql_user'],
-                        password=mysql_config['mysql_password']
+                        host=mysql_config['host'],
+                        port=mysql_config['port'],
+                        user=mysql_config['user'],
+                        password=mysql_config['password']
                     )
+                    
                     with conn.cursor() as cursor:
-                        cursor.execute('DROP DATABASE IF EXISTS ' + mysql_config['mysql_database'])
+                        # 删除数据库如果存在
+                        cursor.execute(f"DROP DATABASE IF EXISTS {mysql_config['database']}")
+                        # 创建新数据库
                         cursor.execute(
-                            f"CREATE DATABASE {mysql_config['mysql_database']} "
-                            'CHARACTER SET utf8mb4 '
-                            'COLLATE utf8mb4_unicode_ci'
+                            f"CREATE DATABASE {mysql_config['database']} "
+                            "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
                         )
                     conn.close()
-
+                    
                     # 更新数据库配置
                     success, error = Installer.update_db_config(mysql_config)
                     if not success:
                         return render_template('install.html', error=error, tailwind_content=tailwind_content)
-
-                    # 重新配置数据库 URI
-                    db.engine.dispose()  # 关闭现有连接
-                    app = current_app._get_current_object()  # 获取当前应用实例
-                    app.config['SQLALCHEMY_DATABASE_URI'] = (
-                        f"mysql+pymysql://{mysql_config['mysql_user']}:{mysql_config['mysql_password']}"
-                        f"@{mysql_config['mysql_host']}:{mysql_config['mysql_port']}/{mysql_config['mysql_database']}?"
-                        f"charset=utf8mb4"
-                    )
-                    db.init_app(app)  # 重新初始化数据库连接
-
+                        
                 except Exception as e:
-                    return render_template('install.html', error=f'MySQL连接失败: {str(e)}', tailwind_content=tailwind_content)
+                    return render_template('install.html', error=f'MySQL初始化失败: {str(e)}', tailwind_content=tailwind_content)
 
             # 删除所有表并重新创建
             db.drop_all()
@@ -87,12 +79,12 @@ def install():
                 )
                 admin.set_password('123456')
                 db.session.add(admin)
-                db.session.flush()  # 获取 admin.id
+                db.session.flush()
 
                 # 创建一个标签
                 tag = Tag(name='PPress')
                 db.session.add(tag)
-                db.session.flush()  # 获取 tag.id
+                db.session.flush()
 
                 # 创建一个分类
                 category = Category(
@@ -102,7 +94,7 @@ def install():
                     sort_order=1
                 )
                 db.session.add(category)
-                db.session.flush()  # 获取 category.id
+                db.session.flush()
 
                 # 创建一篇示例文章
                 article = Article(
@@ -145,7 +137,6 @@ def install():
                 )
                 db.session.add(comment_config)
 
-                # 提交所有更改
                 db.session.commit()
 
                 # 创建安装锁文件
