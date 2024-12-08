@@ -1,11 +1,12 @@
 <!-- 评论区 -->
-{% if article.allow_comment %}
+{% if (article and article.allow_comment) or (custom_page and custom_page.allow_comment) %}
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8">
         <h3 class="text-xl font-bold mb-6 text-gray-900 dark:text-white">评论</h3>
 
         {% if current_user.is_authenticated or comment_config.allow_guest %}
             <!-- 评论表单 -->
-            <form action="{{ url_for('blog.add_comment', article_id=article.id) }}" method="post" class="mb-8 space-y-6">
+            <form action="{{ url_for('blog.add_comment', article_id=article.id) if article else url_for('blog.add_custom_page_comment', page_id=custom_page.id) }}" 
+                  method="post" class="mb-8 space-y-6">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="parent_id" id="parentCommentId">
                 <input type="hidden" name="reply_to_id" id="replyToCommentId">
@@ -171,13 +172,23 @@
         <!-- 分页 -->
         {% if comment_data and comment_data.pages > 1 %}
             <div class="mt-6">
-                {% with pagination=comment_data, 
-                        endpoint='blog.article', 
-                        kwargs={
-                            'path': ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at).lstrip('/')
-                        } %}
-                    {% include 'components/pagination.html' %}
-                {% endwith %}
+                {% if custom_page %}
+                    <!-- 自定义页面分页 -->
+                    {% with pagination=comment_data, 
+                            endpoint=custom_page.route.lstrip('/'),
+                            kwargs={} %}
+                        {% include 'components/pagination.html' %}
+                    {% endwith %}
+                {% else %}
+                    <!-- 文章分页 -->
+                    {% with pagination=comment_data, 
+                            endpoint='blog.article',
+                            kwargs={
+                                'path': ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at).lstrip('/')
+                            } %}
+                        {% include 'components/pagination.html' %}
+                    {% endwith %}
+                {% endif %}
             </div>
         {% endif %}
     </div>

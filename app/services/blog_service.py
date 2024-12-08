@@ -1,4 +1,4 @@
-from app.models import Article, Category, Tag, Comment, ViewHistory, File, User, CommentConfig, SiteConfig
+from app.models import Article, Category, Tag, Comment, ViewHistory, File, User, CommentConfig, SiteConfig, CustomPage
 from app.models.article import article_tags, article_categories
 from sqlalchemy import func
 from datetime import datetime, timedelta
@@ -879,3 +879,43 @@ class BlogService:
             for widget in widgets
             if widget in widget_map
         }
+
+    @staticmethod
+    def add_custom_page_comment(page_id, user_id, data):
+        """添加自定义页面评论"""
+        try:
+            # 获取页面
+            page = CustomPage.query.get_or_404(page_id)
+            if not page.allow_comment:
+                return False, '该页面已关闭评论功能'
+            
+            # 获取评论配置
+            config = CommentConfig.get_config()
+            
+            # 创建评论
+            status = 'pending' if config.require_audit else 'approved'
+            comment = Comment(
+                content=data['content'].strip(),
+                custom_page_id=page_id,
+                user_id=user_id,
+                guest_name=data.get('guest_name'),
+                guest_email=data.get('guest_email'),
+                guest_contact=data.get('guest_contact'),
+                parent_id=data.get('parent_id'),
+                reply_to_id=data.get('reply_to_id'),
+                status=status
+            )
+            
+            db.session.add(comment)
+            db.session.commit()
+            
+            # 清除相关缓存
+            cache_manager.delete(f'custom_page_data:{page.key}:*')
+            cache_manager.delete('latest_comments')
+            
+            return True, '评论发表成功' + ('，等待审核' if config.require_audit else '')
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Add custom page comment error: {str(e)}")
+            return False, str(e)

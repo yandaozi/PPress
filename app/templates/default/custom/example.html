@@ -45,5 +45,58 @@
             <img src="{{ page.fields.imgvalue }}" class="text-gray-600 dark:text-gray-300">
         </div>
     </div>
+
+    {% if page.allow_comment %}
+    <div class="mt-6">
+        {% with 
+            article=None,
+            custom_page=page,
+            comment_data=comment_data
+        %}
+            {% include theme_path('components/comment.html') %}
+        {% endwith %}
+    </div>
+    {% endif %}
 </div>
+
+
+    <script>
+        function replyTo(parentId, replyToName, replyToId = null) {
+            document.getElementById('parentCommentId').value = parentId;
+            document.getElementById('replyToCommentId').value = replyToId || '';
+            document.getElementById('replyingToName').textContent = replyToName;
+            document.getElementById('replyingTo').classList.remove('hidden');
+
+            // 滚动到评论框
+            const commentForm = document.querySelector('form');
+            commentForm.scrollIntoView({ behavior: 'smooth' });
+            commentForm.querySelector('textarea').focus();
+        }
+
+        function cancelReply() {
+            document.getElementById('parentCommentId').value = '';
+            document.getElementById('replyToCommentId').value = '';
+            document.getElementById('replyingTo').classList.add('hidden');
+        }
+
+        function deleteComment(commentId) {
+            if (confirm('确定要删除这条评论吗？')) {
+                fetch(`/comment/${commentId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        response.json().then(data => {
+                            alert(data.error || '删除失败');
+                        });
+                    }
+                });
+            }
+        }
+    </script>
+
 {% endblock %}

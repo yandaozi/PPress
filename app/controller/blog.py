@@ -8,6 +8,7 @@ from functools import wraps
 from app.models import CommentConfig
 from app.utils.article_url import ArticleUrlGenerator
 from app.models import Article
+from app.models import CustomPage
 
 bp = Blueprint('blog', __name__)
 
@@ -361,4 +362,37 @@ def search_suggestions():
     except Exception as e:
         current_app.logger.error(f"Search suggestions error: {str(e)}")
         return jsonify([])
+
+@bp.route('/custom_page/<int:page_id>/comment', methods=['POST'])
+@handle_view_errors
+def add_custom_page_comment(page_id):
+    """添加自定义页面评论"""
+    try:
+        # 获取页面对象
+        page = CustomPage.query.get_or_404(page_id)
+        
+        data = {
+            'content': request.form.get('content'),
+            'parent_id': request.form.get('parent_id'),
+            'reply_to_id': request.form.get('reply_to_id'),
+            'guest_name': request.form.get('guest_name'),
+            'guest_email': request.form.get('guest_email'),
+            'guest_contact': request.form.get('guest_contact')
+        }
+        
+        # 获取用户ID(如果已登录)
+        user_id = current_user.id if current_user.is_authenticated else None
+        
+        success, message = BlogService.add_custom_page_comment(
+            page_id=page_id,
+            user_id=user_id,
+            data=data
+        )
+        
+        flash(message)
+        return redirect(page.route)
+        
+    except Exception as e:
+        current_app.logger.error(f"add_custom_page_comment error: {str(e)}")
+        abort(500)
 

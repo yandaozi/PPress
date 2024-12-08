@@ -273,7 +273,8 @@ class AdminService:
         try:
             query = Comment.query.options(
                 db.joinedload(Comment.user),
-                db.joinedload(Comment.article)
+                db.joinedload(Comment.article),
+                db.joinedload(Comment.custom_page)
             )
             
             # 搜索过滤
@@ -288,7 +289,11 @@ class AdminService:
                         return None, 'ID必须是数字'
                 elif search_type == 'author':
                     query = query.join(User).filter(User.username.ilike(f'%{search_query}%'))
-            
+                elif search_type == 'article':
+                    query = query.join(Article).filter(Article.title.ilike(f'%{search_query}%'))
+                elif search_type == 'page':
+                    query = query.join(CustomPage).filter(CustomPage.title.ilike(f'%{search_query}%'))
+                
             # 分页
             pagination = query.order_by(Comment.created_at.desc())\
                             .paginate(page=page, per_page=20, error_out=False)

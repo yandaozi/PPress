@@ -1,9 +1,15 @@
 import os
 from flask import render_template, current_app, request, abort
 from flask_login import login_required, current_user
-from app.models import CustomPage
+
+from app import db
+from app.models import CustomPage, Comment
 from app.models.site_config import SiteConfig
 from app.utils.cache_manager import cache_manager
+from app.models.comment_config import CommentConfig
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import joinedload
+from app.utils.pagination import Pagination
 
 class CustomPageMiddleware:
     def __init__(self, wsgi_app, flask_app):
@@ -11,7 +17,7 @@ class CustomPageMiddleware:
         self.flask_app = flask_app
 
     def __call__(self, environ, start_response):
-        path = environ.get('PATH_INFO', '')
+        path = environ.get('PATH_INFO', '').split('?')[0]  # 移除查询参数
         
         # 检查是否匹配自定义页面路由
         custom_pages = self.flask_app.config.get('CUSTOM_PAGES', {})
@@ -19,15 +25,26 @@ class CustomPageMiddleware:
             # 找到匹配的页面,重定向到内部处理函数
             environ['PATH_INFO'] = f'/custom_page/{custom_pages[path]}'
             environ['HTTP_X_CUSTOM_PAGE'] = 'true'
+            # 保留原始路径用于分页
+            environ['HTTP_X_ORIGINAL_PATH'] = path
                 
         return self.wsgi_app(environ, start_response)
 
 def render_custom_page(page):
     """渲染自定义页面"""
     try:
+        # 获取评论配置
+        comment_config = CommentConfig.get_config()
+        
+        # 获取当前页码
+        current_page = request.args.get('page', 1, type=int)
+        
+        # 获取原始路径（用于分页）
+        original_path = request.environ.get('HTTP_X_ORIGINAL_PATH', page.route)
+        
         # 如果是管理后台的请求，不使用缓存
         if request.endpoint and request.endpoint.startswith('admin.'):
-            return _render_template(page)
+            return _render_template(page, comment_config=comment_config)
             
         # 获取用户状态
         if current_user.is_authenticated:
@@ -39,40 +56,140 @@ def render_custom_page(page):
             user_state = 'guest'
             
         # 使用缓存获取页面数据
-        cache_key = f'custom_page_data:{page.key}:{user_state}'
+        cache_key = f'custom_page_data:{page.key}:{user_state}:{current_page}'
         page_data = cache_manager.get(cache_key)
         
         if page_data is None:
-            # 根据用户状态准备页面数据
-            page_data = {
-                'title': page.title,
-                'content': page.content,
-                'fields': page.fields,
-                'template': page.template,
-                # 其他需要的数据...
-            }
+            # 获取评论数据并分页
+            comments_query = Comment.query.filter_by(
+                custom_page_id=page.id
+            ).order_by(Comment.created_at.desc())
+            
+            # 非管理员只能看到已审核的评论
+            if not (current_user.is_authenticated and current_user.role == 'admin'):
+                comments_query = comments_query.filter_by(status='approved')
+            
+            # 获取评论及其回复
+            comments = comments_query.options(
+                db.joinedload(Comment.user),  # 预加载用户信息
+                db.joinedload(Comment.parent),  # 预加载父评论
+                db.joinedload(Comment.reply_to)  # 预加载回复对象
+            ).paginate(
+                page=current_page,
+                per_page=comment_config.comments_per_page,
+                error_out=False
+            )
+            
+            # 准备页面数据
+            page_data = dict(
+                title=page.title,
+                content=page.content,
+                fields=page.fields,
+                template=page.template,
+                allow_comment=page.allow_comment,
+                key=page.key,
+                route=page.route,
+                id=page.id
+            )
             
             # 缓存页面数据
             cache_manager.set(cache_key, page_data)
+        
+        # 重新获取评论分页数据（因为分页对象不能被缓存）
+        # 1. 获取所有评论
+        comments = Comment.query.filter(
+            Comment.custom_page_id == page.id
+        ).order_by(Comment.created_at.asc()).all()
+        
+        # 2. 先收集所有评论的ID和状态
+        comment_map = {}
+        parent_comments = []
+        
+        # 3. 第一次遍历：收集所有评论
+        for comment in comments:
+            # 跳过未审核的评论（非管理员）
+            if not (current_user.is_authenticated and current_user.role == 'admin'):
+                if comment.status != 'approved':
+                    continue
             
-        # 使用数据渲染模板
-        return _render_template(page, page_data)
+            # 将评论添加到映射中
+            comment_map[comment.id] = comment
+            comment.replies = []
+            
+            # 如果是父评论
+            if not comment.parent_id:
+                parent_comments.append(comment)
+        
+        # 4. 第二次遍历：处理回复
+        for comment in comments:
+            if comment.parent_id and comment.id in comment_map:
+                parent = comment_map.get(comment.parent_id)
+                if parent:
+                    parent.replies.append(comment)
+        
+        # 5. 对父评论按时间倒序排序
+        parent_comments.sort(key=lambda x: x.created_at, reverse=True)
+        
+        # 6. 对每个父评论的回复按时间正序排序
+        for parent in parent_comments:
+            parent.replies.sort(key=lambda x: x.created_at)
+        
+        # 7. 创建分页对象
+        per_page = comment_config.comments_per_page
+        total = len(parent_comments)
+        total_pages = (total + per_page - 1) // per_page if total > 0 else 1
+        start = (current_page - 1) * per_page
+        end = start + per_page
+        
+        comments = Pagination(
+            items=parent_comments[start:end],
+            page=current_page,
+            per_page=per_page,
+            total=total,
+            total_pages=total_pages
+        )
+        
+        # 使用数据渲染模板，同时传递评论配置和分页数据
+        current_theme = SiteConfig.get_config('site_theme', 'default')
+        template = f'{current_theme}/custom/{page.template}'
+        
+        if not os.path.exists(os.path.join(current_app.template_folder, template)):
+            template = f'default/custom/{page.template}'
+            
+        return render_template(template, 
+                             page=page_data if page_data else page,
+                             comment_config=comment_config,
+                             comment_data=comments,
+                             original_path=original_path)
             
     except Exception as e:
         current_app.logger.error(f"Render custom page error: {str(e)}")
-        return render_template('default/custom/example.html', page=page)
+        return render_template('default/custom/example.html', 
+                             page=page,
+                             comment_config=comment_config)
 
-def _render_template(page, page_data=None):
+def _render_template(page, page_data=None, comment_config=None):
     """渲染模板"""
-    current_theme = SiteConfig.get_config('site_theme', 'default')
-    template = f'{current_theme}/custom/{page.template}'
-    
-    if not os.path.exists(os.path.join(current_app.template_folder, template)):
-        template = f'default/custom/{page.template}'
+    try:
+        current_theme = SiteConfig.get_config('site_theme', 'default')
+        template = f'{current_theme}/custom/{page.template}'
         
-    # 如果有缓存数据就使用缓存数据,否则使用原始page对象
-    context = {'page': page_data} if page_data else {'page': page}
-    return render_template(template, **context)
+        if not os.path.exists(os.path.join(current_app.template_folder, template)):
+            template = f'default/custom/{page.template}'
+        
+        # 准备模板上下文
+        context = {
+            'page': page_data if page_data else page,
+            'comment_config': comment_config or CommentConfig.get_config()  # 确保始终有评论配置
+        }
+        
+        return render_template(template, **context)
+        
+    except Exception as e:
+        current_app.logger.error(f"Render template error: {str(e)}")
+        return render_template('default/custom/example.html', 
+                             page=page, 
+                             comment_config=comment_config or CommentConfig.get_config())
 
 class CustomPageManager:
     @staticmethod
