@@ -32,11 +32,17 @@ def install():
                     'db_type': db_type,
                     'host': request.form.get('mysql_host'),
                     'port': int(request.form.get('mysql_port', 3306)),
-                    'database': request.form.get('mysql_database'),
+                    'database': request.form.get('mysql_database').strip().replace(' ', '_'),
                     'user': request.form.get('mysql_user'),
                     'password': request.form.get('mysql_password'),
                     'charset': 'utf8mb4'
                 }
+                
+                # 验证数据库名称
+                if not mysql_config['database'].isalnum() and not '_' in mysql_config['database']:
+                    return render_template('install.html', 
+                                         error='数据库名称只能包含字母、数字和下划线', 
+                                         tailwind_content=tailwind_content)
                 
                 try:
                     # 连接MySQL并创建数据库
@@ -49,10 +55,10 @@ def install():
                     
                     with conn.cursor() as cursor:
                         # 删除数据库如果存在
-                        cursor.execute(f"DROP DATABASE IF EXISTS {mysql_config['database']}")
+                        cursor.execute(f"DROP DATABASE IF EXISTS `{mysql_config['database']}`")
                         # 创建新数据库
                         cursor.execute(
-                            f"CREATE DATABASE {mysql_config['database']} "
+                            f"CREATE DATABASE `{mysql_config['database']}` "
                             "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
                         )
                     conn.close()
