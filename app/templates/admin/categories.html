@@ -34,6 +34,10 @@
                             class="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
                         添加分类
                     </button>
+                    <button onclick="showBatchPerPageModal()" 
+                            class="w-full sm:w-auto px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200">
+                        批量设置分页
+                    </button>
                 </div>
             </div>
         </div>
@@ -237,6 +241,35 @@
             <button onclick="moveCategory()"
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
                 移动
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 批量设置分页的模态框 -->
+<div id="batchPerPageModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div class="px-6 py-4 border-b">
+            <h3 class="text-lg font-medium">批量设置每页文章数</h3>
+        </div>
+        <form id="batchPerPageForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">每页文章数</label>
+                <input type="number" name="per_page" required
+                       min="1" max="100"
+                       placeholder="设置所有分类的每页文章数(1-100)"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-0">
+                <p class="mt-1 text-xs text-gray-500">此操作将统一设置所有分类的每页文章数</p>
+            </div>
+        </form>
+        <div class="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
+            <button onclick="hideBatchPerPageModal()"
+                    class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+                取消
+            </button>
+            <button onclick="saveBatchPerPage()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                确定设置
             </button>
         </div>
     </div>
@@ -462,6 +495,49 @@ new Sortable(document.getElementById('categoryList'), {
         });
     }
 });
+
+// 显示批量设置模态框
+function showBatchPerPageModal() {
+    document.getElementById('batchPerPageModal').classList.remove('hidden');
+    document.getElementById('batchPerPageModal').classList.add('flex');
+}
+
+// 隐藏批量设置模态框
+function hideBatchPerPageModal() {
+    document.getElementById('batchPerPageModal').classList.add('hidden');
+    document.getElementById('batchPerPageModal').classList.remove('flex');
+    document.getElementById('batchPerPageForm').reset();
+}
+
+// 保存批量设置
+function saveBatchPerPage() {
+    const form = document.getElementById('batchPerPageForm');
+    const perPage = form.per_page.value;
+    
+    if (!perPage || perPage < 1 || perPage > 100) {
+        showAlert('请输入1-100之间的数值', 'error', '错误');
+        return;
+    }
+    
+    fetch('/admin/categories/batch-per-page', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ per_page: parseInt(perPage) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert(data.error, 'error', '错误');
+        } else {
+            showAlert(data.message, 'success', '成功');
+            setTimeout(() => location.reload(), 500);
+        }
+        hideBatchPerPageModal();
+    });
+}
 </script>
 
 <!-- 在页面底部添加样式 -->

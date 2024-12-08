@@ -1873,3 +1873,24 @@ class AdminService:
         except Exception as e:
             current_app.logger.error(f"Error getting category templates: {str(e)}")
             return []
+
+    @staticmethod
+    def batch_update_per_page(per_page):
+        """批量更新分类的每页文章数"""
+        try:
+            # 验证输入
+            per_page = max(1, min(100, int(per_page)))
+            
+            # 批量更新所有分类
+            Category.query.update({Category.per_page: per_page})
+            db.session.commit()
+            
+            # 清除缓存
+            cache_manager.delete('admin:categories:*')
+            cache_manager.delete('categories_*')
+            
+            return True, f'已将所有分类的每页文章数设置为 {per_page}'
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Batch update per_page error: {str(e)}")
+            return False, str(e)

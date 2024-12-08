@@ -1121,3 +1121,22 @@ def uninstall_theme(theme_id):
         'status': 'success' if success else 'error',
         'message': message
     })
+
+@bp.route('/categories/batch-per-page', methods=['POST'])
+@login_required
+@admin_required
+def batch_update_category_per_page():
+    """批量更新分类每页文章数"""
+    try:
+        data = request.get_json()
+        per_page = data.get('per_page')
+        if not per_page:
+            return jsonify({'error': '请提供每页文章数'}), 400
+            
+        success, message = AdminService.batch_update_per_page(per_page)
+        if success:
+            return jsonify({'message': message})
+        return jsonify({'error': message}), 400
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
