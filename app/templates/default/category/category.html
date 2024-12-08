@@ -48,6 +48,55 @@
                             <div class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
                                 {{ article.content|striptags|truncate(200) }}
                             </div>
+
+                            <!-- 遍历所有自定义字段 -->
+                            {% if article.fields %}
+                                <div class="mt-4 space-y-2">
+                                    {% for key, value in article.fields.items() %}
+                                        <div class="flex items-center text-sm">
+                                            <span class="text-gray-500 dark:text-gray-400">{{ key }}:</span>
+                                            <span class="ml-2">{{ value }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            <!-- 副标题 -->
+                            {% if article.fields and article.fields.subtitle %}
+                                <h2 class="text-xl text-gray-600 dark:text-gray-400 mt-2">
+                                    {{ article.fields.subtitle }}
+                                </h2>
+                            {% endif %}
+
+                            <!-- 缩略图 -->
+                            {% if article.fields and article.fields.thumbnail %}
+                                <div class="mt-4">
+                                    <img src="{{ article.fields.thumbnail }}"
+                                         alt="{{ article.title }}"
+                                         class="w-full rounded-lg">
+                                </div>
+                            {% endif %}
+
+                            <!-- 使用 get_field 方法,可以指定默认值 -->
+                            {{ article.get_field('thumbnail', '/static/images/default-thumbnail.jpg') }}
+
+
+                            <!-- 根据主题配置显示字段 -->
+                            {% for field_key, field in theme.article_fields.items() %}
+                                {% if article.fields and field_key in article.fields %}
+                                    {% if field.type == 'image' %}
+                                        <img src="{{ article.fields[field_key] }}"
+                                             alt="{{ field.name }}"
+                                             class="w-full rounded-lg">
+                                    {% else %}
+                                        <div class="field-{{ field_key }}">
+                                            <span class="field-name">{{ field.name }}:</span>
+                                            <span class="field-value">{{ article.fields[field_key] }}</span>
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+
                             <div class="flex flex-wrap items-center gap-2 sm:gap-4">
                                 <a href="{{ ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at) }}"
                                    class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
