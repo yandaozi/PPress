@@ -1636,7 +1636,8 @@ class AdminService:
                 'parent_id': category.parent_id,
                 'sort_order': category.sort_order,
                 'use_slug': category.use_slug,
-                'template': category.template
+                'template': category.template,
+                'per_page': category.per_page  # 添加 per_page
             }
         except Exception as e:
             current_app.logger.error(f"Get category error: {str(e)}")
