@@ -86,8 +86,10 @@
     </div>
 
     <!-- 侧边栏 -->
+    {% block sidebar %}
     <div class="lg:col-span-4 space-y-6">
         <!-- 今日热门 -->
+        {% block hot_today %}
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">今日热门</h2>
             <div class="space-y-3">
@@ -110,8 +112,10 @@
                 {% endfor %}
             </div>
         </div>
+        {% endblock %}
 
         <!-- 本周热门 -->
+        {% block hot_week %}
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">本周热门</h2>
             <div class="space-y-3">
@@ -131,8 +135,10 @@
                 {% endfor %}
             </div>
         </div>
+        {% endblock %}
 
         <!-- 随机推荐 -->
+        {% block random_articles %}
         <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">随机推荐</h2>
             <div class="space-y-3">
@@ -153,8 +159,10 @@
                 {% endfor %}
             </div>
         </div>
+        {% endblock %}
 
         <!-- 标签云 -->
+        {% block random_tags %}
         <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">标签云</h2>
             <div class="flex flex-wrap gap-2">
@@ -168,8 +176,9 @@
                 {% endfor %}
             </div>
         </div>
-
+        {% endblock %}
         <!-- 最新评论 -->
+        {% block latest_comments %}
         <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
             <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">最新评论</h2>
             <div class="space-y-4">
@@ -206,6 +215,8 @@
                 {% endfor %}
             </div>
         </div>
+        {% endblock %}
     </div>
+    {% endblock %}
 </div>
 {% endblock %} 

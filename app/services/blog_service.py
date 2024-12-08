@@ -832,3 +832,28 @@ class BlogService:
             abort(403, '您没有权限编辑此文章')
         
         return article
+
+    @staticmethod
+    def get_sidebar_data(widgets=None):
+        """获取侧边栏数据
+        Args:
+            widgets: 需要获取的组件列表,如 ['hot_today', 'hot_week']
+        """
+        if not widgets:
+            return {}
+        
+        # 定义组件与获取方法的映射
+        widget_map = {
+            'hot_today': ('hot_articles_today', BlogService.get_hot_articles_today),
+            'hot_week': ('hot_articles_week', BlogService.get_hot_articles_week),
+            'random_articles': ('random_articles', BlogService.get_random_articles),
+            'random_tags': ('random_tags', BlogService.get_random_tags),
+            'latest_comments': ('latest_comments', BlogService.get_latest_comments)
+        }
+        
+        # 使用字典推导式获取数据
+        return {
+            widget_map[widget][0]: widget_map[widget][1]()
+            for widget in widgets
+            if widget in widget_map
+        }
