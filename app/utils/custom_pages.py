@@ -1,6 +1,6 @@
 import os
 from flask import render_template, current_app, request, abort
-from flask_login import login_required
+from flask_login import login_required, current_user
 from app.models import CustomPage
 from app.models.site_config import SiteConfig
 from app.utils.cache_manager import cache_manager
@@ -27,28 +27,52 @@ def render_custom_page(page):
     try:
         # 如果是管理后台的请求，不使用缓存
         if request.endpoint and request.endpoint.startswith('admin.'):
-            current_theme = SiteConfig.get_config('site_theme', 'default')
-            template = f'{current_theme}/custom/{page.template}'
-            if not os.path.exists(os.path.join(current_app.template_folder, template)):
-                template = f'default/custom/{page.template}'
-            return render_template(template, page=page)
+            return _render_template(page)
             
-        # 前台页面使用缓存
-        cache_key = f'custom_page_html:{page.key}'
-        html = cache_manager.get(cache_key)
+        # 获取用户状态
+        if current_user.is_authenticated:
+            if current_user.role == 'admin':
+                user_state = 'admin'
+            else:
+                user_state = 'user'
+        else:
+            user_state = 'guest'
+            
+        # 使用缓存获取页面数据
+        cache_key = f'custom_page_data:{page.key}:{user_state}'
+        page_data = cache_manager.get(cache_key)
         
-        if html is None:
-            current_theme = SiteConfig.get_config('site_theme', 'default')
-            template = f'{current_theme}/custom/{page.template}'
-            if not os.path.exists(os.path.join(current_app.template_folder, template)):
-                template = f'default/custom/{page.template}'
-            html = render_template(template, page=page)
-            cache_manager.set(cache_key, html)
+        if page_data is None:
+            # 根据用户状态准备页面数据
+            page_data = {
+                'title': page.title,
+                'content': page.content,
+                'fields': page.fields,
+                'template': page.template,
+                # 其他需要的数据...
+            }
             
-        return html
+            # 缓存页面数据
+            cache_manager.set(cache_key, page_data)
+            
+        # 使用数据渲染模板
+        return _render_template(page, page_data)
+            
     except Exception as e:
         current_app.logger.error(f"Render custom page error: {str(e)}")
         return render_template('default/custom/example.html', page=page)
+
+def _render_template(page, page_data=None):
+    """渲染模板"""
+    current_theme = SiteConfig.get_config('site_theme', 'default')
+    template = f'{current_theme}/custom/{page.template}'
+    
+    if not os.path.exists(os.path.join(current_app.template_folder, template)):
+        template = f'default/custom/{page.template}'
+        
+    # 如果有缓存数据就使用缓存数据,否则使用原始page对象
+    context = {'page': page_data} if page_data else {'page': page}
+    return render_template(template, **context)
 
 class CustomPageManager:
     @staticmethod

@@ -98,8 +98,15 @@ class CustomPageService:
     def _clear_page_cache(page):
         """清除页面缓存"""
         try:
-            # 只清除前台页面的HTML缓存
-            cache_manager.delete(f'custom_page_html:{page.key}')
+            # 清除所有用户状态的缓存
+            patterns = [
+                f'custom_page_data:{page.key}:admin',  # 管理员缓存
+                f'custom_page_data:{page.key}:user',   # 登录用户缓存
+                f'custom_page_data:{page.key}:guest'   # 游客缓存
+            ]
+            for pattern in patterns:
+                cache_manager.delete(pattern)
+            
             current_app.logger.info(f"已清除页面缓存: {page.key}")
         except Exception as e:
             current_app.logger.error(f"Clear page cache error: {str(e)}")
@@ -130,7 +137,14 @@ class CustomPageService:
             # 清除旧的缓存
             CustomPageService._clear_page_cache(page)
             if old_key != page.key:
-                cache_manager.delete(f'custom_page_html:{old_key}')
+                # 如果修改了key,还需要清除旧key的缓存
+                patterns = [
+                    f'custom_page_data:{old_key}:admin',
+                    f'custom_page_data:{old_key}:user',
+                    f'custom_page_data:{old_key}:guest'
+                ]
+                for pattern in patterns:
+                    cache_manager.delete(pattern)
             
             # 更新路由
             from app.utils.custom_pages import custom_page_manager
@@ -196,7 +210,7 @@ class CustomPageService:
             # 清除旧的缓存
             CustomPageService._clear_page_cache(page)
             if old_key != page.key:
-                cache_manager.delete(f'custom_page_html:{old_key}')
+                cache_manager.delete(f'custom_page_data:{old_key}:*')
             
             # 更新路由
             from app.utils.custom_pages import custom_page_manager
