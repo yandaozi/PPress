@@ -122,10 +122,13 @@ class BlogService:
             # 合并查询结果
             combined_query = main_category_articles.union(multi_category_articles)
             
+            # 获取分页数量 - 优先使用分类设置的值
+            per_page = category.per_page or 10  # 如果未设置则使用默认值10
+            
             # 排序和分页
             paginated = combined_query\
                 .order_by(Article.created_at.desc())\
-                .paginate(page=page, per_page=10, error_out=False)
+                .paginate(page=page, per_page=per_page, error_out=False)
             
             # 获取分类的自定义模板
             template = None

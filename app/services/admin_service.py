@@ -505,6 +505,16 @@ class AdminService:
                 category.parent_id = data.get('parent_id', type=int)
             category.sort_order = data.get('sort_order', type=int, default=category.sort_order)
             
+            # 处理每页文章数
+            per_page = data.get('per_page')
+            if per_page:
+                try:
+                    category.per_page = max(1, min(100, int(per_page)))  # 限制在1-100之间
+                except (TypeError, ValueError):
+                    category.per_page = None  # 如果转换失败则使用默认值
+            else:
+                category.per_page = None  # 未填写则使用默认值
+            
             db.session.commit()
             
             # 清除分类缓存

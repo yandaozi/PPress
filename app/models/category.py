@@ -18,6 +18,7 @@ class Category(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     use_slug = db.Column(db.Boolean, default=False)
     template = db.Column(db.String(100))  # 存储模板名称
+    per_page = db.Column(db.Integer, comment='每页文章数')
     
     parent = db.relationship('Category', remote_side=[id], backref=db.backref('children', lazy='dynamic'))
     
