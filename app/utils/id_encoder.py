@@ -1,6 +1,5 @@
 import base64
 import hashlib
-import struct
 from app.models import SiteConfig
 from app.utils.cache_manager import cache_manager
 from flask import current_app

@@ -1,5 +1,3 @@
-from flask import current_app
-
 from app.models import Category
 from app.utils.cache_manager import cache_manager
 

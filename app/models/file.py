@@ -1,6 +1,5 @@
 from app import db
 from datetime import datetime
-from app.models.user import User
 
 class File(db.Model):
     __tablename__ = 'files'

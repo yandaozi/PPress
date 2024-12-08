@@ -1,5 +1,5 @@
 from app.models import Article, Category, Tag, Comment, ViewHistory, File, User, CommentConfig, SiteConfig, CustomPage
-from app.models.article import article_tags, article_categories
+from app.models.article import article_tags
 from sqlalchemy import func
 from datetime import datetime, timedelta
 

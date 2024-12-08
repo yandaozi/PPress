@@ -7,8 +7,6 @@ from app.models import CustomPage, Comment
 from app.models.site_config import SiteConfig
 from app.utils.cache_manager import cache_manager
 from app.models.comment_config import CommentConfig
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import joinedload
 from app.utils.pagination import Pagination
 
 class CustomPageMiddleware:

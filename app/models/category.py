@@ -2,7 +2,6 @@ from ..extensions import db
 from datetime import datetime
 from sqlalchemy import text
 from flask import current_app
-from .article import Article, article_categories
 
 class Category(db.Model):
     __tablename__ = 'categories'

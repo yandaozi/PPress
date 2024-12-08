@@ -1,7 +1,6 @@
 from flask import current_app
 from app.models import SiteConfig, Category
 from .id_encoder import IdEncoder
-from .cache_manager import cache_manager
 
 class ArticleUrlGenerator:
     """文章URL生成器"""
