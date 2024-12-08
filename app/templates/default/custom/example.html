@@ -80,7 +80,7 @@
         }
 
         function deleteComment(commentId) {
-            if (confirm('确定要删除这条评论吗？')) {
+            showAlert('确定要删除这条评论吗？此操作不可恢复！', 'warning', '确认删除', function() {
                 fetch(`/comment/${commentId}`, {
                     method: 'DELETE',
                     headers: {
@@ -88,14 +88,17 @@
                     }
                 }).then(response => {
                     if (response.ok) {
-                        location.reload();
+                        showAlert('评论已删除', 'success', '成功');
+                        setTimeout(() => location.reload(), 200);
                     } else {
                         response.json().then(data => {
-                            alert(data.error || '删除失败');
+                            showAlert(data.error || '删除失败', 'error', '错误');
                         });
                     }
+                }).catch(error => {
+                    showAlert('删除失败', 'error', '错误');
                 });
-            }
+            });
         }
     </script>
 
