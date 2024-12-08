@@ -1,4 +1,4 @@
-from flask import Flask, url_for, render_template, g, current_app
+from flask import Flask, url_for, render_template, g, current_app, request, redirect
 import os
 
 from werkzeug.routing import BuildError
@@ -158,6 +158,10 @@ def create_app(db_type=DB_TYPE, init_components=True):
     app.register_blueprint(admin.bp)
     app.register_blueprint(user.bp)
 
+    # 初始化安装模块(安装完成后这段代码会被自动删除)
+    from .installer import init_installer
+    init_installer(app)
+
     # 初始化路由（确保在注册蓝图之后）
     if init_components:
         init_app_components(app)
@@ -299,4 +303,4 @@ def create_app(db_type=DB_TYPE, init_components=True):
         
         return {'get_public_custom_pages': get_public_custom_pages}
 
-    return app 
+    return app

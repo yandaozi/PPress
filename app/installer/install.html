@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安装 PPress</title>
+    <script>
+        {{ tailwind_content|safe }}
+    </script>
+    <style>
+        /* Logo 样式 */
+        .logo-circle {
+            position: relative;
+            overflow: hidden;
+            transform: translateZ(0);
+            background: linear-gradient(135deg, #0180FF, #0178FF);
+        }
+        
+        .logo-circle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 60%);
+            z-index: 1;
+            border-radius: 9999px;
+        }
+        
+        .logo-circle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(1, 128, 255, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex flex-col">
+        <!-- Logo 区域 -->
+        <div class="flex flex-col items-center py-8 space-y-4">
+            <!-- Logo -->
+            <div class="logo-circle w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-3xl transition-all duration-300">
+                P
+            </div>
+            <!-- 标题 -->
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-gray-800">PPress</h1>
+                <p class="mt-2 text-sm text-gray-600">基于 Flask 的轻量级博客系统</p>
+            </div>
+        </div>
+
+        <!-- 安装表单 -->
+        <div class="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+            <div class="max-w-md w-full space-y-8">
+                {% if error %}
+                <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-700">{{ error }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form class="mt-8 space-y-6" method="POST">
+                    <!-- 添加 CSRF token -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <!-- 网站设置 -->
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">网站名称</label>
+                                <input type="text" name="site_name" required
+                                       placeholder="请输入网站名称"
+                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">数据库类型</label>
+                                <select name="db_type" id="dbType" onchange="toggleMySQLConfig()"
+                                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="sqlite">SQLite (推荐)</option>
+                                    <option value="mysql">MySQL</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MySQL 配置 -->
+                    <div id="mysqlConfig" class="hidden bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">主机地址</label>
+                                <input type="text" name="mysql_host" value="localhost"
+                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">端口</label>
+                                <input type="number" name="mysql_port" value="3306"
+                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">数据库名</label>
+                            <input type="text" name="mysql_database" value="ppress"
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">用户名</label>
+                            <input type="text" name="mysql_user"
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">密码</label>
+                            <input type="password" name="mysql_password"
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <button type="submit"
+                                class="w-full flex justify-center items-center px-4 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            开始安装
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 页脚版权信息 -->
+        <div class="py-8 text-center text-sm text-gray-500">
+            <p>PPress - Flask Content Management System</p>
+            <p class="mt-1">版权所有 (c) 2024 言道子</p>
+        </div>
+    </div>
+
+    <script>
+    function toggleMySQLConfig() {
+        const dbType = document.getElementById('dbType').value;
+        const mysqlConfig = document.getElementById('mysqlConfig');
+        
+        if (dbType === 'mysql') {
+            mysqlConfig.classList.remove('hidden');
+        } else {
+            mysqlConfig.classList.add('hidden');
+        }
+    }
+    </script>
+</body>
+</html> 
