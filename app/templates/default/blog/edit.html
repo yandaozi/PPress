@@ -412,11 +412,13 @@ function togglePasswordField() {
 <!-- 在页面底部添加验证脚本 -->
 <script>
 function validateForm() {
+    // 先同步编辑器内容
+    tinymce.triggerSave();
+    
     // 检查分类选择
     const categories = document.querySelectorAll('input[name="categories"]:checked');
     if (categories.length === 0) {
         showAlert('请至少选择一个分类', 'error', '错误');
-        // 滚动到分类选择区域
         document.querySelector('.custom-scrollbar').scrollIntoView({ behavior: 'smooth', block: 'center' });
         return false;
     }
@@ -437,40 +439,23 @@ function validateForm() {
         return false;
     }
     
+    // 确保内容已经同步到表单
+    document.querySelector('textarea[name="content"]').value = content;
+    
     return true;
 }
 
-// 添加分类选择监听
-document.querySelectorAll('input[name="categories"]').forEach(checkbox => {
-    checkbox.addEventListener('change', function() {
-        const categories = document.querySelectorAll('input[name="categories"]:checked');
-        if (categories.length === 0) {
-            // 如果没有选中任何分类,显示提示
-            showAlert('请至少选择一个分类', 'warning', '提示');
-        }
-    });
-});
-</script>
-
-<!-- 在现有的 JavaScript 代码中添加图片选择支持 -->
-<script>
-// 添加图片选择支持
-function selectImage(button) {
-    openImageSelector().then(url => {
-        if (url) {
-            const input = button.parentElement.querySelector('input');
-            input.value = url;
-        }
-    });
-}
-
-// 修改表单提交处理,添加自定义字段处理
+// 修改表单提交处理
 document.getElementById('articleForm').onsubmit = function(e) {
     if (!validateForm()) {
         return false;
     }
     
     e.preventDefault();
+    
+    // 再次确保编辑器内容已同步
+    tinymce.triggerSave();
+    
     const formData = new FormData(this);
     
     // 获取自定义字段
@@ -485,6 +470,9 @@ document.getElementById('articleForm').onsubmit = function(e) {
     
     // 添加到表单数据
     formData.set('fields', JSON.stringify(fields));
+    
+    // 再次确保内容已经添加到表单数据
+    formData.set('content', tinymce.get('editor').getContent());
     
     // 发送请求
     fetch(this.action, {
@@ -516,7 +504,19 @@ document.getElementById('articleForm').onsubmit = function(e) {
     
     return false;
 };
+
+// 添加分类选择监听
+document.querySelectorAll('input[name="categories"]').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const categories = document.querySelectorAll('input[name="categories"]:checked');
+        if (categories.length === 0) {
+            // 如果没有选中任何分类,显示提示
+            showAlert('请至少选择一个分类', 'warning', '提示');
+        }
+    });
+});
 </script>
+
 
 <!-- 在现有的 JavaScript 代码中添加字段操作函数 -->
 <script>

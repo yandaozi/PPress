@@ -242,11 +242,15 @@ def edit(id=None):
         required_fields = ['title', 'content']
         for field in required_fields:
             if not request.form.get(field):
+                if request.headers.get('Accept') == 'application/json':
+                    return jsonify({'error': f'请填写{field}字段'}), 400
                 flash(f'请填写{field}字段')
                 return redirect(url_for('blog.edit', id=id))
         
         # 验证分类选择
         if not request.form.getlist('categories'):
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'error': '请至少选择一个分类'}), 400
             flash('请至少选择一个分类')
             return redirect(url_for('blog.edit', id=id))
             
@@ -257,17 +261,19 @@ def edit(id=None):
             current_user.role == 'admin'
         )
         
-        flash(message)
-        if success:
-            # 如果是 AJAX 请求,返回 JSON
-            if request.headers.get('Accept') == 'application/json':
+        # 根据请求类型返回不同的响应
+        if request.headers.get('Accept') == 'application/json':
+            if success:
                 return jsonify({
                     'message': message,
-                    'url': result['url']  # 直接使用返回的 URL
+                    'url': result['url']
                 })
-            # 否则重定向
-            return redirect(result['url'])  # 直接使用返回的 URL
+            return jsonify({'error': message}), 400
             
+        # 普通表单提交
+        flash(message)
+        if success:
+            return redirect(result['url'])
         return redirect(url_for('blog.edit', id=id))
     
     # GET 请求处理保持不变
