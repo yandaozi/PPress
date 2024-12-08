@@ -226,74 +226,89 @@
 
         <!-- 评论设置内容 -->
         <div id="config-tab" class="{% if active_tab != 'config' %}hidden{% endif %} p-6">
-            <form id="commentConfigForm" class="space-y-6">
+            <form id="commentConfigForm" class="max-w-3xl mx-auto space-y-6">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 
-                <div class="space-y-4">
+                <!-- 每页显示评论数 -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                     <div class="flex items-center justify-between">
-                        <label for="commentsPerPage" class="text-sm font-medium text-gray-700">
-                            每页显示评论数
-                        </label>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">每页显示评论数</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">设置每页显示的评论数量</p>
+                        </div>
                         <input type="number" id="commentsPerPage" name="comments_per_page" 
                                value="{{ comment_config.comments_per_page }}"
                                min="1" max="100"
-                               class="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                               class="w-24 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                     </div>
-                    
-                    <div class="flex items-center">
-                        <input type="checkbox" id="requireAudit" name="require_audit"
-                               {% if comment_config.require_audit %}checked{% endif %}
-                               class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                        <label for="requireAudit" class="ml-2 text-sm text-gray-700">
-                            所有评论需要审核
-                        </label>
-                    </div>
+                </div>
 
-                    <div class="flex items-center">
-                        <input type="checkbox" id="allowGuest" name="allow_guest"
-                               {% if comment_config.allow_guest %}checked{% endif %}
-                               class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                        <label for="allowGuest" class="ml-2 text-sm text-gray-700">
-                            允许游客评论
-                        </label>
-                    </div>
-
-                    <div class="flex items-center">
-                        <input type="checkbox" id="requireEmail" name="require_email"
-                               {% if comment_config.require_email %}checked{% endif %}
-                               class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                        <label for="requireEmail" class="ml-2 text-sm text-gray-700">
-                            必须填写邮箱
-                        </label>
-                    </div>
-
-                    <div class="flex items-center">
-                        <input type="checkbox" id="requireContact" name="require_contact"
-                               {% if comment_config.require_contact %}checked{% endif %}
-                               class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                        <label for="requireContact" class="ml-2 text-sm text-gray-700">
-                            必须填写联系方式
+                <!-- 评论审核设置 -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">评论审核</h3>
+                    <div class="space-y-4">
+                        <label class="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
+                            <input type="checkbox" id="requireAudit" name="require_audit"
+                                   {% if comment_config.require_audit %}checked{% endif %}
+                                   class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <div class="ml-3">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">所有评论需要审核</div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">开启后，所有评论将在审核通过后才会显示</p>
+                            </div>
                         </label>
                     </div>
                 </div>
 
+                <!-- 游客评论设置 -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">游客评论</h3>
+                    <div class="space-y-4">
+                        <label class="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
+                            <input type="checkbox" id="allowGuest" name="allow_guest"
+                                   {% if comment_config.allow_guest %}checked{% endif %}
+                                   class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <div class="ml-3">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">允许游客评论</div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">开启后，未登录用户也可以发表评论</p>
+                            </div>
+                        </label>
+
+                        <!-- 游客评论附加选项 -->
+                        <div class="ml-8 space-y-4" id="guestOptions">
+                            <label class="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
+                                <input type="checkbox" id="requireEmail" name="require_email"
+                                       {% if comment_config.require_email %}checked{% endif %}
+                                       class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">必须填写邮箱</div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">游客评论时必须提供邮箱地址</p>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
+                                <input type="checkbox" id="requireContact" name="require_contact"
+                                       {% if comment_config.require_contact %}checked{% endif %}
+                                       class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">必须填写联系方式</div>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">游客评论时必须提供联系方式</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 保存按钮 -->
                 <div class="flex justify-end">
                     <button type="button" onclick="saveCommentConfig()"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
                         保存设置
                     </button>
                 </div>
             </form>
-
-            <!-- 在评论配置表单下方添加 -->
-            {#<div class="mt-4 p-4 bg-gray-50 rounded-lg">
-                <h4 class="font-bold mb-2">当前配置状态：</h4>
-                <pre class="text-sm">
-                    评论审核：{{ comment_config.require_audit }}
-                    游客评论：{{ comment_config.allow_guest }}
-                    每页评论数：{{ comment_config.comments_per_page }}
-                </pre>
-            </div>#}
         </div>
     </div>
 </div>
@@ -499,6 +514,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab') || 'comments';
     switchTab(tab);
+});
+
+// 添加游客评论选项联动
+document.getElementById('allowGuest').addEventListener('change', function() {
+    const guestOptions = document.getElementById('guestOptions');
+    const inputs = guestOptions.querySelectorAll('input');
+    
+    if (this.checked) {
+        guestOptions.classList.remove('opacity-50', 'pointer-events-none');
+        inputs.forEach(input => input.disabled = false);
+    } else {
+        guestOptions.classList.add('opacity-50', 'pointer-events-none');
+        inputs.forEach(input => input.disabled = true);
+    }
+});
+
+// 页面加载时初始化游客选项状态
+document.addEventListener('DOMContentLoaded', function() {
+    const allowGuest = document.getElementById('allowGuest');
+    if (!allowGuest.checked) {
+        const guestOptions = document.getElementById('guestOptions');
+        const inputs = guestOptions.querySelectorAll('input');
+        guestOptions.classList.add('opacity-50', 'pointer-events-none');
+        inputs.forEach(input => input.disabled = true);
+    }
 });
 </script>
 {% endblock %} 
