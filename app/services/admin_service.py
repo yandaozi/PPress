@@ -98,7 +98,7 @@ class AdminService:
                     'user': {
                         'id': comment.user.id if comment.user else None,
                         'username': comment.user.username if comment.user else '已注销用户',
-                        'avatar': comment.user.avatar if comment.user else '/static/default_avatar.png'
+                        'avatar': comment.user.avatar if comment.user else '/static/image/default_avatar.png'
                     },
                     'article': comment.article,
                     'article_url': ArticleUrlGenerator.generate(comment.article),
@@ -112,7 +112,7 @@ class AdminService:
                     'user': {
                         'id': article.author.id if article.author else None,
                         'username': article.author.username if article.author else '已注销用户',
-                        'avatar': article.author.avatar if article.author else '/static/default_avatar.png'
+                        'avatar': article.author.avatar if article.author else '/static/image/default_avatar.png'
                     },
                     'article': article,
                     'article_url': ArticleUrlGenerator.generate(article),
@@ -912,33 +912,21 @@ class AdminService:
                     )
                 )
 
-            # 分
+            # 分页
             pagination = query.order_by(Plugin.installed_at.desc()).paginate(
                 page=page, per_page=9, error_out=False
             )
 
             # 获取已加载的插件实例
-            loaded_plugins = plugin_manager.plugins
+            #loaded_plugins = plugin_manager.plugins
 
-            # 处理插件信息
-            plugin_info = []
-            for plugin in pagination.items:
-                info = {
-                    'name': plugin.name,
-                    'directory': plugin.directory,
-                    'description': plugin.description,
-                    'version': plugin.version,
-                    'author': plugin.author,
-                    'author_url': plugin.author_url,
-                    'enabled': plugin.enabled,
-                    'installed_at': plugin.installed_at,
-                    'is_loaded': plugin.directory in loaded_plugins,
-                    'config': plugin.config
-                }
-                plugin_info.append(info)
+            # 处理插件信息并添加到 pagination.items
+            for item in pagination.items:
+                # 添加额外属性
+                #item.is_loaded = item.directory in loaded_plugins
+                item.logo = f'/plugin/{item.directory}/static/logo.png'  # 添加 logo 属性
 
             return {
-                'plugins': plugin_info,
                 'pagination': pagination,
                 'search_query': search_query
             }, None

@@ -3,6 +3,18 @@
 {% block title %}插件管理{% endblock %}
 
 {% block content %}
+<script>
+function checkImage(img) {
+    if (!img.complete || !img.naturalWidth) {
+        handleImageError(img);
+    }
+}
+
+function handleImageError(img) {
+    img.src = '/static/image/Plugin.png';
+}
+</script>
+
 <div class="max-w-7xl mx-auto py-6">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
         <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mb-6">
@@ -65,12 +77,21 @@
                 <div class="p-6">
                     <div class="flex flex-col space-y-4">
                         <div class="flex-1">
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate" title="{{ plugin.name }}">
-                                {{ plugin.name }}
-                            </h3>
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-2" title="{{ plugin.description }}">
-                                {{ plugin.description }}
-                            </p>
+                            <div class="plugin-card">
+                                <div class="plugin-info">
+                                    <img src="{{ plugin.logo }}"
+                                         alt="{{ plugin.name }}"
+                                         class="h-10 object-cover rounded"
+                                         onload="checkImage(this)" 
+                                         onerror="handleImageError(this)">
+                                    <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate" title="{{ plugin.name }}">
+                                        {{ plugin.name }}
+                                    </h3>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-2" title="{{ plugin.description }}">
+                                        {{ plugin.description }}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="flex flex-col space-y-2 text-sm text-gray-500 dark:text-gray-400">

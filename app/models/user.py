@@ -14,7 +14,7 @@ class User(UserMixin, db.Model):
     nickname = db.Column(db.String(50))
     password_hash = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    avatar = db.Column(db.String(255), default='/static/default_avatar.png')
+    avatar = db.Column(db.String(255), default='/static/image/default_avatar.png')
     role = db.Column(db.Enum('user', 'admin'), default='user')
     created_at = db.Column(db.DateTime, default=datetime.now)
     last_login = db.Column(db.DateTime, default=datetime.now)

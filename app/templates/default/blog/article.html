@@ -248,7 +248,7 @@
                     <div class="border-t border-gray-100 dark:border-gray-700 py-6 first:border-t-0" id="comment-{{ comment.id }}">
                         <!-- 父评论内容 -->
                         <div class="flex items-start space-x-3">
-                            <img src="{{ comment.user.avatar if comment.user else '/static/default_avatar.png' }}" 
+                            <img src="{{ comment.user.avatar if comment.user else '/static/image/default_avatar.png' }}" 
                                  alt="avatar" class="w-8 h-8 rounded-full">
                             <div class="flex-1">
                                 <div class="flex items-center justify-between">
@@ -285,7 +285,7 @@
                         <div class="mt-4 ml-11 space-y-4">
                             {% for reply in comment.replies %}
                             <div class="flex items-start space-x-3" id="comment-{{ reply.id }}">
-                                <img src="{{ reply.user.avatar if reply.user else '/static/default_avatar.png' }}" 
+                                <img src="{{ reply.user.avatar if reply.user else '/static/image/default_avatar.png' }}" 
                                      alt="avatar" class="w-6 h-6 rounded-full">
                                 <div class="flex-1">
                                     <div class="flex items-center justify-between">

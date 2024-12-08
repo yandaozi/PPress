@@ -220,7 +220,7 @@ def create_app(db_type=DB_TYPE, init_components=True):
                 'id': None,
                 'nickname': '已注销用户',
                 'username': '已注销用户',
-                'avatar': url_for('static', filename='default_avatar.png')
+                'avatar': url_for('static/image', filename='default_avatar.png')
             }
         
         def get_author_info(article_or_author):
