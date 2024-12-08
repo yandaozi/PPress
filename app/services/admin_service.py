@@ -918,12 +918,12 @@ class AdminService:
             )
 
             # 获取已加载的插件实例
-            #loaded_plugins = plugin_manager.plugins
+            loaded_plugins = plugin_manager.plugins
 
             # 处理插件信息并添加到 pagination.items
             for item in pagination.items:
                 # 添加额外属性
-                #item.is_loaded = item.directory in loaded_plugins
+                item.is_loaded = item.directory in loaded_plugins
                 item.logo = f'/plugin/{item.directory}/static/logo.png'  # 添加 logo 属性
 
             return {
