@@ -75,6 +75,8 @@ def install():
             db.drop_all()
             db.create_all()
 
+            # 开始一个新的事务
+            db.session.begin()
             try:
                 # 创建管理员账号
                 admin = User(
@@ -143,6 +145,7 @@ def install():
                 )
                 db.session.add(comment_config)
 
+                # 提交事务
                 db.session.commit()
 
                 # 创建安装锁文件
