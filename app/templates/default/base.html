@@ -325,6 +325,14 @@
                 {% for category in categories %}
                     {{ render_category(category) }}
                 {% endfor %}
+
+                <!-- 公开的自定义页面 -->
+                {% for page in get_public_custom_pages() %}
+                    <a href="{{ page.route }}"
+                       class="py-4 px-1 border-b-2 {% if request.path == page.route %}border-blue-500 text-blue-600{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300{% endif %} whitespace-nowrap transition-colors duration-200">
+                        {{ page.title }}
+                    </a>
+                {% endfor %}
             </div>
         </div>
     </div>

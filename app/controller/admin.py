@@ -807,7 +807,9 @@ def custom_pages():
         )
         
         return render_template('admin/custom_pages.html', 
-                             pagination=pagination)
+                             pagination=pagination,
+                             CustomPage=CustomPage
+                               )
     except Exception as e:
         current_app.logger.error(f"Custom pages error: {str(e)}")
         flash('获取自定义页面列表失败')
@@ -824,9 +826,10 @@ def add_custom_page():
             'title': request.form.get('title'),
             'template': request.form.get('template'),
             'route': request.form.get('route'),
-            'content': request.form.get('content', ''),  # 直接获取内容，不需要 JSON 解析
-            'fields': json.loads(request.form.get('fields', '{}')),  # 解析字段 JSON
-            'require_login': request.form.get('require_login') == 'true'
+            'content': request.form.get('content', ''),
+            'fields': json.loads(request.form.get('fields', '{}')),
+            'require_login': request.form.get('require_login') == 'true',
+            'status': int(request.form.get('status', CustomPage.STATUS_PUBLIC))
         }
         
         success, message, page = CustomPageService.add_page(data)
@@ -874,7 +877,9 @@ def edit_custom_page(id):
     return render_template('admin/custom_page_form.html',
                          page=page,
                          templates=templates,
-                         title='编辑页面')
+                         title='编辑页面',
+                          CustomPage=CustomPage
+                           )
 
 @bp.route('/custom_pages/<int:id>/update', methods=['POST'])
 @login_required
@@ -889,7 +894,8 @@ def update_custom_page(id):
             'route': request.form.get('route'),
             'content': request.form.get('content', ''),
             'fields': json.loads(request.form.get('fields', '{}')),
-            'require_login': request.form.get('require_login') == 'true'
+            'require_login': request.form.get('require_login') == 'true',
+            'status': int(request.form.get('status', CustomPage.STATUS_PUBLIC))
         }
         
         success, message, _ = CustomPageService.edit_page(id, data)
@@ -921,7 +927,8 @@ def create_custom_page():
     return render_template('admin/custom_page_form.html',
                          title='创建页面',
                          page=None,
-                         templates=templates)
+                         templates=templates,
+                         CustomPage=CustomPage)
 
 @bp.route('/categories/all')
 @login_required

@@ -281,4 +281,22 @@ def create_app(db_type=DB_TYPE, init_components=True):
             
         return {'theme': get_theme_settings()}
 
+    @app.context_processor
+    def inject_custom_pages():
+        from app.models import CustomPage
+        
+        def get_public_custom_pages():
+            """获取公开的自定义页面的标题和链接"""
+            pages = CustomPage.query.with_entities(
+                CustomPage.title,
+                CustomPage.route
+            ).filter_by(
+                status=CustomPage.STATUS_PUBLIC,
+                enabled=True
+            ).order_by(CustomPage.created_at.desc()).all()
+            
+            return [{'title': page.title, 'route': page.route} for page in pages]
+        
+        return {'get_public_custom_pages': get_public_custom_pages}
+
     return app 

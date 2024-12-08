@@ -69,7 +69,8 @@ class CustomPageService:
                 route=route,
                 content=data.get('content', ''),
                 fields=data.get('fields', {}),
-                require_login=data.get('require_login', False)
+                require_login=data.get('require_login', False),
+                status=data.get('status', 'public')
             )
             
             db.session.add(page)
@@ -99,13 +100,13 @@ class CustomPageService:
         try:
             # 只清除前台页面的HTML缓存
             cache_manager.delete(f'custom_page_html:{page.key}')
-            print(f"✓ 已清除页面缓存: {page.key}")
+            current_app.logger.info(f"已清除页面缓存: {page.key}")
         except Exception as e:
             current_app.logger.error(f"Clear page cache error: {str(e)}")
 
     @staticmethod
     def edit_page(page_id, data):
-        """编辑自定义页面"""
+        """更新自定义页面"""
         try:
             page = CustomPage.query.get_or_404(page_id)
             old_key = page.key
@@ -122,6 +123,7 @@ class CustomPageService:
             page.content = data.get('content', '')
             page.fields = data.get('fields', {})
             page.require_login = data.get('require_login', False)
+            page.status = int(data.get('status', CustomPage.STATUS_PUBLIC))
             
             db.session.commit()
             
@@ -187,6 +189,7 @@ class CustomPageService:
             page.content = data.get('content', '')
             page.fields = data.get('fields', {})
             page.require_login = data.get('require_login', False)
+            page.status = data.get('status', 'public')
             
             db.session.commit()
             
