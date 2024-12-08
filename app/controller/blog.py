@@ -66,44 +66,39 @@ def index():
 @handle_view_errors
 def category(id):
     """分类文章列表"""
-    try:
-        data = BlogService.get_category_articles(
-            id,
-            request.args.get('page', 1, type=int),
-            current_user
-        )
-        
-        # 使用分类指定的模板或默认模板
-        template = data.get('template', 'blog/index.html')
-        
-        # 获取模板对象
-        template_obj = current_app.jinja_env.get_template(template)
-        
-        # 定义区块和对应的数据键名映射
-        block_map = {
-            'hot_today': 'hot_articles_today',
-            'hot_week': 'hot_articles_week',
-            'random_articles': 'random_articles', 
-            'random_tags': 'random_tags',
-            'latest_comments': 'latest_comments'
-        }
-        
-        # 获取模板中定义的区块与需要的数据的交集
-        needed_widgets = set(block_map.keys()) & set(template_obj.blocks.keys())
-        
-        # 只获取需要的侧边栏数据
-        sidebar_data = BlogService.get_sidebar_data(needed_widgets)
-        
-        return render_template(template,
-                             articles=data['pagination'],
-                             current_category=data['current_category'],
-                             endpoint='blog.category',
-                             **sidebar_data,
-                             **get_categories_data())
-                             
-    except Exception as e:
-        current_app.logger.error(f"category error: {str(e)}")
-        abort(500)
+    data = BlogService.get_category_articles(
+        id,
+        request.args.get('page', 1, type=int),
+        current_user
+    )
+
+    # 使用分类指定的模板或默认模板
+    template = data.get('template', 'blog/index.html')
+
+    # 获取模板对象
+    template_obj = current_app.jinja_env.get_template(template)
+
+    # 定义区块和对应的数据键名映射
+    block_map = {
+        'hot_today': 'hot_articles_today',
+        'hot_week': 'hot_articles_week',
+        'random_articles': 'random_articles',
+        'random_tags': 'random_tags',
+        'latest_comments': 'latest_comments'
+    }
+
+    # 获取模板中定义的区块与需要的数据的交集
+    needed_widgets = set(block_map.keys()) & set(template_obj.blocks.keys())
+
+    # 只获取需要的侧边栏数据
+    sidebar_data = BlogService.get_sidebar_data(needed_widgets)
+
+    return render_template(template,
+                           articles=data['pagination'],
+                           current_category=data['current_category'],
+                           endpoint='blog.category',
+                           **sidebar_data,
+                           **get_categories_data())
 
 @bp.route('/<path:path>')
 def article(path):
