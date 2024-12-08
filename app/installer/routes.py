@@ -116,8 +116,8 @@ def install():
                 SiteConfig(key='site_name', value=site_name, description='网站名称'),
                 SiteConfig(key='site_keywords', value='PPress,技术,博客', description= '网站关键词'),
                 SiteConfig(key='site_description', value='基于 Flask 的博客系统', description= '网站描述'),
-                SiteConfig(key='contact_email', value='ponyj@qq.com', description= '网站描述'),
-                SiteConfig(key='footer_text', value='© 2024 PPress 版权所有', description= '网站描述'),
+                SiteConfig(key='contact_email', value='ponyj@qq.com', description= '联系邮箱'),
+                SiteConfig(key='footer_text', value='© 2024 PPress 版权所有', description= '页脚文本'),
                 SiteConfig(key='site_theme', value='default', description= '网站主题'),
                 SiteConfig(key='article_url_pattern', value='article/{id}'),
             ]
