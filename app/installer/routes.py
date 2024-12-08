@@ -39,6 +39,7 @@ def install():
 
                 # 测试连接并创建数据库
                 try:
+                    # 先连接 MySQL 服务器
                     conn = pymysql.connect(
                         host=mysql_config['mysql_host'],
                         port=mysql_config['mysql_port'],
@@ -53,13 +54,24 @@ def install():
                             'COLLATE utf8mb4_unicode_ci'
                         )
                     conn.close()
+
+                    # 更新数据库配置
+                    success, error = Installer.update_db_config(mysql_config)
+                    if not success:
+                        return render_template('install.html', error=error, tailwind_content=tailwind_content)
+
+                    # 重新配置数据库 URI
+                    db.engine.dispose()  # 关闭现有连接
+                    app = current_app._get_current_object()  # 获取当前应用实例
+                    app.config['SQLALCHEMY_DATABASE_URI'] = (
+                        f"mysql+pymysql://{mysql_config['mysql_user']}:{mysql_config['mysql_password']}"
+                        f"@{mysql_config['mysql_host']}:{mysql_config['mysql_port']}/{mysql_config['mysql_database']}?"
+                        f"charset=utf8mb4"
+                    )
+                    db.init_app(app)  # 重新初始化数据库连接
+
                 except Exception as e:
                     return render_template('install.html', error=f'MySQL连接失败: {str(e)}', tailwind_content=tailwind_content)
-
-                # 更新数据库配置
-                success, error = Installer.update_db_config(mysql_config)
-                if not success:
-                    return render_template('install.html', error=error, tailwind_content=tailwind_content)
 
             # 删除所有表并重新创建
             db.drop_all()
