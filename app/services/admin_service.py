@@ -274,34 +274,41 @@ class AdminService:
             query = Comment.query.options(
                 db.joinedload(Comment.user),
                 db.joinedload(Comment.article),
-                db.joinedload(Comment.custom_page)
+                db.joinedload(Comment.custom_page),
+                db.joinedload(Comment.parent)
             )
             
             # 搜索过滤
             if search_query:
                 if search_type == 'content':
                     query = query.filter(Comment.content.ilike(f'%{search_query}%'))
-                elif search_type == 'id':
+                elif search_type == 'id':  # 添加回ID搜索
                     try:
                         comment_id = int(search_query)
                         query = query.filter(Comment.id == comment_id)
                     except ValueError:
                         return None, 'ID必须是数字'
-                elif search_type == 'author':
+                elif search_type == 'author':  # 修改回author搜索
                     query = query.join(User).filter(User.username.ilike(f'%{search_query}%'))
                 elif search_type == 'article':
                     query = query.join(Article).filter(Article.title.ilike(f'%{search_query}%'))
-                elif search_type == 'page':
-                    query = query.join(CustomPage).filter(CustomPage.title.ilike(f'%{search_query}%'))
-                
+                elif search_type == 'status':
+                    query = query.filter(Comment.status == search_query)
+            
+            # 按时间倒序排序
+            query = query.order_by(Comment.created_at.desc())
+            
             # 分页
-            pagination = query.order_by(Comment.created_at.desc())\
-                            .paginate(page=page, per_page=20, error_out=False)
+            pagination = query.paginate(
+                page=page,
+                per_page=20,
+                error_out=False
+            )
             
             return pagination, None
             
         except Exception as e:
-            current_app.logger.error(f"Get comments error: {str(e)}")
+            current_app.logger.error(f"Comments error: {str(e)}")
             return None, str(e)
 
     @staticmethod

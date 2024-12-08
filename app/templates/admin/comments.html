@@ -52,6 +52,8 @@
                                 <option value="content" {% if search_type == 'content' %}selected{% endif %}>内容</option>
                                 <option value="id" {% if search_type == 'id' %}selected{% endif %}>ID</option>
                                 <option value="author" {% if search_type == 'author' %}selected{% endif %}>作者</option>
+                                <option value="article" {% if search_type == 'article' %}selected{% endif %}>文章</option>
+                                <option value="status" {% if search_type == 'status' %}selected{% endif %}>状态</option>
                             </select>
                             <div class="relative flex-1">
                                 <input type="text" name="q" value="{{ search_query }}"
@@ -101,37 +103,34 @@
                                 </div>
                                 {% endif %}
                             </td>
-                            <td class="hidden sm:table-cell px-6 py-4">
-                                <div class="flex items-center">
-                                    {% if comment.user %}
-                                        <img src="{{ comment.user.avatar }}" alt="avatar" class="w-6 h-6 rounded-full">
-                                        <a href="{{ url_for('user.author', id=comment.user.id) }}" 
-                                           class="ml-2 text-sm text-gray-900 hover:text-blue-600">
-                                            {{ comment.display_name }}
-                                        </a>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if comment.user %}
+                                    <a href="{{ url_for('user.author', id=comment.user.id) }}" 
+                                       class="text-blue-600 hover:text-blue-900">
+                                        {{ comment.user.username }}
+                                    </a>
+                                {% else %}
+                                    {% if comment.guest_name %}
+                                        <span class="text-gray-500">{{ comment.guest_name }}</span>
                                     {% else %}
-                                        <div class="flex flex-col">
-                                            <span class="text-sm text-gray-900">{{ comment.guest_name or '游客' }}</span>
-                                            {% if comment.guest_email %}
-                                            <span class="text-xs text-gray-500">{{ comment.guest_email }}</span>
-                                            {% endif %}
-                                            {% if comment.guest_contact %}
-                                            <span class="text-xs text-gray-500">{{ comment.guest_contact }}</span>
-                                            {% endif %}
-                                        </div>
+                                        <span class="text-gray-500">游客</span>
                                     {% endif %}
-                                </div>
+                                {% endif %}
                             </td>
-                            <td class="hidden sm:table-cell px-6 py-4">
-                                <div class="flex flex-col">
+                            <td class="px-6 py-4">
+                                {% if comment.article %}
                                     <a href="{{ ArticleUrlGenerator.generate(comment.article.id, comment.article.category_id, comment.article.created_at) }}"
-                                       class="text-sm text-gray-900 hover:text-blue-600 line-clamp-1">
+                                       class="text-blue-600 hover:text-blue-900">
                                         {{ comment.article.title }}
                                     </a>
-                                    <span class="text-xs text-gray-500">
-                                        作者: {{ comment.article.author.nickname or comment.article.author.username }}
-                                    </span>
-                                </div>
+                                {% elif comment.custom_page %}
+                                    <a href="{{ comment.custom_page.route }}"
+                                       class="text-blue-600 hover:text-blue-900">
+                                        {{ comment.custom_page.title }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-gray-500">已删除</span>
+                                {% endif %}
                             </td>
                             <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
                                 <div class="relative" x-data="{ open: false }">
@@ -340,7 +339,7 @@ function deleteComment(commentId) {
             }
         }).then(response => {
             if (response.ok) {
-                showAlert('评论删��成功', 'success', '成功');
+                showAlert('评论删除成功', 'success', '成功');
                 setTimeout(() => location.reload(), 200);
             } else {
                 response.json().then(data => {
