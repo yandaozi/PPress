@@ -47,16 +47,41 @@
                     <h2 class="text-xl font-bold">评论管理</h2>
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full lg:w-auto">
                         <form method="get" class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 flex-1">
-                            <select name="search_type" 
-                                   class="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                                <option value="content" {% if search_type == 'content' %}selected{% endif %}>内容</option>
-                                <option value="id" {% if search_type == 'id' %}selected{% endif %}>ID</option>
-                                <option value="author" {% if search_type == 'author' %}selected{% endif %}>作者</option>
-                                <option value="article" {% if search_type == 'article' %}selected{% endif %}>文章</option>
-                                <option value="status" {% if search_type == 'status' %}selected{% endif %}>状态</option>
-                            </select>
+                            <div class="relative">
+                                <select name="search_type" 
+                                       class="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
+                                       onchange="toggleStatusHelp(this.value)">
+                                    <option value="content" {% if search_type == 'content' %}selected{% endif %}>内容</option>
+                                    <option value="id" {% if search_type == 'id' %}selected{% endif %}>ID</option>
+                                    <option value="author" {% if search_type == 'author' %}selected{% endif %}>评论者</option>
+                                    <option value="article" {% if search_type == 'article' %}selected{% endif %}>文章</option>
+                                    <option value="status" {% if search_type == 'status' %}selected{% endif %}>状态</option>
+                                </select>
+
+                                <!-- 改进的状态搜索提示框 -->
+                                <div id="statusHelp" class="hidden absolute z-10 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                                    <div class="p-4">
+                                        <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">可用的状态值：</h4>
+                                        <div class="space-y-2">
+                                            <div class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-md" onclick="setStatusSearch('approved')">
+                                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                                <span class="text-sm text-gray-600 dark:text-gray-300">approved - 已通过</span>
+                                            </div>
+                                            <div class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-md" onclick="setStatusSearch('pending')">
+                                                <span class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                                                <span class="text-sm text-gray-600 dark:text-gray-300">pending - 待审核</span>
+                                            </div>
+                                            <div class="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-md" onclick="setStatusSearch('rejected')">
+                                                <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                                                <span class="text-sm text-gray-600 dark:text-gray-300">rejected - 已拒绝</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="relative flex-1">
-                                <input type="text" name="q" value="{{ search_query }}"
+                                <input type="text" name="q" id="searchInput" value="{{ search_query }}"
                                        placeholder="搜索评论..." 
                                        class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -442,6 +467,32 @@ function updateCommentStatus(commentId, status) {
         }
     });
 }
+
+function toggleStatusHelp(value) {
+    const helpBox = document.getElementById('statusHelp');
+    if (value === 'status') {
+        helpBox.classList.remove('hidden');
+        // 如果是状态搜索，自动聚焦搜索框
+        document.getElementById('searchInput').focus();
+    } else {
+        helpBox.classList.add('hidden');
+    }
+}
+
+// 添加点击状态值的处理函数
+function setStatusSearch(status) {
+    document.getElementById('searchInput').value = status;
+    document.getElementById('statusHelp').classList.add('hidden');
+}
+
+// 点击其他地方关闭提示框
+document.addEventListener('click', function(e) {
+    const helpBox = document.getElementById('statusHelp');
+    const select = document.querySelector('select[name="search_type"]');
+    if (!helpBox.contains(e.target) && !select.contains(e.target)) {
+        helpBox.classList.add('hidden');
+    }
+});
 
 // 初始化时根据 URL 参数切换 tab
 document.addEventListener('DOMContentLoaded', function() {
