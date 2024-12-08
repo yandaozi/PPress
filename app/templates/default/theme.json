@@ -10,5 +10,17 @@
         "email": "ponyj@qq.com",
         "github_url": "https://github.com/kzmnlz/flask-iosblog",
         "gitee_url": "https://gitee.com/fojie/PPress"
+    },
+    "article_fields": {
+        "thumbnail": {
+            "name": "缩略图",
+            "type": "image",
+            "description": "文章缩略图"
+        },
+        "subtitle": {
+            "name": "副标题",
+            "type": "text",
+            "description": "文章副标题"
+        }
     }
 } 

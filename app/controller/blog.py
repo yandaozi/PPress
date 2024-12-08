@@ -255,18 +255,27 @@ def edit(id=None):
             flash('请至少选择一个分类')
             return redirect(url_for('blog.edit', id=id))
             
-        success, message, article = BlogService.edit_article(
+        success, message, result = BlogService.edit_article(
             id,
             request.form,
             current_user.id,
             current_user.role == 'admin'
         )
+        
         flash(message)
         if success:
-            return redirect(ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at))
+            # 如果是 AJAX 请求,返回 JSON
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({
+                    'message': message,
+                    'url': result['url']  # 直接使用返回的 URL
+                })
+            # 否则重定向
+            return redirect(result['url'])  # 直接使用返回的 URL
+            
         return redirect(url_for('blog.edit', id=id))
     
-    # 获取文章用于编辑
+    # GET 请求处理保持不变
     article = None
     if id:
         try:

@@ -60,6 +60,9 @@ class Article(db.Model):
     
     tags = db.relationship('Tag', secondary=article_tags, backref=db.backref('articles', lazy=True))
     
+    # 添加自定义字段
+    fields = db.Column(db.JSON, nullable=True, comment='自定义字段')
+    
     # 静态定义表参数
     __table_args__ = (
         db.Index('idx_article_sort', 'created_at', 'view_count'),
@@ -130,6 +133,12 @@ class Article(db.Model):
         elif self.categories:
             return self.categories[0] if self.categories else None
         return None
+
+    def get_field(self, key, default=None):
+        """获取自定义字段值"""
+        if not self.fields:
+            return default
+        return self.fields.get(key, default)
 
 # 将事件监听器移到文件末尾，并使用延迟导入
 def init_article_events():

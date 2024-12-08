@@ -29,6 +29,82 @@
                 </label>
                 <textarea id="editor" name="content">{{ article.content if article else '' }}</textarea>
             </div>
+
+            <!-- 在内容编辑器后面添加自定义字段部分 -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">自定义字段</h3>
+                    <button type="button" onclick="addCustomField()"
+                            class="px-3 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded-lg 
+                                   hover:bg-gray-50 dark:hover:bg-gray-700
+                                   text-gray-700 dark:text-gray-300">
+                        + 添加字段
+                    </button>
+                </div>
+                
+                <div id="customFields" class="space-y-4">
+                    <!-- 主题预定义字段 -->
+                    {% if theme.article_fields %}
+                        {% for field_key, field in theme.article_fields.items() %}
+                        <div class="flex items-center space-x-4">
+                            <input type="text" name="field_keys[]" value="{{ field_key }}"
+                                   placeholder="字段名" readonly
+                                   class="w-1/3 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                          bg-gray-50 dark:bg-gray-600
+                                          text-gray-900 dark:text-white">
+                            {% if field.type == 'image' %}
+                            <div class="flex-1 flex items-center space-x-2">
+                                <input type="text" name="field_values[]"
+                                       value="{{ article.get_field(field_key) if article else '' }}"
+                                       placeholder="{{ field.description or '字段值' }}"
+                                       class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                              focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                              bg-white dark:bg-gray-700 
+                                              text-gray-900 dark:text-white">
+
+                            </div>
+                            {% else %}
+                            <input type="text" name="field_values[]"
+                                   value="{{ article.get_field(field_key) if article else '' }}"
+                                   placeholder="{{ field.description or '字段值' }}"
+                                   class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                          focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                          bg-white dark:bg-gray-700 
+                                          text-gray-900 dark:text-white">
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- 自定义字段 -->
+                    {% if article and article.fields %}
+                        {% for key, value in article.fields.items() %}
+                            {% if not theme.article_fields or key not in theme.article_fields %}
+                            <div class="flex items-center space-x-4">
+                                <input type="text" name="field_keys[]" value="{{ key }}"
+                                       placeholder="字段名"
+                                       class="w-1/3 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                              focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                              bg-white dark:bg-gray-700 
+                                              text-gray-900 dark:text-white">
+                                <input type="text" name="field_values[]" value="{{ value }}"
+                                       placeholder="字段值"
+                                       class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                              focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                              bg-white dark:bg-gray-700 
+                                              text-gray-900 dark:text-white">
+                                <button type="button" onclick="removeCustomField(this)"
+                                        class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <!-- 右侧设置区域 -->
@@ -374,5 +450,107 @@ document.querySelectorAll('input[name="categories"]').forEach(checkbox => {
         }
     });
 });
+</script>
+
+<!-- 在现有的 JavaScript 代码中添加图片选择支持 -->
+<script>
+// 添加图片选择支持
+function selectImage(button) {
+    openImageSelector().then(url => {
+        if (url) {
+            const input = button.parentElement.querySelector('input');
+            input.value = url;
+        }
+    });
+}
+
+// 修改表单提交处理,添加自定义字段处理
+document.getElementById('articleForm').onsubmit = function(e) {
+    if (!validateForm()) {
+        return false;
+    }
+    
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    // 获取自定义字段
+    const fields = {};
+    const keys = Array.from(this.querySelectorAll('input[name="field_keys[]"]'));
+    const values = Array.from(this.querySelectorAll('input[name="field_values[]"]'));
+    keys.forEach((key, index) => {
+        if (key.value.trim()) {
+            fields[key.value.trim()] = values[index].value;
+        }
+    });
+    
+    // 添加到表单数据
+    formData.set('fields', JSON.stringify(fields));
+    
+    // 发送请求
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'Accept': 'application/json'  // 添加这行,表明期望返回JSON
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('网络错误');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.error) {
+            showAlert(data.error, 'error', '错误');
+        } else {
+            showAlert(data.message, 'success', '成功');
+            if (data.url) {
+                setTimeout(() => location.href = data.url, 500);
+            }
+        }
+    })
+    .catch(error => {
+        showAlert(error.message, 'error', '错误');
+    });
+    
+    return false;
+};
+</script>
+
+<!-- 在现有的 JavaScript 代码中添加字段操作函数 -->
+<script>
+function addCustomField() {
+    const container = document.getElementById('customFields');
+    const fieldDiv = document.createElement('div');
+    fieldDiv.className = 'flex items-center space-x-4';
+    fieldDiv.innerHTML = `
+        <input type="text" name="field_keys[]"
+               placeholder="字段名"
+               class="w-1/3 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                      focus:outline-none focus:ring-2 focus:ring-blue-500 
+                      bg-white dark:bg-gray-700 
+                      text-gray-900 dark:text-white">
+        <input type="text" name="field_values[]"
+               placeholder="字段值"
+               class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                      focus:outline-none focus:ring-2 focus:ring-blue-500 
+                      bg-white dark:bg-gray-700 
+                      text-gray-900 dark:text-white">
+        <button type="button" onclick="removeCustomField(this)"
+                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+    container.appendChild(fieldDiv);
+}
+
+function removeCustomField(button) {
+    button.closest('div').remove();
+}
+
+
 </script>
 {% endblock %} 

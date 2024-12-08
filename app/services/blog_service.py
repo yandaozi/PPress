@@ -11,6 +11,7 @@ import hashlib
 from flask import current_app, abort
 import random
 from app.utils.pagination import Pagination
+import json
 
 
 class BlogService:
@@ -635,16 +636,34 @@ class BlogService:
                 db.session.rollback()
                 return False, f'更新标签失败: {str(e)}', None
             
+            # 处理自定义字段
+            try:
+                fields = json.loads(data.get('fields', '{}'))
+                if isinstance(fields, dict):  # 确保是字典类型
+                    article.fields = fields
+                else:
+                    article.fields = {}
+            except (json.JSONDecodeError, TypeError):
+                article.fields = {}  # 如果解析失败,使用空字典
+            
             db.session.commit()
             
             # 清除相关缓存
-            BlogService.clear_article_related_cache(article.id)  # 使用统一的缓存清理方法
-            
-            # 额外清除用户相关缓存
+            BlogService.clear_article_related_cache(article.id)
             cache_manager.delete(f'user:{user_id}:articles:*')
             cache_manager.delete('routes_last_refresh')
             
-            return True, '文章保存成功', article
+            # 生成URL并返回
+            from app.utils.article_url import ArticleUrlGenerator
+            return True, '文章保存成功', {
+                'id': article.id,
+                'url': ArticleUrlGenerator.generate(
+                    article.id,  # 直接传递参数,不使用关键字参数
+                    article.category_id,
+                    article.created_at
+                ),
+                'message': '文章保存成功'
+            }
             
         except Exception as e:
             db.session.rollback()
