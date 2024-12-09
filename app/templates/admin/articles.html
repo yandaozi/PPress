@@ -32,7 +32,7 @@
                             搜索
                         </button>
                     </form>
-                    <a href="{{ url_for('blog.edit') }}" 
+                    <a href="{{ url_for('admin.edit_article') }}"
                        class="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-center">
                         新建文章
                     </a>
@@ -130,7 +130,7 @@
                         </td>
                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
                             <div class="flex items-center space-x-3">
-                                <a href="{{ url_for('blog.edit', id=article.id) }}" 
+                                <a href="{{ url_for('admin.edit_article', id=article.id) }}"
                                    class="text-blue-600 hover:text-blue-900 transition-colors duration-200">编辑</a>
                                 <button onclick="deleteArticle({{ article.id }})" 
                                         class="text-red-600 hover:text-red-900 transition-colors duration-200">删除</button>

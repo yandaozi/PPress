@@ -1,4 +1,4 @@
-{% extends theme_path('base.html') %}
+{% extends theme_path('admin/base.html') %}
 
 {% block title %}{{ '编辑文章' if article else '创建文章' }}{% endblock %}
 
@@ -246,7 +246,7 @@
 
             <!-- 操作按钮 -->
             <div class="flex justify-end space-x-4">
-                <a href="{{ ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at) if article else url_for('blog.index') }}"
+                <a href="{{ url_for('admin.articles') }}"
                    class="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300">
                     取消
                 </a>
@@ -350,10 +350,12 @@ tagInput.addEventListener('keydown', function(e) {
         addTag(this.value);
     }
 });
+
 // 给输入框添加 blur 事件监听器，当失去焦点时调用 addTag 函数
 tagInput.addEventListener('blur', function() {
     addTag(this.value);
 });
+
 // 获取标签建议
 let debounceTimer;
 tagInput.addEventListener('input', function() {

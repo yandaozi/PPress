@@ -1,4 +1,5 @@
 from flask import current_app
+from flask_login import current_user
 
 from app.models import User, Article, Comment, ViewHistory, Category, Tag, Plugin, File, SiteConfig, Route, \
     CommentConfig
@@ -1906,3 +1907,90 @@ class AdminService:
             db.session.rollback()
             current_app.logger.error(f"Batch update per_page error: {str(e)}")
             return False, str(e)
+
+    @staticmethod
+    def save_article(article_id, form_data):
+        """保存文章"""
+        try:
+            # 获取表单数据
+            title = form_data.get('title')
+            content = form_data.get('content')
+            status = form_data.get('status', Article.STATUS_PUBLIC)
+            password = form_data.get('password', '')
+            allow_comment = form_data.get('allow_comment', 'true') == 'true'
+            
+            # 获取分类ID列表
+            category_ids = form_data.getlist('categories')
+            if not category_ids:
+                return False, '请至少选择一个分类', None
+            
+            # 获取标签
+            tags = form_data.get('tags', '').strip()
+            tag_names = [t.strip() for t in tags.split(',') if t.strip()]
+            
+            # 获取自定义字段
+            try:
+                fields = json.loads(form_data.get('fields', '{}'))
+            except:
+                fields = {}
+            
+            # 创建或更新文章
+            if article_id:
+                article = Article.query.get_or_404(article_id)
+            else:
+                article = Article(author_id=current_user.id)
+            
+            # 更新文章属性
+            article.title = title
+            article.content = content
+            article.status = status
+            article.password = password if status == Article.STATUS_PASSWORD else None
+            article.allow_comment = allow_comment
+            article.fields = fields
+            
+            # 更新分类
+            categories = Category.query.filter(Category.id.in_(category_ids)).all()
+            if not categories:
+                return False, '无效的分类ID', None
+            
+            article.category_id = categories[0].id  # 第一个作为主分类
+            article.categories = categories
+            
+            # 更新标签
+            article.tags.clear()
+            for name in tag_names:
+                tag = Tag.query.filter_by(name=name).first()
+                if not tag:
+                    tag = Tag(name=name)
+                    db.session.add(tag)
+                article.tags.append(tag)
+            
+            # 保存到数据库
+            if not article_id:
+                db.session.add(article)
+            db.session.commit()
+            
+            # 清除缓存
+            from app.services.blog_service import BlogService
+            BlogService.clear_article_related_cache(article.id)
+            
+            return True, '保存成功', article
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Save article error: {str(e)}")
+            return False, str(e), None
+
+    @staticmethod
+    def get_article_for_edit(article_id):
+        """获取用于编辑的文章"""
+        try:
+            article = Article.query.options(
+                db.joinedload(Article.author),
+                db.joinedload(Article.tags),
+                db.joinedload(Article.categories)
+            ).get_or_404(article_id)
+            return article
+        except Exception as e:
+            current_app.logger.error(f"Get article for edit error: {str(e)}")
+            return None

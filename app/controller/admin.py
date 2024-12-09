@@ -13,6 +13,7 @@ from app.models import CommentConfig
 from app.models.site_config import SiteConfig
 from app.utils.theme_manager import ThemeManager
 from app.models.theme_settings import ThemeSettings
+from app.models.category import Category
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -1141,4 +1142,38 @@ def batch_update_category_per_page():
         return jsonify({'error': message}), 400
         
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/article/edit', methods=['GET', 'POST'])
+@bp.route('/article/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_article(id=None):
+    """编辑/创建文章"""
+    try:
+        if request.method == 'POST':
+            success, message, data = AdminService.save_article(id, request.form)
+            return jsonify({
+                'error': message if not success else None,
+                'message': message if success else None,
+                'url': url_for('admin.articles') if success else None
+            })
+            
+        # GET 请求
+        if id:
+            article = AdminService.get_article_for_edit(id)
+            if not article:
+                abort(404)
+        else:
+            article = None
+            
+        # 获取分类列表
+        categories = Category.query.order_by(Category.sort_order).all()
+        
+        return render_template('admin/articles_edit.html',
+                             article=article,
+                             categories=categories)
+                             
+    except Exception as e:
+        current_app.logger.error(f"Edit article error: {str(e)}")
         return jsonify({'error': str(e)}), 500
