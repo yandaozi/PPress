@@ -76,7 +76,6 @@ class Installer:
                 )
                 
                 # 打印匹配到的内容用于调试
-                import re
                 match = re.search(pattern, content, re.DOTALL)
                 if match:
                     print("找到匹配内容:", match.group())
@@ -88,9 +87,9 @@ class Installer:
                 
                 with open(init_file, 'w', encoding='utf-8') as f:
                     f.write(content)
-                    
-                return True, None
-                
-            except Exception as e:
-                current_app.logger.error(f"Error cleaning up installer: {str(e)}")
-                return False, str(e) 
+            
+            return True, None
+            
+        except Exception as e:
+            current_app.logger.error(f"Error cleaning up installer: {str(e)}")
+            return False, str(e) 
