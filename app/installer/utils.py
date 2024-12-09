@@ -64,25 +64,28 @@ class Installer:
                 with open(init_file, 'r', encoding='utf-8') as f:
                     content = f.read()
                 
+                print("原始内容:", content)  # 打印原始内容
+                
                 # 删除安装相关代码
                 pattern = (
-                    r'# 初始化安装模块\(安装完成后这段代码会被自动删除\)\s*'
-                    r'# 检查是否已安装\(移到最前面\)\s*'
-                    r'from \.installer import is_installed,init_installer\s*'
-                    r'if not is_installed\(app\):\s*'
-                    r'# 未安装时只初始化安装模块\s*'
-                    r'init_installer\(app\)\s*'
-                    r'return app\s*'
+                    r'^\s*# 初始化安装模块\(安装完成后这段代码会被自动删除\)\s*?\n'
+                    r'^\s*# 检查是否已安装\(移到最前面\)\s*?\n'
+                    r'^\s*from \.installer import is_installed,init_installer\s*?\n'
+                    r'^\s*if not is_installed\(app\):\s*?#.*?\n'
+                    r'^\s*# 未安装时只初始化安装模块\s*?\n'
+                    r'^\s*init_installer\(app\)\s*?\n'
+                    r'^\s*return app\s*?\n'
                 )
                 
                 # 打印匹配到的内容用于调试
-                match = re.search(pattern, content, re.DOTALL)
+                match = re.search(pattern, content, re.DOTALL | re.MULTILINE)
                 if match:
-                    print("找到匹配内容:", match.group())
+                    print("找到匹配内容:", repr(match.group()))  # 使用 repr() 显示换行符
                     # 执行替换
                     content = content.replace(match.group(), '')
                 else:
                     print("未找到匹配内容")
+                    print("尝试匹配的模式:", repr(pattern))  # 打印模式用于调试
                 
                 # 写入更新后的内容
                 with open(init_file, 'w', encoding='utf-8') as f:
