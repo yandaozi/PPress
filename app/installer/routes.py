@@ -171,7 +171,7 @@ def install():
 
                 return jsonify({
                     'success': True,
-                    'message': '安装成功！',
+                    'message': '安装成功！记得重启应用！',
                     'redirect_url': '/'
                 })
 
