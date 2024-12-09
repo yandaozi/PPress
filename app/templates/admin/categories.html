@@ -30,34 +30,37 @@
                             搜索
                         </button>
                     </form>
-                    <div class="flex gap-2">
+                    <div class="flex flex-col sm:flex-row gap-2">
                         <button onclick="updateAllCategoryCounts()" 
-                                class="flex-1 sm:flex-none px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+                                class="w-full sm:w-auto px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-sm sm:text-base">
                             <span class="flex items-center justify-center">
                                 <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
                                     </path>
                                 </svg>
-                                <span>更新所有计数</span>
+                                <span class="hidden sm:inline">更新所有计数</span>
+                                <span class="sm:hidden">更新计数</span>
                             </span>
                         </button>
                         <button onclick="showAddCategoryModal()" 
-                                class="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+                                class="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm sm:text-base">
                             <span class="flex items-center justify-center">
                                 <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                                 </svg>
-                                <span>添加分类</span>
+                                <span class="hidden sm:inline">添加分类</span>
+                                <span class="sm:hidden">添加分类</span>
                             </span>
                         </button>
                         <button onclick="showBatchPerPageModal()" 
-                                class="flex-1 sm:flex-none px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                                class="w-full sm:w-auto px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm sm:text-base">
                             <span class="flex items-center justify-center">
                                 <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
                                 </svg>
-                                <span>批量设置</span>
+                                <span class="hidden sm:inline">批量设置</span>
+                                <span class="sm:hidden">批量设置</span>
                             </span>
                         </button>
                     </div>
@@ -83,7 +86,7 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200" id="categoryList">
                     {% for category in pagination.items recursive %}
-                    <tr data-category-id="{{ category.id }}" {% if category.parent_id %}data-parent="{{ category.parent_id }}"{% endif %} class="category-item">
+                    <tr data-id="{{ category.id }}" data-category-id="{{ category.id }}" {% if category.parent_id %}data-parent="{{ category.parent_id }}"{% endif %} class="category-item">
                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ category.id }}</td>
                         <td class="px-4 sm:px-6 py-4">
                             <div class="flex items-center">
