@@ -13,23 +13,22 @@ def is_installed(app=None):
     if app is None:
         from flask import current_app
         app = current_app
-    lock_file = os.path.join(app.root_path, '..', 'ppress_db.lock')
+    # 使用绝对路径
+    base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    lock_file = os.path.join(base_path, 'ppress_db.lock')
     return os.path.exists(lock_file)
 
 def init_installer(app):
     """初始化安装模块"""
-    # 在应用上下文中检查是否已安装
-    with app.app_context():
-        if not is_installed(app):
-            # 确保 CSRF 保护已启用
-            from app.extensions import csrf
-            csrf.init_app(app)
-            
-            from .routes import bp as installer_bp
-            app.register_blueprint(installer_bp)
-            
-            @app.before_request
-            def check_installed():
-                from flask import request, redirect, url_for
-                if not is_installed(app) and request.endpoint != 'installer.install':
-                    return redirect(url_for('installer.install')) 
+    # 确保 CSRF 保护已启用
+    from app.extensions import csrf
+    csrf.init_app(app)
+    
+    from .routes import bp as installer_bp
+    app.register_blueprint(installer_bp)
+    
+    @app.before_request
+    def check_installed():
+        from flask import request, redirect, url_for
+        if not is_installed() and request.endpoint != 'installer.install':
+            return redirect(url_for('installer.install')) 

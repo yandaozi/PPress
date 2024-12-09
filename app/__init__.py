@@ -123,6 +123,16 @@ def create_app(db_type=DB_TYPE, init_components=True):
 
     # 配置
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'PPress')
+
+    # 初始化安装模块(安装完成后这段代码会被自动删除)
+    # 检查是否已安装(移到最前面)
+    from .installer import is_installed
+    if not is_installed(app):  # 传入 app 实例
+        # 未安装时只初始化安装模块
+        from .installer import init_installer
+        init_installer(app)
+        return app
+
     app.config['SQLALCHEMY_DATABASE_URI'] = get_db_url(db_type)
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
@@ -157,10 +167,6 @@ def create_app(db_type=DB_TYPE, init_components=True):
     app.register_blueprint(blog.bp)
     app.register_blueprint(admin.bp)
     app.register_blueprint(user.bp)
-
-    # 初始化安装模块(安装完成后这段代码会被自动删除)
-    from .installer import init_installer
-    init_installer(app)
 
     # 初始化路由（确保在注册蓝图之后）
     if init_components:
