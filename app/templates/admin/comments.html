@@ -153,11 +153,17 @@
                                     </a>
                                 {% else %}
                                     {% if comment.guest_name %}
-                                        <span class="text-gray-500">{{ comment.guest_name }}</span>
+                                        <span class="text-gray-500">
+                                            {{ comment.guest_name }}<br>
+                                            邮箱：{{ comment.guest_email }}<br>
+                                            联系方式：{{ comment.guest_contact }}<br>
+                                        </span>
                                     {% else %}
                                         <span class="text-gray-500">游客</span>
                                     {% endif %}
                                 {% endif %}
+
+                                <div class="text-xs text-gray-500">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 {% if comment.article %}
@@ -210,8 +216,6 @@
                                             </button>
                                         </div>
                                     </div>
-
-                                    <div class="text-xs text-gray-500">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
                                 </div>
                             </td>
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
