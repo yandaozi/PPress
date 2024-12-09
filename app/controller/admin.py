@@ -1281,3 +1281,23 @@ def batch_delete_articles():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@bp.route('/comments/batch-delete', methods=['POST'])
+@login_required
+@admin_required
+def batch_delete_comments():
+    """批量删除评论"""
+    try:
+        comment_ids = request.json.get('comment_ids', [])
+        if not comment_ids:
+            return jsonify({'error': '未选择评论'}), 400
+            
+        success, message = AdminService.batch_delete_comments(comment_ids)
+        
+        if not success:
+            return jsonify({'error': message}), 400
+            
+        return jsonify({'message': '删除成功'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

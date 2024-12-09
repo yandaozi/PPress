@@ -299,7 +299,7 @@ class AdminService:
                     query = query.filter(Comment.status == search_query)
             
             # 按时间倒序排序
-            query = query.order_by(Comment.created_at.desc())
+            query = query.order_by(Comment.id.desc())
             
             # 分页
             pagination = query.paginate(
@@ -2243,4 +2243,26 @@ class AdminService:
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Batch delete articles error: {str(e)}")
+            return False, str(e)
+
+    @staticmethod
+    def batch_delete_comments(comment_ids):
+        """批量删除评论"""
+        try:
+            # 查询要删除的评论
+            comments = Comment.query.filter(Comment.id.in_(comment_ids)).all()
+            
+            if not comments:
+                return False, '没有找到可删除的评论'
+                
+            # 删除评论
+            for comment in comments:
+                db.session.delete(comment)
+                
+            db.session.commit()
+            return True, None
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Batch delete comments error: {str(e)}")
             return False, str(e)
