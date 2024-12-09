@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import current_app
 from flask_login import current_user
 
@@ -1955,8 +1957,18 @@ class AdminService:
             article.content = content
             article.status = status
             article.password = password if status == Article.STATUS_PASSWORD else None
-            article.allow_comment = allow_comment
+            article.allow_comment = form_data.get('allow_comment') == 'on'
             article.fields = fields
+
+            # 更新发布时间
+            created_at = form_data.get('created_at')
+            if created_at:
+                try:
+                    article.created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
+                except ValueError:
+                    return False, '发布时间格式不正确', None
+            elif not article_id:  # 新文章且未设置时间则使用当前时间
+                article.created_at = datetime.now()
             
             # 更新分类
             categories = Category.query.filter(Category.id.in_(category_ids)).all()
