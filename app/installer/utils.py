@@ -66,7 +66,13 @@ class Installer:
                 
                 # 删除安装相关代码
                 content = re.sub(
-                    r'from .installer import init_installer.*?init_installer\(app\)',
+                    r'# 初始化安装模块\(安装完成后这段代码会被自动删除\)\s*'
+                    r'# 检查是否已安装\(移到最前面\)\s*'
+                    r'from \.installer import is_installed,init_installer\s*'
+                    r'if not is_installed\(app\):\s*'
+                    r'# 未安装时只初始化安装模块\s*'
+                    r'init_installer\(app\)\s*'
+                    r'return app\s*\n*',
                     '',
                     content,
                     flags=re.DOTALL

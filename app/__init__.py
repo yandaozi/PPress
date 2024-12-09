@@ -145,10 +145,9 @@ def create_app(db_type=DB_TYPE, init_components=True):
 
     # 初始化安装模块(安装完成后这段代码会被自动删除)
     # 检查是否已安装(移到最前面)
-    from .installer import is_installed
+    from .installer import is_installed,init_installer
     if not is_installed(app):  # 传入 app 实例
         # 未安装时只初始化安装模块
-        from .installer import init_installer
         init_installer(app)
         return app
 
