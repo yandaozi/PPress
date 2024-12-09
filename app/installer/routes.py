@@ -1,4 +1,6 @@
 from flask import render_template, request, redirect, url_for, current_app, jsonify
+
+from app import create_app
 from app.installer import bp
 from app.installer.utils import Installer
 from app.models import (
@@ -10,7 +12,7 @@ from datetime import datetime
 import os
 import pymysql
 import base64
-from config.database import MYSQL_CONFIG, get_db_url
+from slugify import slugify
 
 
 @bp.route('/install', methods=['GET', 'POST'])
@@ -42,20 +44,15 @@ def install():
                     'charset': 'utf8mb4'
                 }
                 
-                # 验证数据库名称
-                if not mysql_config['database'].isalnum() and not '_' in mysql_config['database']:
-                    return jsonify({
-                        'success': False,
-                        'message': '数据库名称只能包含字母、数字和下划线'
-                    })
-                
                 try:
                     # 连接MySQL并创建数据库
                     conn = pymysql.connect(
                         host=mysql_config['host'],
                         port=mysql_config['port'],
                         user=mysql_config['user'],
-                        password=mysql_config['password']
+                        password=mysql_config['password'],
+                        charset='utf8mb4',
+                        connect_timeout=10
                     )
                     
                     with conn.cursor() as cursor:
@@ -63,8 +60,9 @@ def install():
                         cursor.execute(f"DROP DATABASE IF EXISTS `{mysql_config['database']}`")
                         # 创建新数据库
                         cursor.execute(
-                            f"CREATE DATABASE `{mysql_config['database']}` "
-                            "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+                            f"CREATE DATABASE {mysql_config['database']} "
+                            'CHARACTER SET utf8mb4 '
+                            'COLLATE utf8mb4_unicode_ci'
                         )
                     conn.close()
                     
@@ -76,31 +74,33 @@ def install():
                             'message': error
                         })
                         
-                    # 重新初始化数据库连接
-                    app = current_app._get_current_object()
-                    app.config['SQLALCHEMY_DATABASE_URI'] = get_db_url(db_type)
-                    db.init_app(app)
-                    
-                    # 确保所有模型都被加载
-                    models = [
-                        User, Tag, Category, Article, SiteConfig, CommentConfig,
-                        Plugin, File, Route, CustomPage, ViewHistory, Comment
-                    ]
-                    
-                    # 删除所有表并重新创建
-                    with app.app_context():
-                        db.drop_all()
-                        db.create_all()
-                        
                 except Exception as e:
                     return jsonify({
                         'success': False,
                         'message': f'MySQL初始化失败: {str(e)}'
                     })
 
-            # 开始一个新的事务
-            db.session.begin()
-            try:
+            # 创建应用实例
+            app = create_app(db_type=db_type, init_components=False)
+
+            with app.app_context():
+                # 删除所有表并重新创建
+                db.drop_all()
+                db.create_all()
+                
+                # 初始化网站配置
+                default_configs = [
+                    {'key': 'site_name', 'value': site_name, 'description': '网站名称'},
+                    {'key': 'site_keywords', 'value': 'PPress,技术,博客,Python', 'description': '网站关键词'},
+                    {'key': 'site_description', 'value': '分享技术知识和经验', 'description': '网站描述'},
+                    {'key': 'contact_email', 'value': 'ponyj@qq.com', 'description': '联系邮箱'},
+                    {'key': 'icp_number', 'value': '', 'description': 'ICP备案号'},
+                    {'key': 'footer_text', 'value': '© 2024 PPress 版权所有', 'description': '页脚文本'},
+                    {'key': 'site_theme', 'value': 'default', 'description': '网站主题'},
+                ]
+                for config in default_configs:
+                    db.session.add(SiteConfig(**config))
+
                 # 创建管理员账号
                 admin = User(
                     username='admin',
@@ -110,22 +110,22 @@ def install():
                 )
                 admin.set_password('123456')
                 db.session.add(admin)
-                db.session.flush()
 
                 # 创建一个标签
                 tag = Tag(name='PPress')
                 db.session.add(tag)
-                db.session.flush()
 
                 # 创建一个分类
                 category = Category(
                     name='示例分类',
-                    slug='example',
+                    slug=slugify('示例分类'),
                     description='PPress 示例分类',
                     sort_order=1
                 )
                 db.session.add(category)
-                db.session.flush()
+                
+                # 提交以获取ID
+                db.session.commit()
 
                 # 创建一篇示例文章
                 article = Article(
@@ -146,29 +146,7 @@ def install():
                 article.tags.append(tag)
                 db.session.add(article)
 
-                # 初始化网站配置
-                site_configs = [
-                    SiteConfig(key='site_name', value=site_name, description='网站名称'),
-                    SiteConfig(key='site_keywords', value='PPress,技术,博客', description='网站关键词'),
-                    SiteConfig(key='site_description', value='基于 Flask 的博客系统', description='网站描述'),
-                    SiteConfig(key='contact_email', value='ponyj@qq.com', description='联系邮箱'),
-                    SiteConfig(key='footer_text', value='© 2024 PPress 版权所有', description='页脚文本'),
-                    SiteConfig(key='site_theme', value='default', description='网站主题'),
-                    SiteConfig(key='article_url_pattern', value='article/{id}'),
-                ]
-                db.session.bulk_save_objects(site_configs)
-
-                # 初始化评论配置
-                comment_config = CommentConfig(
-                    require_audit=True,
-                    require_email=True,
-                    require_contact=False,
-                    allow_guest=True,
-                    comments_per_page=10
-                )
-                db.session.add(comment_config)
-
-                # 提交事务
+                # 最终提交
                 db.session.commit()
 
                 # 创建安装锁文件
@@ -189,13 +167,6 @@ def install():
                     'success': True,
                     'message': '安装成功！记得重启应用！',
                     'redirect_url': '/'
-                })
-
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({
-                    'success': False,
-                    'message': str(e)
                 })
 
         except Exception as e:
