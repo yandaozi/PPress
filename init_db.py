@@ -9,7 +9,7 @@ from datetime import datetime
 import pymysql
 from config.database import MYSQL_CONFIG
 
-LOCK_FILE = '../ppress_db.lock'
+LOCK_FILE = 'ppress_db.lock'
 COPYRIGHT_INFO = base64.b64decode(
     'UFByZXNzIC0gRmxhc2sgQ29udGVudCBNYW5hZ2VtZW50IFN5c3RlbQrniYjmnYPmiYDmnIkgKGMpIDIwMjQg6KiA6YGT5a2QCuS9nOiAhVFR77yaNTc1NzMyNTYzCumhueebruWcsOWdgO+8mmh0dHBzOi8vZ2l0ZWUuY29tL2ZvamllL1BQcmVzcw=='
 ).decode('utf-8')
@@ -30,7 +30,7 @@ def create_db_lock():
 
 def update_db_config(db_type):
     """更新数据库配置文件"""
-    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'database.py')
+    config_path = os.path.join(os.path.dirname(__file__), 'config', 'database.py')
     
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
