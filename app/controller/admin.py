@@ -1257,3 +1257,27 @@ def update_all_tag_counts():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@bp.route('/articles/batch-delete', methods=['POST'])
+@login_required
+@admin_required
+def batch_delete_articles():
+    """批量删除文章"""
+    try:
+        article_ids = request.json.get('article_ids', [])
+        if not article_ids:
+            return jsonify({'error': '未选择文章'}), 400
+            
+        success, message = AdminService.batch_delete_articles(
+            article_ids,
+            current_user.id,
+            current_user.role == 'admin'
+        )
+        
+        if not success:
+            return jsonify({'error': message}), 400
+            
+        return jsonify({'message': '删除成功'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

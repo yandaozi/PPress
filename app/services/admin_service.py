@@ -2216,3 +2216,31 @@ class AdminService:
             db.session.rollback()
             current_app.logger.error(f"Error updating all tag counts: {str(e)}")
             return False, str(e)
+
+    @staticmethod
+    def batch_delete_articles(article_ids, user_id, is_admin=False):
+        """批量删除文章"""
+        try:
+            # 查询要删除的文章
+            query = Article.query.filter(Article.id.in_(article_ids))
+            
+            # 非管理员只能删除自己的文章
+            if not is_admin:
+                query = query.filter_by(author_id=user_id)
+            
+            articles = query.all()
+            
+            if not articles:
+                return False, '没有找到可删除的文章'
+                
+            # 删除文章
+            for article in articles:
+                db.session.delete(article)
+                
+            db.session.commit()
+            return True, None
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Batch delete articles error: {str(e)}")
+            return False, str(e)
