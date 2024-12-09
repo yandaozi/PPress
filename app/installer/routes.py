@@ -13,6 +13,7 @@ import os
 import pymysql
 import base64
 from slugify import slugify
+from config.database import MYSQL_CONFIG
 
 
 @bp.route('/install', methods=['GET', 'POST'])
@@ -33,40 +34,19 @@ def install():
 
             # MySQL 配置
             if db_type == 'mysql':
-                # 获取表单中的 MySQL 配置
-                mysql_config = {
-                    'db_type': db_type,
+                # 获取表单中的 MySQL 配置并更新 MYSQL_CONFIG
+                MYSQL_CONFIG.update({
                     'host': request.form.get('mysql_host'),
                     'port': int(request.form.get('mysql_port', 3306)),
                     'database': request.form.get('mysql_database').strip().replace(' ', '_'),
                     'user': request.form.get('mysql_user'),
-                    'password': request.form.get('mysql_password'),
-                    'charset': 'utf8mb4'
-                }
+                    'password': request.form.get('mysql_password')
+                })
                 
                 try:
-                    # 连接MySQL并创建数据库
-                    conn = pymysql.connect(
-                        host=mysql_config['host'],
-                        port=mysql_config['port'],
-                        user=mysql_config['user'],
-                        password=mysql_config['password'],
-                        charset='utf8mb4',
-                        connect_timeout=10
-                    )
-                    
-                    with conn.cursor() as cursor:
-                        # 删除数据库如果存在
-                        cursor.execute(f"DROP DATABASE IF EXISTS `{mysql_config['database']}`")
-                        # 创建新数据库
-                        cursor.execute(
-                            f"CREATE DATABASE {mysql_config['database']} "
-                            'CHARACTER SET utf8mb4 '
-                            'COLLATE utf8mb4_unicode_ci'
-                        )
-                    conn.close()
-                    
                     # 更新数据库配置
+                    mysql_config = MYSQL_CONFIG.copy()
+                    mysql_config['db_type'] = db_type
                     success, error = Installer.update_db_config(mysql_config)
                     if not success:
                         return jsonify({
@@ -84,6 +64,7 @@ def install():
             app = create_app(db_type=db_type, init_components=False)
 
             with app.app_context():
+                print(f"\n开始初始化数据到 {db_type} 数据库...")
                 # 删除所有表并重新创建
                 db.drop_all()
                 db.create_all()
