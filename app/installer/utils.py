@@ -65,24 +65,32 @@ class Installer:
                     content = f.read()
                 
                 # 删除安装相关代码
-                content = re.sub(
-                    r'# 初始化安装模块\(安装完成后这段代码会被自动删除\)\s*'
+                pattern = (
+                    r'\s*# 初始化安装模块\(安装完成后这段代码会被自动删除\)\s*'
                     r'# 检查是否已安装\(移到最前面\)\s*'
                     r'from \.installer import is_installed,init_installer\s*'
                     r'if not is_installed\(app\):\s*'
                     r'# 未安装时只初始化安装模块\s*'
                     r'init_installer\(app\)\s*'
-                    r'return app\s*\n*',
-                    '',
-                    content,
-                    flags=re.DOTALL
+                    r'return app\s*'
                 )
+                
+                # 打印匹配到的内容用于调试
+                import re
+                match = re.search(pattern, content, re.DOTALL)
+                if match:
+                    print("找到匹配内容:", match.group())
+                else:
+                    print("未找到匹配内容")
+                
+                # 执行替换
+                content = re.sub(pattern, '', content, flags=re.DOTALL)
                 
                 with open(init_file, 'w', encoding='utf-8') as f:
                     f.write(content)
                     
-            return True, None
-            
-        except Exception as e:
-            current_app.logger.error(f"Error cleaning up installer: {str(e)}")
-            return False, str(e) 
+                return True, None
+                
+            except Exception as e:
+                current_app.logger.error(f"Error cleaning up installer: {str(e)}")
+                return False, str(e) 
