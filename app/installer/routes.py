@@ -125,6 +125,7 @@ def install():
                     status='public'
                 )
                 article.tags.append(tag)
+                article.categories = [category]
                 db.session.add(article)
 
                 # 最终提交

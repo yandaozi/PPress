@@ -115,10 +115,6 @@ def init_db(db_type='mysql'):
         # 创建一个分类
         category = Category(
             name='示例分类',
-            description='PPress 示例分类'
-        )
-        category = Category(
-            name='示例分类',
             slug=slugify('示例分类'),  # 添加 slug
             description='PPress 示例分类',
             sort_order=1  # 添加排序
@@ -145,6 +141,7 @@ def init_db(db_type='mysql'):
             view_count=0,
         )
         article.tags.append(tag)
+        article.categories = [category]
         db.session.add(article)
         
         # 最终提交
