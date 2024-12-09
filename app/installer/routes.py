@@ -1,7 +1,10 @@
 from flask import render_template, request, redirect, url_for, current_app, jsonify
 from app.installer import bp
 from app.installer.utils import Installer
-from app.models import User, Tag, Category, Article, SiteConfig, CommentConfig
+from app.models import (
+    User, Tag, Category, Article, SiteConfig, CommentConfig,
+    Plugin, File, Route, CustomPage, ViewHistory, Comment
+)
 from app.extensions import db
 from datetime import datetime
 import os
@@ -77,6 +80,12 @@ def install():
                         'success': False,
                         'message': f'MySQL初始化失败: {str(e)}'
                     })
+
+            # 确保所有模型都被加载
+            models = [
+                User, Tag, Category, Article, SiteConfig, CommentConfig,
+                Plugin, File, Route, CustomPage, ViewHistory, Comment
+            ]
 
             # 删除所有表并重新创建
             db.drop_all()
