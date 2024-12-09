@@ -82,10 +82,8 @@ Windows下PPress启动教程：https://www.bilibili.com/video/BV1sEzSYHEHc/
 ### 文字教程
 1. 下载代码，解压缩
 2. 安装依赖 pip install -r requirements.txt
-3. 如果选择用mysql数据库需要在config/database文件MYSQL_CONFIG变量中修改连接信息
-4. 运行 init_db.py 文件 初始化数据库
-5. 运行 run.py
-6. 后台地址：`/admin/`
+3. 运行 run.py - 进入网页安装 - 填写对应的配置信息 - 安装成功后重启本应用
+4. 后台地址：`/admin/`  默认管理员账号（admin/123456）
 
 ## 文档
 
