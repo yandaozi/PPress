@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, current_app
+from flask import render_template, request, redirect, url_for, current_app, jsonify
 from app.installer import bp
 from app.installer.utils import Installer
 from app.models import User, Tag, Category, Article, SiteConfig, CommentConfig
@@ -40,9 +40,10 @@ def install():
                 
                 # 验证数据库名称
                 if not mysql_config['database'].isalnum() and not '_' in mysql_config['database']:
-                    return render_template('install.html', 
-                                         error='数据库名称只能包含字母、数字和下划线', 
-                                         tailwind_content=tailwind_content)
+                    return jsonify({
+                        'success': False,
+                        'message': '数据库名称只能包含字母、数字和下划线'
+                    })
                 
                 try:
                     # 连接MySQL并创建数据库
@@ -66,10 +67,16 @@ def install():
                     # 更新数据库配置
                     success, error = Installer.update_db_config(mysql_config)
                     if not success:
-                        return render_template('install.html', error=error, tailwind_content=tailwind_content)
+                        return jsonify({
+                            'success': False,
+                            'message': error
+                        })
                         
                 except Exception as e:
-                    return render_template('install.html', error=f'MySQL初始化失败: {str(e)}', tailwind_content=tailwind_content)
+                    return jsonify({
+                        'success': False,
+                        'message': f'MySQL初始化失败: {str(e)}'
+                    })
 
             # 删除所有表并重新创建
             db.drop_all()
@@ -157,15 +164,28 @@ def install():
                 # 清理安装文件
                 success, error = Installer.cleanup_installer()
                 if not success:
-                    return render_template('install.html', error=error, tailwind_content=tailwind_content)
+                    return jsonify({
+                        'success': False,
+                        'message': error
+                    })
 
-                return redirect(url_for('blog.index'))
+                return jsonify({
+                    'success': True,
+                    'message': '安装成功！',
+                    'redirect_url': '/'
+                })
 
             except Exception as e:
                 db.session.rollback()
-                return render_template('install.html', error=str(e), tailwind_content=tailwind_content)
+                return jsonify({
+                    'success': False,
+                    'message': str(e)
+                })
 
         except Exception as e:
-            return render_template('install.html', error=str(e), tailwind_content=tailwind_content)
+            return jsonify({
+                'success': False,
+                'message': str(e)
+            })
 
     return render_template('install.html', tailwind_content=tailwind_content)

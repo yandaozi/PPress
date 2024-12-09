@@ -67,7 +67,7 @@
                 </div>
                 {% endif %}
 
-                <form class="mt-8 space-y-6" method="POST">
+                <form id="installForm" class="mt-8 space-y-6" method="POST">
                     <!-- 添加 CSRF token -->
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
@@ -145,7 +145,91 @@
         </div>
     </div>
 
+    <!-- 添加 Alert 组件 -->
+    <div id="alert" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+        <div class="absolute inset-0 bg-black opacity-50"></div>
+        <div class="relative bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <div id="alertIcon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4"></div>
+            <div id="alertTitle" class="text-lg font-medium text-center mb-2"></div>
+            <div id="alertMessage" class="text-sm text-gray-500 text-center mb-4"></div>
+            <div id="alertButtons" class="flex justify-center space-x-4">
+                <button id="alertConfirm" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">确定</button>
+                <button id="alertCancel" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 hidden">取消</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+    // Alert 组件
+    function showAlert(message, type = 'info', title = null, callback = null, showCancel = false) {
+        const alert = document.getElementById('alert');
+        const alertIcon = document.getElementById('alertIcon');
+        const alertTitle = document.getElementById('alertTitle');
+        const alertMessage = document.getElementById('alertMessage');
+        const alertConfirm = document.getElementById('alertConfirm');
+        const alertCancel = document.getElementById('alertCancel');
+
+        // 设置图标和颜色
+        const icons = {
+            'success': '<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>',
+            'error': '<svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>',
+            'warning': '<svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>',
+            'info': '<svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+        };
+
+        alertIcon.innerHTML = icons[type];
+        alertTitle.textContent = title || type.charAt(0).toUpperCase() + type.slice(1);
+        alertMessage.textContent = message;
+        
+        // 显示/隐藏取消按钮
+        alertCancel.classList.toggle('hidden', !showCancel);
+        
+        // 绑定回调
+        alertConfirm.onclick = () => {
+            alert.classList.add('hidden');
+            if (callback) callback(true);
+        };
+        alertCancel.onclick = () => {
+            alert.classList.add('hidden');
+            if (callback) callback(false);
+        };
+        
+        alert.classList.remove('hidden');
+    }
+
+    // 表单提交处理
+    document.getElementById('installForm').onsubmit = function(e) {
+        e.preventDefault();
+        
+        // 显示加载提示
+        showAlert('正在安装...', 'info', null, null, false);
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: new FormData(this),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success', '成功');
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 1000);
+            } else {
+                showAlert(data.message, 'error', '错误');
+            }
+        })
+        .catch(error => {
+            showAlert('安装失败: ' + error, 'error', '错误');
+        });
+        
+        return false;
+    };
+
+    // MySQL 配置显示/隐藏
     function toggleMySQLConfig() {
         const dbType = document.getElementById('dbType').value;
         const mysqlConfig = document.getElementById('mysqlConfig');
