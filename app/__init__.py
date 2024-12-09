@@ -158,10 +158,6 @@ def create_app(db_type=DB_TYPE, init_components=True):
     app.register_blueprint(admin.bp)
     app.register_blueprint(user.bp)
 
-    # 初始化安装模块(安装完成后这段代码会被自动删除)
-    from .installer import init_installer
-    init_installer(app)
-
     # 初始化路由（确保在注册蓝图之后）
     if init_components:
         init_app_components(app)
