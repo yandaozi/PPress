@@ -2105,3 +2105,44 @@ class AdminService:
             db.session.rollback()
             current_app.logger.error(f"Update tag counts error: {str(e)}")
             return False, str(e)
+
+    @staticmethod
+    def update_all_category_counts():
+        """更新所有分类的文章计数"""
+        try:
+            # 获取所有分类
+            categories = Category.query.all()
+            updated = []
+            
+            for category in categories:
+                # 计算文章数 - 修复 join 语句
+                count = db.session.query(
+                    func.count(distinct(
+                        func.coalesce(Article.id, article_categories.c.article_id)
+                    ))
+                ).select_from(Category).filter(
+                    Category.id == category.id
+                ).outerjoin(
+                    Article,
+                    Category.id == Article.category_id
+                ).outerjoin(
+                    article_categories,
+                    Category.id == article_categories.c.category_id
+                ).scalar()
+                
+                # 如果计数有变化,更新并记录
+                if category.article_count != count:
+                    category.article_count = count
+                    updated.append({
+                        'id': category.id,
+                        'name': category.name,
+                        'new_count': count
+                    })
+            
+            db.session.commit()
+            return True, updated
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error updating all category counts: {str(e)}")
+            return False, str(e)

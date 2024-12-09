@@ -59,34 +59,7 @@ class Category(db.Model):
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Error updating article count for category {self.id}: {str(e)}")
-    
-    @staticmethod
-    def update_all_counts():
-        """更新所有分类的文章计数"""
-        try:
-            # 使用单条 SQL 更新所有分类的计数
-            sql = text("""
-                UPDATE categories c
-                SET article_count = (
-                    SELECT COUNT(DISTINCT article_id) 
-                    FROM (
-                        SELECT id as article_id 
-                        FROM articles 
-                        WHERE category_id = c.id
-                        UNION
-                        SELECT article_id
-                        FROM article_categories
-                        WHERE category_id = c.id
-                    ) as combined_articles
-                )
-            """)
-            
-            db.session.execute(sql)
-            db.session.commit()
-            
-        except Exception as e:
-            db.session.rollback()
-            current_app.logger.error(f"Error updating all category counts: {str(e)}")
+
     
     def get_total_article_count(self):
         """获取包含子分类的总文章数"""

@@ -9,7 +9,7 @@
             <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center space-y-4 lg:space-y-0">
                 <h2 class="text-xl font-bold">分类管理</h2>
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full lg:w-auto">
-                    <form method="get" class="flex-1 flex flex-col sm:flex-row gap-2">
+                    <form method="get" class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 flex-1">
                         <select name="search_type" 
                                class="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500">
                             <option value="name" {% if search_type != 'id' %}selected{% endif %}>名称</option>
@@ -31,6 +31,17 @@
                         </button>
                     </form>
                     <div class="flex gap-2">
+                        <button onclick="updateAllCategoryCounts()" 
+                                class="flex-1 sm:flex-none px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+                            <span class="flex items-center justify-center">
+                                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                                <span>更新所有计数</span>
+                            </span>
+                        </button>
                         <button onclick="showAddCategoryModal()" 
                                 class="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
                             <span class="flex items-center justify-center">
@@ -756,6 +767,42 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('没有找到分类元素'); // 调试信息
     }
 });
+
+// 添加更新所有分类计数的函数
+function updateAllCategoryCounts() {
+    showAlert(
+        '此操作会重新计算所有分类的文章数，在分类计数不准确时使用。确定要继续吗？', 
+        'warning', 
+        '更新所有分类计数', 
+        function() {
+            // 显示加载提示
+            showAlert('正在更新所有分类计数...', 'info', null, null, false);
+            
+            fetch('/admin/categories/update-all-counts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert(data.error, 'error', '错误');
+                    return;
+                }
+                if (data.success) {
+                    showAlert('所有分类计数已更新', 'success', '成功');
+                    setTimeout(() => location.reload(), 200);
+                }
+            })
+            .catch(error => {
+                showAlert('更新失败: ' + error, 'error', '错误');
+            });
+        },
+        true  // 显示取消按钮
+    );
+}
 </script>
 
 <!-- 在页面底部添加样式 -->
