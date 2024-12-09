@@ -75,21 +75,27 @@ def install():
                             'message': error
                         })
                         
+                    # 重新初始化数据库连接
+                    app = current_app._get_current_object()
+                    app.config['SQLALCHEMY_DATABASE_URI'] = get_db_url(db_type)
+                    db.init_app(app)
+                    
+                    # 确保所有模型都被加载
+                    models = [
+                        User, Tag, Category, Article, SiteConfig, CommentConfig,
+                        Plugin, File, Route, CustomPage, ViewHistory, Comment
+                    ]
+                    
+                    # 删除所有表并重新创建
+                    with app.app_context():
+                        db.drop_all()
+                        db.create_all()
+                        
                 except Exception as e:
                     return jsonify({
                         'success': False,
                         'message': f'MySQL初始化失败: {str(e)}'
                     })
-
-            # 确保所有模型都被加载
-            models = [
-                User, Tag, Category, Article, SiteConfig, CommentConfig,
-                Plugin, File, Route, CustomPage, ViewHistory, Comment
-            ]
-
-            # 删除所有表并重新创建
-            db.drop_all()
-            db.create_all()
 
             # 开始一个新的事务
             db.session.begin()
