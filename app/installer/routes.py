@@ -10,7 +10,8 @@ from datetime import datetime
 import os
 import pymysql
 import base64
-from config.database import MYSQL_CONFIG
+from config.database import MYSQL_CONFIG, get_db_url
+
 
 @bp.route('/install', methods=['GET', 'POST'])
 def install():
