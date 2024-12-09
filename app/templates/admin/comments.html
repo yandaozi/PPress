@@ -119,8 +119,7 @@
                                 <input type="checkbox" id="selectAll" class="rounded border-gray-300">
                             </th>
                             <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评论内容</th>
-                            <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评论者</th>
+                            <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评论信息</th>
                             <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评论文章</th>
                             <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评论状态</th>
                             <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
@@ -130,42 +129,64 @@
                         {% for comment in pagination.items %}
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-4">
-                                <input type="checkbox" name="comment_ids" value="{{ comment.id }}" 
+                                <input type="checkbox" name="comment_ids" value="{{ comment.id }}"
                                        class="comment-checkbox rounded border-gray-300"
                                        onchange="updateBatchDeleteButton()">
                             </td>
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ comment.id }}</td>
-                            <td class="px-6 py-4">
+
+                            <td class="px-6 py-4 space-y-3">
+                                <!-- 评论者信息 -->
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        {% if comment.user %}
+                                            <img src="{{ comment.user.avatar }}" alt="avatar" 
+                                                 class="w-10 h-10 rounded-full object-cover">
+                                            <div>
+                                                <a href="{{ url_for('user.author', id=comment.user.id) }}" 
+                                                   class="text-sm font-medium text-gray-900 hover:text-blue-600">
+                                                   {{ comment.user.nickname or comment.user.username }}
+                                                </a>
+                                            </div>
+                                        {% else %}
+                                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900">
+                                                    {{ comment.guest_name or '游客' }}
+                                                </div>
+                                                {% if comment.guest_email %}
+                                                    <div class="text-xs text-gray-500">{{ comment.guest_email }}</div>
+                                                {% endif %}
+                                                {% if comment.guest_contact %}
+                                                    <div class="text-xs text-gray-500">{{ comment.guest_contact }}</div>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <!-- 时间显示 -->
+                                    <div class="text-xs text-gray-500 whitespace-nowrap">
+                                        {{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </div>
+                                </div>
+
+                                <!-- 评论内容 -->
                                 <div class="text-sm text-gray-900">
                                     <div class="line-clamp-2">{{ comment.content }}</div>
                                 </div>
+
+                                <!-- 回复信息 -->
                                 {% if comment.parent_id %}
-                                <div class="mt-1 text-xs text-gray-500">
-                                    回复: {{ comment.parent.content|truncate(20) }}
+                                <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                                    <div class="font-medium">回复给:</div>
+                                    <div class="mt-1">{{ comment.parent.content|truncate(50) }}</div>
                                 </div>
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                {% if comment.user %}
-                                    <a href="{{ url_for('user.author', id=comment.user.id) }}" 
-                                       class="text-blue-600 hover:text-blue-900">
-                                        {{ comment.user.username }}
-                                    </a>
-                                {% else %}
-                                    {% if comment.guest_name %}
-                                        <span class="text-gray-500">
-                                            {{ comment.guest_name }}<br>
-                                            邮箱：{{ comment.guest_email }}<br>
-                                            联系方式：{{ comment.guest_contact }}<br>
-                                        </span>
-                                    {% else %}
-                                        <span class="text-gray-500">游客</span>
-                                    {% endif %}
-                                {% endif %}
-
-                                <div class="text-xs text-gray-500">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
-                            </td>
-                            <td class="px-6 py-4">
                                 {% if comment.article %}
                                     <a href="{{ ArticleUrlGenerator.generate(comment.article.id, comment.article.category_id, comment.article.created_at) }}"
                                        class="text-blue-600 hover:text-blue-900">
