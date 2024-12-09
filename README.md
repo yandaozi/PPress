@@ -6,12 +6,12 @@
     PPress
 </h1>
 
-<h4 align="center">一个基于Python的CMS系统，采用Flask极致构建</h4>
+<h4 align="center">一个基于Python的博客CMS系统，采用Flask极致构建</h4>
 
 ## 简介
-PPress 是一个基于 Flask 框架构建的功能丰富的CMS系统，具备内存缓存、缓存预热等优化机制，支持 sqlite 和 mysql 两种数据库。
+PPress 是一个基于 Flask 框架构建的功能丰富的博客CMS系统，具备内存缓存、缓存预热等优化机制，支持 sqlite 和 mysql 两种数据库。
 
-拥有完善的前后台管理系统，涵盖用户管理、文章管理、评论管理、系统配置管理等多个方面，是一个适合任何Web的开源CMS平台。
+拥有完善的前后台管理系统，涵盖用户管理、文章管理、评论管理、系统配置管理等多个方面，是一个适合任何Web的开源 Blog / CMS 平台。
 
 ## 功能
 
