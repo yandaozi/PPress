@@ -123,16 +123,6 @@ def create_app(db_type=DB_TYPE, init_components=True):
 
     # 配置
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'PPress')
-
-    # 初始化安装模块(安装完成后这段代码会被自动删除)
-    # 检查是否已安装(移到最前面)
-    from .installer import is_installed
-    if not is_installed(app):  # 传入 app 实例
-        # 未安装时只初始化安装模块
-        from .installer import init_installer
-        init_installer(app)
-        return app
-
     app.config['SQLALCHEMY_DATABASE_URI'] = get_db_url(db_type)
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
@@ -152,6 +142,16 @@ def create_app(db_type=DB_TYPE, init_components=True):
 
     # 初始化基础扩展
     db.init_app(app)
+
+    # 初始化安装模块(安装完成后这段代码会被自动删除)
+    # 检查是否已安装(移到最前面)
+    from .installer import is_installed
+    if not is_installed(app):  # 传入 app 实例
+        # 未安装时只初始化安装模块
+        from .installer import init_installer
+        init_installer(app)
+        return app
+
     login_manager.init_app(app)
     csrf.init_app(app)
     login_manager.login_view = 'auth.login'
