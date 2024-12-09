@@ -1237,3 +1237,23 @@ def update_all_category_counts():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@bp.route('/tags/update-all-counts', methods=['POST'])
+@login_required
+@admin_required
+def update_all_tag_counts():
+    """更新所有标签文章数"""
+    try:
+        success, result = AdminService.update_all_tag_counts()
+        
+        if not success:
+            return jsonify({'error': result}), 400
+            
+        return jsonify({
+            'success': True,
+            'message': '所有标签计数已更新',
+            'updated': result
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

@@ -22,7 +22,7 @@ from app.utils.pagination import Pagination
 from threading import Lock
 
 from app.utils.route_manager import route_manager
-from sqlalchemy import text, update, func, distinct
+from sqlalchemy import text, update, func, distinct, case
 from app.utils.article_url import ArticleUrlGenerator
 from app.utils.id_encoder import IdEncoder
 
@@ -2145,4 +2145,62 @@ class AdminService:
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Error updating all category counts: {str(e)}")
+            return False, str(e)
+
+    @staticmethod
+    def update_all_tag_counts():
+        """高性能更新所有标签的文章计数"""
+        try:
+            # 1. 创建子查询获取标签计数
+            tag_counts = db.session.query(
+                article_tags.c.tag_id.label('tag_id'),
+                func.count(distinct(article_tags.c.article_id)).label('count')
+            ).group_by(
+                article_tags.c.tag_id
+            ).subquery()
+
+            # 2. 获取需要更新的标签
+            updated_tags = db.session.query(Tag).outerjoin(
+                tag_counts,
+                Tag.id == tag_counts.c.tag_id
+            ).filter(
+                Tag.article_count != func.coalesce(tag_counts.c.count, 0)
+            ).with_entities(
+                Tag.id,
+                Tag.name,
+                func.coalesce(tag_counts.c.count, 0).label('new_count')
+            ).all()
+
+            if updated_tags:
+                # 3. 使用正确的 case() 语法执行批量更新
+                # 使用 coalesce 确保空值为 0
+                stmt = update(Tag).values(
+                    article_count=func.coalesce(
+                        db.session.query(
+                            func.count(distinct(article_tags.c.article_id))
+                        ).filter(
+                            article_tags.c.tag_id == Tag.id
+                        ).as_scalar(),
+                        0
+                    )
+                )
+                db.session.execute(stmt)
+
+                # 4. 提交事务
+                db.session.commit()
+
+                # 5. 返回更新的标签信息
+                return True, [
+                    {
+                        'id': tag.id,
+                        'name': tag.name,
+                        'new_count': tag.new_count
+                    } for tag in updated_tags
+                ]
+
+            return True, []
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error updating all tag counts: {str(e)}")
             return False, str(e)

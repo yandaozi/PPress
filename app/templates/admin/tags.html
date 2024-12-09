@@ -32,10 +32,24 @@
                             搜索
                         </button>
                     </form>
-                    <button onclick="showAddTagModal()" 
-                           class="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
-                        新增标签
-                    </button>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button onclick="updateAllTagCounts()" 
+                                class="w-full sm:w-auto px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-sm sm:text-base">
+                            <span class="flex items-center justify-center">
+                                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                                <span class="hidden sm:inline">更新所有计数</span>
+                                <span class="sm:hidden">更新计数</span>
+                            </span>
+                        </button>
+                        <button onclick="showAddTagModal()" 
+                                class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            新增标签
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -289,5 +303,39 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('没有找到标签元素'); // 调试信息
     }
 });
+
+function updateAllTagCounts() {
+    showAlert(
+        '此操作会重新计算所有标签的文章数，在标签计数不准确时使用。确定要继续吗？', 
+        'warning', 
+        '更新所有标签计数', 
+        function() {
+            showAlert('正在更新所有标签计数...', 'info', null, null, false);
+            
+            fetch('/admin/tags/update-all-counts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert(data.error, 'error', '错误');
+                    return;
+                }
+                if (data.success) {
+                    showAlert('所有标签计数已更新', 'success', '成功');
+                    setTimeout(() => location.reload(), 200);
+                }
+            })
+            .catch(error => {
+                showAlert('更新失败: ' + error, 'error', '错误');
+            });
+        },
+        true
+    );
+}
 </script>
 {% endblock %} 
