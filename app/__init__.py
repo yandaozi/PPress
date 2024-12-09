@@ -1,4 +1,4 @@
-from flask import Flask, url_for, render_template, g, current_app, request, redirect
+from flask import Flask, url_for, render_template, g, current_app, abort
 import os
 
 from werkzeug.routing import BuildError
@@ -12,6 +12,7 @@ from config.database import get_db_url, DB_TYPE
 from sqlalchemy import event
 from app.utils.custom_pages import custom_page_manager
 from app.utils.article_url import ArticleUrlGenerator
+import jinja2
 
 cache = Cache()
 
@@ -307,5 +308,12 @@ def create_app(db_type=DB_TYPE, init_components=True):
             return [{'title': page.title, 'route': page.route} for page in pages]
         
         return {'get_public_custom_pages': get_public_custom_pages}
+
+    # 添加错误处理
+    @app.errorhandler(jinja2.exceptions.TemplateNotFound)
+    def handle_template_not_found(error):
+        """将模板缺失错误转为404"""
+        current_app.logger.error(f"Template not found: {str(error)}")
+        return render_template('errors/404.html'), 404
 
     return app
