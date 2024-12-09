@@ -3,7 +3,7 @@ from flask_login import current_user
 
 from app.models import User, Article, Comment, ViewHistory, Category, Tag, Plugin, File, SiteConfig, Route, \
     CommentConfig
-from app.models.article import article_categories
+from app.models.article import article_categories, article_tags
 from app.utils.cache_manager import cache_manager
 from app.plugins import plugin_manager
 
@@ -1925,9 +1925,19 @@ class AdminService:
                 return False, '请至少选择一个分类', None
             
             # 获取标签
-            tags = form_data.get('tags', '').strip()
-            tag_names = [t.strip() for t in tags.split(',') if t.strip()]
-            
+            tags = form_data.get('tag_names', '').strip()
+            tag_names = [name.strip() for name in tags.split() if name.strip()]
+
+            new_tags = []
+
+            # 获取或创建标签
+            for tag_name in tag_names:
+                tag = Tag.query.filter_by(name=tag_name).first()
+                if not tag:
+                    tag = Tag(name=tag_name)
+                    db.session.add(tag)
+                new_tags.append(tag)
+
             # 获取自定义字段
             try:
                 fields = json.loads(form_data.get('fields', '{}'))
@@ -1957,13 +1967,25 @@ class AdminService:
             article.categories = categories
             
             # 更新标签
-            article.tags.clear()
-            for name in tag_names:
-                tag = Tag.query.filter_by(name=name).first()
-                if not tag:
-                    tag = Tag(name=name)
-                    db.session.add(tag)
-                article.tags.append(tag)
+            try:
+                # 手动处理标签关联
+                if article_id:
+                    # 先清除所有现有的标签关联
+                    db.session.execute(
+                        article_tags.delete().where(
+                            article_tags.c.article_id == article_id
+                        )
+                    )
+                    db.session.flush()
+
+                # 设置新的标签
+                article.tags = new_tags
+                db.session.flush()
+
+            except Exception as e:
+                current_app.logger.error(f"Error updating article tags: {str(e)}")
+                db.session.rollback()
+                return False, f'更新标签失败: {str(e)}', None
             
             # 保存到数据库
             if not article_id:
