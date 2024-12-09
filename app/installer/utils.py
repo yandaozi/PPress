@@ -66,36 +66,23 @@ class Installer:
                 
                 # 删除安装相关代码
                 pattern = (
-                    r'\s*# 初始化安装模块\(安装完成后这段代码会被自动删除\)\s*'
+                    r'# 初始化安装模块\(安装完成后这段代码会被自动删除\)\s*'
                     r'# 检查是否已安装\(移到最前面\)\s*'
                     r'from \.installer import is_installed,init_installer\s*'
                     r'if not is_installed\(app\):\s*'
                     r'# 未安装时只初始化安装模块\s*'
                     r'init_installer\(app\)\s*'
-                    r'return app\s*\n*'
+                    r'return app\s*'
                 )
                 
-                # 先打印整个文件内容用于调试
-                print("文件内容:", content)
-                
                 # 打印匹配到的内容用于调试
-                match = re.search(pattern, content, re.DOTALL | re.MULTILINE)
+                match = re.search(pattern, content, re.DOTALL)
                 if match:
                     print("找到匹配内容:", match.group())
                     # 执行替换
                     content = content.replace(match.group(), '')
                 else:
-                    # 尝试更简单的模式
-                    simple_pattern = (
-                        r'# 初始化安装模块.*?'
-                        r'return app\s*\n'
-                    )
-                    match = re.search(simple_pattern, content, re.DOTALL)
-                    if match:
-                        print("使用简单模式找到匹配:", match.group())
-                        content = content.replace(match.group(), '')
-                    else:
-                        print("未找到匹配内容")
+                    print("未找到匹配内容")
                 
                 # 写入更新后的内容
                 with open(init_file, 'w', encoding='utf-8') as f:
