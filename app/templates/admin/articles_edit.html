@@ -3,260 +3,285 @@
 {% block title %}{{ '编辑文章' if article else '创建文章' }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 py-8">
-    <form method="post" class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="articleForm" onsubmit="return validateForm()">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        
-        <!-- 左侧主要内容区域 -->
-        <div class="lg:col-span-2 space-y-6">
-            <!-- 标题输入 -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    标题
-                </label>
-                <input type="text" name="title" required
-                       value="{{ article.title if article else '' }}"
-                       class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
-                              focus:outline-none focus:ring-2 focus:ring-blue-500 
-                              bg-white dark:bg-gray-700 
-                              text-gray-900 dark:text-white">
-            </div>
-
-            <!-- 内容编辑器 -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    内容
-                </label>
-                <textarea id="editor" name="content">{{ article.content if article else '' }}</textarea>
-            </div>
-
-            <!-- 在内容编辑器后面添加自定义字段部分 -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">自定义字段</h3>
-                    <button type="button" onclick="addCustomField()"
-                            class="px-3 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded-lg 
-                                   hover:bg-gray-50 dark:hover:bg-gray-700
-                                   text-gray-700 dark:text-gray-300">
-                        + 添加字段
-                    </button>
+<div class="p-6">
+    <div class="bg-white rounded-lg shadow-sm">
+        <!-- 标题栏 -->
+        <div class="px-6 py-4 border-b">
+            <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center space-y-4 lg:space-y-0">
+                <h2 class="text-xl font-bold">{{ '编辑文章' if article else '撰写文章' }}</h2>
+                {% if article %}
+                <div class="flex items-center space-x-4">
+                    <a href="{{ ArticleUrlGenerator.generate(article.id, article.category_id, article.created_at) }}"
+                       target="_blank" 
+                       class="text-blue-600 hover:text-blue-700">
+                        查看文章
+                    </a>
+                    <a href="{{ url_for('admin.articles') }}"
+                       class="text-gray-600 hover:text-gray-900">
+                        返回列表
+                    </a>
                 </div>
-                
-                <div id="customFields" class="space-y-4">
-                    <!-- 主题预定义字段 -->
-                    {% if theme.article_fields %}
-                        {% for field_key, field in theme.article_fields.items() %}
-                        <div class="flex items-center space-x-4">
-                            <input type="text" name="field_keys[]" value="{{ field_key }}"
-                                   placeholder="字段名" readonly
-                                   class="w-1/3 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
-                                          bg-gray-50 dark:bg-gray-600
-                                          text-gray-900 dark:text-white">
-                            {% if field.type == 'image' %}
-                            <div class="flex-1 flex items-center space-x-2">
-                                <input type="text" name="field_values[]"
-                                       value="{{ article.get_field(field_key) if article else '' }}"
-                                       placeholder="{{ field.description or '字段值' }}"
-                                       class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
-                                              focus:outline-none focus:ring-2 focus:ring-blue-500 
-                                              bg-white dark:bg-gray-700 
-                                              text-gray-900 dark:text-white">
-
-                            </div>
-                            {% else %}
-                            <input type="text" name="field_values[]"
-                                   value="{{ article.get_field(field_key) if article else '' }}"
-                                   placeholder="{{ field.description or '字段值' }}"
-                                   class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
-                                          focus:outline-none focus:ring-2 focus:ring-blue-500 
-                                          bg-white dark:bg-gray-700 
-                                          text-gray-900 dark:text-white">
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    {% endif %}
-
-                    <!-- 自定义字段 -->
-                    {% if article and article.fields %}
-                        {% for key, value in article.fields.items() %}
-                            {% if not theme.article_fields or key not in theme.article_fields %}
-                            <div class="flex items-center space-x-4">
-                                <input type="text" name="field_keys[]" value="{{ key }}"
-                                       placeholder="字段名"
-                                       class="w-1/3 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
-                                              focus:outline-none focus:ring-2 focus:ring-blue-500 
-                                              bg-white dark:bg-gray-700 
-                                              text-gray-900 dark:text-white">
-                                <input type="text" name="field_values[]" value="{{ value }}"
-                                       placeholder="字段值"
-                                       class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
-                                              focus:outline-none focus:ring-2 focus:ring-blue-500 
-                                              bg-white dark:bg-gray-700 
-                                              text-gray-900 dark:text-white">
-                                <button type="button" onclick="removeCustomField(this)"
-                                        class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                            {% endif %}
-                        {% endfor %}
-                    {% endif %}
-                </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- 右侧设置区域 -->
-        <div class="space-y-6">
-            <!-- 发布时间 -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    发布时间
-                </label>
-                <input type="datetime-local"
-                       name="created_at"
-                       value="{{ article.created_at.strftime('%Y-%m-%dT%H:%M') if article else '' }}"
-                       class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg
-                              focus:outline-none focus:ring-2 focus:ring-blue-500
-                              bg-white dark:bg-gray-700
-                              text-gray-900 dark:text-white">
-                <p class="mt-1 text-xs text-gray-500">留空则使用当前时间</p>
-            </div>
-
-            <!-- 分类选择 -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                    分类
-                </label>
-                <div class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
-                    {% macro render_category_checkbox(category, level=0) %}
-                    <div class="category-item flex items-center hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors duration-200 {% if level > 0 %}ml-{{ level * 4 }}{% endif %}">
-                        <div class="relative flex items-center">
-                            <input type="checkbox" 
-                                   name="categories" 
-                                   value="{{ category.id }}"
-                                   id="category_{{ category.id }}"
-                                   {% if article and category.id in article.categories|map(attribute='id') %}checked{% endif %}
-                                   class="w-4 h-4 text-blue-600 border-gray-300 rounded 
-                                          focus:ring-blue-500 dark:focus:ring-blue-600
-                                          dark:bg-gray-600 dark:border-gray-500">
-                            <label for="category_{{ category.id }}" 
-                                   class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-                                {{ category.name }}
-                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">({{ category.article_count }})</span>
-                            </label>
-                        </div>
+        <!-- 表单内容 -->
+        <div class="p-6">
+            <form method="post" class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="articleForm" onsubmit="return validateForm()">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- 左侧主要内容区域 -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- 标题输入 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            标题
+                        </label>
+                        <input type="text" name="title" required
+                               value="{{ article.title if article else '' }}"
+                               class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                      focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                      bg-white dark:bg-gray-700 
+                                      text-gray-900 dark:text-white">
                     </div>
-                    {% if category._children %}
-                        {% for child in category._children %}
-                            {{ render_category_checkbox(child, level + 1) }}
-                        {% endfor %}
-                    {% endif %}
-                    {% endmacro %}
 
-                    {% for category in categories %}
-                        {{ render_category_checkbox(category) }}
-                    {% endfor %}
-                </div>
-            </div>
+                    <!-- 内容编辑器 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            内容
+                        </label>
+                        <textarea id="editor" name="content">{{ article.content if article else '' }}</textarea>
+                    </div>
 
-            <!-- 文章状态 -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    文章状态
-                </label>
-                <select name="status" 
-                        id="articleStatus"
-                        onchange="togglePasswordField()"
-                        class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
-                               focus:outline-none focus:ring-2 focus:ring-blue-500 
-                               bg-white dark:bg-gray-700 
-                               text-gray-900 dark:text-white">
-                    <option value="public" {% if article and article.status == 'public' %}selected{% endif %}>公开</option>
-                    <option value="hidden" {% if article and article.status == 'hidden' %}selected{% endif %}>隐藏</option>
-                    <option value="password" {% if article and article.status == 'password' %}selected{% endif %}>密码保护</option>
-                    <option value="private" {% if article and article.status == 'private' %}selected{% endif %}>私密</option>
-                    <option value="draft" {% if article and article.status == 'draft' %}selected{% endif %}>草稿</option>
-                    <option value="pending" {% if article and article.status == 'pending' %}selected{% endif %}>待审核</option>
-                </select>
+                    <!-- 在内容编辑器后面添加自定义字段部分 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">自定义字段</h3>
+                            <button type="button" onclick="addCustomField()"
+                                    class="px-3 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded-lg 
+                                           hover:bg-gray-50 dark:hover:bg-gray-700
+                                           text-gray-700 dark:text-gray-300">
+                                + 添加字段
+                            </button>
+                        </div>
+                        
+                        <div id="customFields" class="space-y-4">
+                            <!-- 主题预定义字段 -->
+                            {% if theme.article_fields %}
+                                {% for field_key, field in theme.article_fields.items() %}
+                                <div class="flex items-center space-x-4">
+                                    <input type="text" name="field_keys[]" value="{{ field_key }}"
+                                           placeholder="字段名" readonly
+                                           class="w-1/3 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                                  bg-gray-50 dark:bg-gray-600
+                                                  text-gray-900 dark:text-white">
+                                    {% if field.type == 'image' %}
+                                    <div class="flex-1 flex items-center space-x-2">
+                                        <input type="text" name="field_values[]"
+                                               value="{{ article.get_field(field_key) if article else '' }}"
+                                               placeholder="{{ field.description or '字段值' }}"
+                                               class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                                      focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                                      bg-white dark:bg-gray-700 
+                                                      text-gray-900 dark:text-white">
 
-                <!-- 密码保护选项 -->
-                <div id="passwordField" class="mt-4 {% if not article or article.status != 'password' %}hidden{% endif %}">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        访问密码
-                    </label>
-                    <input type="password" 
-                           name="password" 
-                           value="{{ article.password if article else '' }}"
-                           placeholder="留空将使用默认密码: 123456"
-                           class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
-                                  focus:outline-none focus:ring-2 focus:ring-blue-500 
-                                  bg-white dark:bg-gray-700 
-                                  text-gray-900 dark:text-white">
-                </div>
-            </div>
+                                    </div>
+                                    {% else %}
+                                    <input type="text" name="field_values[]"
+                                           value="{{ article.get_field(field_key) if article else '' }}"
+                                           placeholder="{{ field.description or '字段值' }}"
+                                           class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                                  focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                                  bg-white dark:bg-gray-700 
+                                                  text-gray-900 dark:text-white">
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            {% endif %}
 
-            <!-- 标签设置 -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    标签
-                </label>
-                <div class="relative">
-                    <!-- 标签输入区域 -->
-                    <div class="flex flex-wrap items-center gap-2 p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg min-h-[42px]">
-                        <div id="selected-tags" class="flex flex-wrap gap-2">
-                            {% if article %}
-                                {% for tag in article.tags %}
-                                <span class="tag-item inline-flex items-center px-2.5 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full text-sm">
-                                    {{ tag.name }}
-                                    <button type="button" onclick="removeTag(this)" class="ml-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                        </svg>
-                                    </button>
-                                </span>
+                            <!-- 自定义字段 -->
+                            {% if article and article.fields %}
+                                {% for key, value in article.fields.items() %}
+                                    {% if not theme.article_fields or key not in theme.article_fields %}
+                                    <div class="flex items-center space-x-4">
+                                        <input type="text" name="field_keys[]" value="{{ key }}"
+                                               placeholder="字段名"
+                                               class="w-1/3 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                                      focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                                      bg-white dark:bg-gray-700 
+                                                      text-gray-900 dark:text-white">
+                                        <input type="text" name="field_values[]" value="{{ value }}"
+                                               placeholder="字段值"
+                                               class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                                      focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                                      bg-white dark:bg-gray-700 
+                                                      text-gray-900 dark:text-white">
+                                        <button type="button" onclick="removeCustomField(this)"
+                                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    {% endif %}
                                 {% endfor %}
                             {% endif %}
                         </div>
-                        <input type="text" 
-                               id="tag-input"
-                               placeholder="输入标签，按空格或回车添加"
-                               class="flex-1 min-w-[120px] bg-transparent border-0 outline-none focus:ring-0 text-gray-900 dark:text-gray-100">
-                        <input type="hidden" name="tag_names" id="tag-names" value="{{ article.tags|map(attribute='name')|join(' ') if article else '' }}">
                     </div>
-                    <!-- 标签建议下拉框 -->
-                    <div id="tag-suggestions" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 hidden"></div>
                 </div>
-            </div>
 
-            <!-- 评论设置 -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <div class="flex items-center">
-                    <input type="checkbox" 
-                           name="allow_comment" 
-                           id="allowComment"
-                           {% if not article or article.allow_comment %}checked{% endif %}
-                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                    <label for="allowComment" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                        允许评论
-                    </label>
+                <!-- 右侧设置区域 -->
+                <div class="space-y-6">
+                    <!-- 发布时间 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            发布时间
+                        </label>
+                        <input type="datetime-local"
+                               name="created_at"
+                               value="{{ article.created_at.strftime('%Y-%m-%dT%H:%M') if article else '' }}"
+                               class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg
+                                      focus:outline-none focus:ring-2 focus:ring-blue-500
+                                      bg-white dark:bg-gray-700
+                                      text-gray-900 dark:text-white">
+                        <p class="mt-1 text-xs text-gray-500">留空则使用当前时间</p>
+                    </div>
+
+                    <!-- 分类选择 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                            分类
+                        </label>
+                        <div class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                            {% macro render_category_checkbox(category, level=0) %}
+                            <div class="category-item flex items-center hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-lg transition-colors duration-200 {% if level > 0 %}ml-{{ level * 4 }}{% endif %}">
+                                <div class="relative flex items-center">
+                                    <input type="checkbox" 
+                                           name="categories" 
+                                           value="{{ category.id }}"
+                                           id="category_{{ category.id }}"
+                                           {% if article and category.id in article.categories|map(attribute='id') %}checked{% endif %}
+                                           class="w-4 h-4 text-blue-600 border-gray-300 rounded 
+                                                  focus:ring-blue-500 dark:focus:ring-blue-600
+                                                  dark:bg-gray-600 dark:border-gray-500">
+                                    <label for="category_{{ category.id }}" 
+                                           class="ml-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                        {{ category.name }}
+                                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">({{ category.article_count }})</span>
+                                    </label>
+                                </div>
+                            </div>
+                            {% if category._children %}
+                                {% for child in category._children %}
+                                    {{ render_category_checkbox(child, level + 1) }}
+                                {% endfor %}
+                            {% endif %}
+                            {% endmacro %}
+
+                            {% for category in categories %}
+                                {{ render_category_checkbox(category) }}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- 文章状态 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            文章状态
+                        </label>
+                        <select name="status" 
+                                id="articleStatus"
+                                onchange="togglePasswordField()"
+                                class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                       focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                       bg-white dark:bg-gray-700 
+                                       text-gray-900 dark:text-white">
+                            <option value="public" {% if article and article.status == 'public' %}selected{% endif %}>公开</option>
+                            <option value="hidden" {% if article and article.status == 'hidden' %}selected{% endif %}>隐藏</option>
+                            <option value="password" {% if article and article.status == 'password' %}selected{% endif %}>密码保护</option>
+                            <option value="private" {% if article and article.status == 'private' %}selected{% endif %}>私密</option>
+                            <option value="draft" {% if article and article.status == 'draft' %}selected{% endif %}>草稿</option>
+                            <option value="pending" {% if article and article.status == 'pending' %}selected{% endif %}>待审核</option>
+                        </select>
+
+                        <!-- 密码保护选项 -->
+                        <div id="passwordField" class="mt-4 {% if not article or article.status != 'password' %}hidden{% endif %}">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                访问密码
+                            </label>
+                            <input type="password" 
+                                   name="password" 
+                                   value="{{ article.password if article else '' }}"
+                                   placeholder="留空将使用默认密码: 123456"
+                                   class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
+                                          focus:outline-none focus:ring-2 focus:ring-blue-500 
+                                          bg-white dark:bg-gray-700 
+                                          text-gray-900 dark:text-white">
+                        </div>
+                    </div>
+
+                    <!-- 标签设置 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            标签
+                        </label>
+                        <div class="relative">
+                            <!-- 标签输入区域 -->
+                            <div class="flex flex-wrap items-center gap-2 p-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg min-h-[42px]">
+                                <div id="selected-tags" class="flex flex-wrap gap-2">
+                                    {% if article %}
+                                        {% for tag in article.tags %}
+                                        <span class="tag-item inline-flex items-center px-2.5 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 rounded-full text-sm">
+                                            {{ tag.name }}
+                                            <button type="button" onclick="removeTag(this)" class="ml-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <input type="text" 
+                                       id="tag-input"
+                                       placeholder="输入标签，按空格或回车添加"
+                                       class="flex-1 min-w-[120px] bg-transparent border-0 outline-none focus:ring-0 text-gray-900 dark:text-gray-100">
+                                <input type="hidden" name="tag_names" id="tag-names" value="{{ article.tags|map(attribute='name')|join(' ') if article else '' }}">
+                            </div>
+                            <!-- 标签建议下拉框 -->
+                            <div id="tag-suggestions" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 hidden"></div>
+                        </div>
+                    </div>
+
+                    <!-- 评论设置 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                        <div class="flex items-center">
+                            <input type="checkbox" 
+                                   name="allow_comment" 
+                                   id="allowComment"
+                                   {% if not article or article.allow_comment %}checked{% endif %}
+                                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="allowComment" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                允许评论
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="flex justify-end space-x-4">
+                        <a href="{{ url_for('admin.articles') }}"
+                           class="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300">
+                            取消
+                        </a>
+                        <button type="submit"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            {{ '保存修改' if article else '发布文章' }}
+                        </button>
+                    </div>
                 </div>
-            </div>
-
-            <!-- 操作按钮 -->
-            <div class="flex justify-end space-x-4">
-                <a href="{{ url_for('admin.articles') }}"
-                   class="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300">
-                    取消
-                </a>
-                <button type="submit"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                    {{ '保存修改' if article else '发布文章' }}
-                </button>
-            </div>
+            </form>
         </div>
-    </form>
+    </div>
 </div>
 
 <!-- 保留原有的 TinyMCE 和其他脚本 -->
