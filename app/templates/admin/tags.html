@@ -52,7 +52,7 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for tag in pagination.items %}
-                    <tr>
+                    <tr data-tag-id="{{ tag.id }}">
                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ tag.id }}</td>
                         <td class="px-4 sm:px-6 py-4">
                             <a href="{{ url_for('admin.articles', search_type='tag', q=tag.name) }}" 
@@ -62,7 +62,9 @@
                                 </span>
                             </a>
                         </td>
-                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ tag.article_count }}</td>
+                        <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span class="article-count">{{ tag.article_count }}</span>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <div class="flex items-center space-x-4">
                                 <button onclick="showEditTagModal({{ tag.id }}, '{{ tag.name }}')"
@@ -235,5 +237,57 @@ function deleteTag(tagId) {
         });
     });
 }
+
+// 页面加载完成后自动更新标签计数
+document.addEventListener('DOMContentLoaded', function() {
+    // 获取当前页面所有标签ID
+    const tagElements = document.querySelectorAll('[data-tag-id]');
+
+    const tagIds = Array.from(tagElements).map(el => parseInt(el.dataset.tagId));
+
+    if (tagIds.length > 0) {
+        // 调用更新API
+        fetch('/admin/tags/update-counts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ tag_ids: tagIds })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('请求失败');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('更新标签计数:', data);
+            if (data.error) {
+                console.error('更新标签计数失败:', data.error);
+                return;
+            }
+            if (data.success && data.updated.length > 0) {
+                // 更新页面显示
+                data.updated.forEach(item => {
+                    const countEl = document.querySelector(`[data-tag-id="${item.id}"] .article-count`);
+                    if (countEl) {
+                        console.log(`更新标签 ${item.id} 的计数为 ${item.new_count}`);
+                        countEl.textContent = item.new_count;
+                        countEl.classList.add('text-green-600', 'animate-pulse');
+                        setTimeout(() => {
+                            countEl.classList.remove('text-green-600', 'animate-pulse');
+                        }, 2000);
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error('更新标签计数失败:', error);
+        });
+    } else {
+        console.log('没有找到标签元素'); // 调试信息
+    }
+});
 </script>
 {% endblock %} 

@@ -1177,3 +1177,43 @@ def edit_article(id=None):
     except Exception as e:
         current_app.logger.error(f"Edit article error: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@bp.route('/categories/update-counts', methods=['POST'])
+@login_required
+@admin_required
+def update_category_counts():
+    """更新分类文章数"""
+    try:
+        category_ids = request.json.get('category_ids', [])
+        success, result = AdminService.update_category_counts(category_ids)
+        
+        if not success:
+            return jsonify({'error': result}), 400
+            
+        return jsonify({
+            'success': True,
+            'updated': result
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/tags/update-counts', methods=['POST'])
+@login_required
+@admin_required
+def update_tag_counts():
+    """更新标签文章数"""
+    try:
+        tag_ids = request.json.get('tag_ids', [])
+        success, result = AdminService.update_tag_counts(tag_ids)
+        
+        if not success:
+            return jsonify({'error': result}), 400
+            
+        return jsonify({
+            'success': True,
+            'updated': result
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

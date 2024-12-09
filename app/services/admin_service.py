@@ -22,7 +22,7 @@ from app.utils.pagination import Pagination
 from threading import Lock
 
 from app.utils.route_manager import route_manager
-from sqlalchemy import text, update
+from sqlalchemy import text, update, func, distinct
 from app.utils.article_url import ArticleUrlGenerator
 from app.utils.id_encoder import IdEncoder
 
@@ -2016,3 +2016,92 @@ class AdminService:
         except Exception as e:
             current_app.logger.error(f"Get article for edit error: {str(e)}")
             return None
+
+    @staticmethod
+    def update_category_counts(category_ids=None):
+        """更新分类文章数"""
+        try:
+            if not category_ids:
+                return True, []
+            
+            # 使用 SQLAlchemy 查询分类文章数
+            category_counts = db.session.query(
+                Category.id,
+                func.count(distinct(
+                    func.coalesce(Article.id, article_categories.c.article_id)
+                )).label('count')
+            ).outerjoin(
+                Article,
+                Category.id == Article.category_id
+            ).outerjoin(
+                article_categories,
+                Category.id == article_categories.c.category_id
+            ).filter(
+                Category.id.in_(category_ids)
+            ).group_by(
+                Category.id
+            ).all()
+            
+            # 记录更新的分类
+            updated = []
+            
+            # 更新每个分类的文章数
+            for category_id, count in category_counts:
+                category = Category.query.get(category_id)
+                if category and (category.article_count is None or category.article_count != count):
+                    category.article_count = count
+                    updated.append({
+                        'id': category.id,
+                        'name': category.name,
+                        'new_count': count
+                    })
+            
+            db.session.commit()
+            return True, updated
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Update category counts error: {str(e)}")
+            return False, str(e)
+
+    @staticmethod
+    def update_tag_counts(tag_ids=None):
+        """更新标签文章数"""
+        try:
+            if not tag_ids:
+                return True, []
+            
+            # 使用 SQLAlchemy 的方式查询标签文章数
+            tag_counts = db.session.query(
+                Tag.id,
+                func.count(distinct(article_tags.c.article_id)).label('count')
+            ).outerjoin(
+                article_tags, 
+                Tag.id == article_tags.c.tag_id
+            ).filter(
+                Tag.id.in_(tag_ids)
+            ).group_by(
+                Tag.id
+            ).all()
+            
+            # 记录更新的标签
+            updated = []
+            
+            # 更新每个标签的文章数
+            for tag_id, count in tag_counts:
+                tag = Tag.query.get(tag_id)
+                if tag and (tag.article_count is None or tag.article_count != count):
+                    tag.article_count = count
+                    updated.append({
+                        'id': tag.id,
+                        'name': tag.name,
+                        'new_count': count
+                    })
+            
+            db.session.commit()
+            return True, updated
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Update tag counts error: {str(e)}")
+            return False, str(e)

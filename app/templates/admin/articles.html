@@ -173,7 +173,7 @@ function deleteArticle(articleId) {
         .then(response => {
             if (response.ok) {
                 showAlert('文章删除成功', 'success', '成功');
-                setTimeout(() => location.reload(), 1000);
+                setTimeout(() => location.reload(), 200);
             } else {
                 response.text().then(text => {
                     showAlert(text, 'error', '错误');
