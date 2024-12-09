@@ -72,7 +72,7 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200" id="categoryList">
                     {% for category in pagination.items recursive %}
-                    <tr data-id="{{ category.id }}" {% if category.parent_id %}data-parent="{{ category.parent_id }}"{% endif %} class="category-item">
+                    <tr data-category-id="{{ category.id }}" {% if category.parent_id %}data-parent="{{ category.parent_id }}"{% endif %} class="category-item">
                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ category.id }}</td>
                         <td class="px-4 sm:px-6 py-4">
                             <div class="flex items-center">
@@ -126,7 +126,9 @@
                         </td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-500">{{ category.slug }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 text-sm text-gray-500">{{ category.description or '无' }}</td>
-                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ category.article_count }}</td>
+                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span class="article-count">{{ category.article_count }}</span>
+                        </td>
                         <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ category.per_page or '默认(10)' }}</td>
                         <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm">
                             {% if category.use_slug %}
@@ -191,7 +193,7 @@
             <!-- 移动端列表视图 -->
             <div class="sm:hidden divide-y divide-gray-200">
                 {% for category in pagination.items recursive %}
-                <div class="p-4 space-y-4" data-id="{{ category.id }}" {% if category.parent_id %}data-parent="{{ category.parent_id }}"{% endif %}>
+                <div class="p-4 space-y-4" data-id="{{ category.id }}" data-category-id="{{ category.id }}" {% if category.parent_id %}data-parent="{{ category.parent_id }}"{% endif %}>
                     <!-- 标题和展开按钮行 -->
                     <div class="flex items-center">
                         <div class="w-{{ category.get_level() * 4 }}"></div>
@@ -217,7 +219,9 @@
                             </div>
                             <div>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">文章数</span>
-                                <div class="text-sm text-gray-900 dark:text-gray-300">{{ category.article_count }}</div>
+                                <div class="text-sm text-gray-900 dark:text-gray-300">
+                                    <span class="article-count">{{ category.article_count }}</span>
+                                </div>
                             </div>
                             <div>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">每页数量</span>
@@ -704,13 +708,10 @@ function saveBatchPerPage() {
 document.addEventListener('DOMContentLoaded', function() {
     // 获取当前页面所有分类ID
     const categoryElements = document.querySelectorAll('[data-category-id]');
-    console.log('找到分类元素:', categoryElements.length); // 调试信息
-    
+
     const categoryIds = Array.from(categoryElements).map(el => parseInt(el.dataset.categoryId));
-    console.log('分类ID列表:', categoryIds); // 调试信息
-    
+
     if (categoryIds.length > 0) {
-        console.log('开始发送更新请求...'); // 调试信息
         // 调用更新API
         fetch('/admin/categories/update-counts', {
             method: 'POST',
@@ -721,16 +722,15 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify({ category_ids: categoryIds })
         })
         .then(response => {
-            console.log('收到响应:', response.status);
             if (!response.ok) {
                 throw new Error('请求失败');
             }
             return response.json();
         })
         .then(data => {
-            console.log('更新数据:', data);
+            console.log('更新分类数据:', data);
             if (data.error) {
-                console.error('更新失败:', data.error);
+                console.error('更新分类数据失败:', data.error);
                 return;
             }
             if (data.success && data.updated.length > 0) {
