@@ -6,7 +6,7 @@
 <div class="p-6">
     <div class="bg-white rounded-lg shadow-sm">
         <div class="px-6 py-4 border-b">
-            <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center space-y-4 lg:space-y-0">
+            <div class="flex flex-col sm:flex-row justify-between items-stretch lg:items-center space-y-4 lg:space-y-0">
                 <h2 class="text-xl font-bold">标签管理</h2>
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full lg:w-auto">
                     <form method="get" 
@@ -33,45 +33,49 @@
                         </button>
                     </form>
                     <div class="flex flex-col sm:flex-row gap-2">
-                        <button onclick="updateAllTagCounts()" 
-                                class="w-full sm:w-auto px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 text-sm sm:text-base">
-                            <span class="flex items-center justify-center">
-                                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="updateAllTagCounts()" 
+                                    class="inline-flex items-center px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all duration-200 shadow-sm hover:shadow">
+                                <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
                                     </path>
                                 </svg>
-                                <span class="hidden sm:inline">更新所有计数</span>
-                                <span class="sm:hidden">更新计数</span>
-                            </span>
-                        </button>
-                        
-                        <button onclick="batchSetTagsAccessMode('slug')" 
-                                class="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm sm:text-base">
-                            <span class="flex items-center justify-center">
-                                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                <span class="hidden sm:inline">更新计数</span>
+                                <span class="sm:hidden">更新</span>
+                            </button>
+
+                            <button onclick="batchSetTagsAccessMode('slug')" 
+                                    class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 shadow-sm hover:shadow">
+                                <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
+                                    </path>
                                 </svg>
-                                <span class="hidden sm:inline">全部使用缩略名</span>
-                                <span class="sm:hidden">用缩略名</span>
-                            </span>
-                        </button>
-                        
-                        <button onclick="batchSetTagsAccessMode('id')" 
-                                class="w-full sm:w-auto px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm sm:text-base">
-                            <span class="flex items-center justify-center">
-                                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                                <span class="hidden sm:inline">使用缩略名</span>
+                                <span class="sm:hidden">缩略名</span>
+                            </button>
+
+                            <button onclick="batchSetTagsAccessMode('id')" 
+                                    class="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-200 shadow-sm hover:shadow">
+                                <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4">
+                                    </path>
                                 </svg>
-                                <span class="hidden sm:inline">全部使用ID</span>
-                                <span class="sm:hidden">用ID</span>
-                            </span>
-                        </button>
-                        
-                        <button onclick="showAddTagModal()" 
-                                class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                            新增标签
-                        </button>
+                                <span class="hidden sm:inline">使用 ID</span>
+                                <span class="sm:hidden">ID</span>
+                            </button>
+
+                            <button onclick="showAddTagModal()" 
+                                    class="inline-flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-all duration-200 shadow-sm hover:shadow">
+                                <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                <span class="hidden sm:inline">添加标签</span>
+                                <span class="sm:hidden">添加</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
