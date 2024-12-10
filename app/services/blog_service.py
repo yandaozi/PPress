@@ -924,20 +924,20 @@ class BlogService:
     def get_adjacent_articles(article):
         """获取上一篇和下一篇文章"""
         try:
-            # 获取上一篇文章(创建时间较早的)
+            # 获取上一篇文章(ID较小的)
             prev_article = Article.query.filter(
                 Article.status == 'public',
-                Article.created_at < article.created_at
+                Article.id < article.id
             ).order_by(
-                Article.created_at.desc()
+                Article.id.desc()
             ).first()
             
-            # 获取下一篇文章(创建时间较晚的)
+            # 获取下一篇文章(ID较大的)
             next_article = Article.query.filter(
                 Article.status == 'public',
-                Article.created_at > article.created_at
+                Article.id > article.id
             ).order_by(
-                Article.created_at.asc()
+                Article.id.asc()
             ).first()
             
             return prev_article, next_article
