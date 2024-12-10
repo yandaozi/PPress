@@ -96,6 +96,20 @@ def category(id):
         current_user
     )
 
+    # 检查是否需要返回API响应
+    api_data = {
+        'category': {
+            'id': data['current_category'].id,
+            'name': data['current_category'].name,
+            'description': data['current_category'].description,
+            'article_count': data['current_category'].article_count
+        },
+        'articles': ApiService.format_article_list(data['pagination'])
+    }
+    api_response = api_response_if_requested(api_data)
+    if api_response:
+        return api_response
+
     # 使用分类指定的模板或默认模板
     template = data.get('template', 'blog/index.html')
 
