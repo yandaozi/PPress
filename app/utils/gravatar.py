@@ -12,7 +12,7 @@ class Gravatar:
         from app.models import SiteConfig
         
         # 获取镜像地址
-        base_url = SiteConfig.get_config('gravatar_mirror', 'https://weavatar.com/avatar/')
+        base_url = SiteConfig.get_config('gravatar_mirror', 'https://gravatar.com/avatar/')
         default = SiteConfig.get_config('gravatar_default', 'mp')
         
         # 如果邮箱为空,返回默认头像
