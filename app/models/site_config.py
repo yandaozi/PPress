@@ -21,6 +21,8 @@ class SiteConfig(db.Model):
         {'key': 'icp_number', 'value': '', 'description': 'ICP备案号'},
         {'key': 'footer_text', 'value': '© 2024 PPress 版权所有', 'description': '页脚文本'},
         {'key': 'site_theme', 'value': 'default', 'description': '网站主题'},
+        {'key': 'gravatar_mirror', 'value': 'https://weavatar.com/avatar/', 'description': 'Gravatar镜像地址'},
+        {'key': 'gravatar_default', 'value': 'mp', 'description': 'Gravatar默认头像(mp/identicon/monsterid/wavatar/retro/robohash/blank)'},
     ]
     
     # API相关的默认配置

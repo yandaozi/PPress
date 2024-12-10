@@ -32,15 +32,14 @@ def handle_view_errors(f):
 
 def api_response_if_requested(data):
     """检查是否请求API响应"""
-    # 检查API访问权限
-    is_allowed, error_response, status_code = ApiService.check_api_access(request)
-    if not is_allowed:
-        if error_response:
-            return jsonify(error_response), status_code
-        return None
-
     # 检查Accept头
     if request.headers.get('Accept') == 'application/json':
+        # 检查API访问权限
+        is_allowed, error_response, status_code = ApiService.check_api_access(request)
+        if not is_allowed:
+            if error_response:
+                return jsonify(error_response), status_code
+            return None
         return jsonify(data)
     return None
 

@@ -176,6 +176,41 @@
                     </div>
                 </div>
 
+                <!-- Gravatar设置 -->
+                <div class="space-y-6">
+                    <h3 class="text-lg font-medium text-gray-900">Gravatar设置</h3>
+                    
+                    <!-- Gravatar镜像 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Gravatar镜像地址
+                        </label>
+                        <input type="text" name="config_gravatar_mirror" 
+                               value="{{ configs|selectattr('key', 'equalto', 'gravatar_mirror')|first|attr('value') }}"
+                               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="mt-1 text-sm text-gray-500">
+                            常用镜像: https://weavatar.com/avatar/ 或 https://gravatar.loli.net/avatar/
+                        </p>
+                    </div>
+
+                    <!-- 默认头像 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            默认头像样式
+                        </label>
+                        <select name="config_gravatar_default"
+                                class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="mp" {% if configs|selectattr('key', 'equalto', 'gravatar_default')|first|attr('value') == 'mp' %}selected{% endif %}>神秘人(mp)</option>
+                            <option value="identicon" {% if configs|selectattr('key', 'equalto', 'gravatar_default')|first|attr('value') == 'identicon' %}selected{% endif %}>抽象图案(identicon)</option>
+                            <option value="monsterid" {% if configs|selectattr('key', 'equalto', 'gravatar_default')|first|attr('value') == 'monsterid' %}selected{% endif %}>小怪物(monsterid)</option>
+                            <option value="wavatar" {% if configs|selectattr('key', 'equalto', 'gravatar_default')|first|attr('value') == 'wavatar' %}selected{% endif %}>卡通脸(wavatar)</option>
+                            <option value="retro" {% if configs|selectattr('key', 'equalto', 'gravatar_default')|first|attr('value') == 'retro' %}selected{% endif %}>复古游戏(retro)</option>
+                            <option value="robohash" {% if configs|selectattr('key', 'equalto', 'gravatar_default')|first|attr('value') == 'robohash' %}selected{% endif %}>机器人(robohash)</option>
+                            <option value="blank" {% if configs|selectattr('key', 'equalto', 'gravatar_default')|first|attr('value') == 'blank' %}selected{% endif %}>空白(blank)</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="flex justify-end">
                     <button type="submit"
                             class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">

@@ -2,6 +2,8 @@ from ..extensions import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from datetime import datetime
+from flask import url_for
+from app.utils.gravatar import Gravatar
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -53,3 +55,9 @@ class User(UserMixin, db.Model):
             f'user:email:{email}',
             lambda: cls.query.filter_by(email=email).first()
         )
+    
+    @property
+    def gravatar_avatar(self):
+        """获取Gravatar头像URL"""
+        return Gravatar.get_url(self.email)
+

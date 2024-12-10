@@ -30,7 +30,7 @@
                     <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
                         {% set author = get_author_info(article) %}
                         <div class="flex items-center flex-shrink-0">
-                            <img src="{{ author.avatar }}" alt="avatar" class="w-8 h-8 rounded-full">
+                            <img src="{{ author.gravatar_avatar }}" alt="avatar" class="w-8 h-8 rounded-full">
                             {% if author.id %}
                                 <a href="{{ url_for('user.author', id=author.id) }}"
                                    class="ml-2 text-sm font-medium dark:text-white text-gray-900 hover:text-blue-600">
