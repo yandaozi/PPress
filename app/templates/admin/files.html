@@ -136,7 +136,7 @@
 </div>
 
 <!-- 添加文件预览模态框 -->
-<div id="filePreviewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+<div id="filePreviewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50" onclick="handleModalClick(event)">
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div class="p-6">
@@ -249,7 +249,7 @@ function showFilePreview(filePath, fileType, fileName) {
     } else if (fileType.startsWith('video/') || /\.mp4$/i.test(filePath)) {
         content.innerHTML = `
             <video controls autoplay class="max-w-full h-auto">
-                <source src="${filePath}" type="${fileType}">
+                <source src="${filePath}" type="video/mp4">
                 您的浏览器不支持视频标签
             </video>`;
     } else {
@@ -277,6 +277,14 @@ function copyToClipboard(elementId) {
     element.select();
     document.execCommand('copy');
     showAlert('已复制到剪贴板', 'success', '成功');
+}
+
+function handleModalClick(event) {
+    const modal = document.getElementById('filePreviewModal');
+    // 如果点击的是模态框的背景层（而不是内容区域）
+    if (event.target === modal) {
+        hideFilePreview();
+    }
 }
 </script>
 {% endblock %} 
