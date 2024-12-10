@@ -2,6 +2,7 @@ from datetime import datetime
 
 from flask import current_app
 from flask_login import current_user
+from slugify import slugify
 
 from app.models import User, Article, Comment, ViewHistory, Category, Tag, Plugin, File, SiteConfig, Route, \
     CommentConfig
@@ -766,6 +767,8 @@ class AdminService:
                 existing = Tag.query.filter(Tag.slug == slug, Tag.id != tag_id).first()
                 if existing:
                     return False, '缩略名已存在', None
+            if slug == '':
+                slug = slugify(name)
 
             tag.name = name
             tag.slug = slug if slug else None

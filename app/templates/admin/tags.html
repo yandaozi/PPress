@@ -93,7 +93,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <div class="flex items-center space-x-4">
-                                <button onclick="showEditTagModal({{ tag.id }}, '{{ tag.name }}')"
+                                <button onclick="showEditTagModal({{ tag.id }}, '{{ tag.name }}', '{{ tag.slug }}', {{ 'true' if tag.use_slug else 'false' }})"
                                         class="text-blue-600 hover:text-blue-900">
                                     编辑
                                 </button>
@@ -212,7 +212,10 @@ function addTag() {
     const form = document.getElementById('addTagForm');
     const formData = new FormData(form);
     
-    fetch('/admin/tags/add', {
+    // 添加 use_slug 字段
+    formData.set('use_slug', form.use_slug.checked);
+    
+    fetch('{{ url_for("admin.add_tag") }}', {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token() }}'
@@ -224,16 +227,18 @@ function addTag() {
         if (data.error) {
             showAlert(data.error, 'error', '错误');
         } else {
-            showAlert('标签添加成功', 'success', '成功');
+            showAlert(data.message, 'success', '成功');
             setTimeout(() => location.reload(), 100);
         }
     });
 }
 
-function showEditTagModal(tagId, name) {
+function showEditTagModal(id, name, slug, use_slug) {
     const form = document.getElementById('editTagForm');
-    form.tag_id.value = tagId;
+    form.tag_id.value = id;
     form.name.value = name;
+    form.slug.value = slug || '';
+    form.use_slug.checked = use_slug;
     
     document.getElementById('editTagModal').classList.remove('hidden');
     document.getElementById('editTagModal').classList.add('flex');
@@ -247,8 +252,11 @@ function hideEditTagModal() {
 
 function updateTag() {
     const form = document.getElementById('editTagForm');
-    const tagId = form.tag_id.value;
     const formData = new FormData(form);
+    const tagId = form.tag_id.value;
+    
+    // 添加 use_slug 字段
+    formData.set('use_slug', form.use_slug.checked);
     
     fetch(`/admin/tags/${tagId}/edit`, {
         method: 'POST',
@@ -262,8 +270,10 @@ function updateTag() {
         if (data.error) {
             showAlert(data.error, 'error', '错误');
         } else {
-            showAlert('标签更新成功', 'success', '成功',function (){setTimeout(() => location.reload(), 100);});
-
+            showAlert(data.message, 'success', '成功');
+            // 更新页面上的标签信息
+            setTimeout(() => location.reload(), 100);
+            hideEditTagModal();
         }
     });
 }
