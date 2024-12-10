@@ -9,6 +9,8 @@ from app.models import CommentConfig
 from app.utils.article_url import ArticleUrlGenerator
 from app.models import Article
 from app.models import CustomPage
+from app.models import SiteConfig
+from app.services.api_service import ApiService
 
 bp = Blueprint('blog', __name__)
 
@@ -27,6 +29,20 @@ def handle_view_errors(f):
             return abort(404 if isinstance(e, NotFound) else 500)
     return decorated_function
 
+def api_response_if_requested(data):
+    """检查是否请求API响应"""
+    # 检查API访问权限
+    is_allowed, error_response, status_code = ApiService.check_api_access(request)
+    if not is_allowed:
+        if error_response:
+            return jsonify(error_response), status_code
+        return None
+
+    # 检查Accept头
+    if request.headers.get('Accept') == 'application/json':
+        return jsonify(data)
+    return None
+
 @bp.route('/')
 @handle_view_errors
 def index():
@@ -39,6 +55,13 @@ def index():
         request.args.get('category', type=int),
         current_user
     )
+    
+    # 检查是否需要返回API响应
+    api_response = api_response_if_requested(
+        ApiService.format_article_list(articles)
+    )
+    if api_response:
+        return api_response
     
     # 获取模板对象
     template_obj = current_app.jinja_env.get_template(template)
@@ -111,6 +134,13 @@ def article(path):
             abort(404)
             
         article = Article.query.get_or_404(article_id)
+        
+        # 检查是否需要返回API响应
+        api_response = api_response_if_requested(
+            ApiService.format_article_detail(article)
+        )
+        if api_response:
+            return api_response
         
         # 获取页码和密码
         page = request.args.get('page', 1, type=int)

@@ -52,7 +52,7 @@ def create_db_lock():
         f.write(COPYRIGHT_INFO)
     print(f"\n已创建数据库锁文件：{os.path.abspath(LOCK_FILE)}")
 
-def init_db(db_type='mysql'):
+def init_db(db_type='mysql', site_name='PPress'):
     """初始化数据库"""
     # 检查数据库锁
     if check_db_lock():
@@ -87,20 +87,13 @@ def init_db(db_type='mysql'):
         print("创建新表...")
         db.create_all()
         db.session.commit()
-        
-        # 初始化网站配置
-        default_configs = [
-            {'key': 'site_name', 'value': 'PPress', 'description': '网站名称'},
-            {'key': 'site_keywords', 'value': 'PPress,技术,博客,Python,Web开发', 'description': '网站关键词'},
-            {'key': 'site_description', 'value': '分享技术知识和经验', 'description': '网站描述'},
-            {'key': 'contact_email', 'value': '575732022@qq.com', 'description': '联系邮箱'},
-            {'key': 'icp_number', 'value': '', 'description': 'ICP备案号'},
-            {'key': 'footer_text', 'value': '© 2024 PPress 版权所有', 'description': '页脚文本'},
-            {'key': 'site_theme', 'value': 'default', 'description': '网站主题'},
-        ]
-        for config in default_configs:
-            db.session.add(SiteConfig(**config))
-        db.session.commit()
+
+        # 初始化网站配置,传入自定义网站名称
+        custom_configs = {
+            'site_name': site_name,
+            'footer_text': f'© 2024 {site_name} 版权所有'
+        }
+        SiteConfig.init_default_configs(custom_configs)
 
         # 创建管理员用户
         admin = User(

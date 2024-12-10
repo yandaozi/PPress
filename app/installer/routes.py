@@ -70,17 +70,11 @@ def install():
                 db.create_all()
                 
                 # 初始化网站配置
-                default_configs = [
-                    {'key': 'site_name', 'value': site_name, 'description': '网站名称'},
-                    {'key': 'site_keywords', 'value': 'PPress,技术,博客,Python', 'description': '网站关键词'},
-                    {'key': 'site_description', 'value': '分享技术知识和经验', 'description': '网站描述'},
-                    {'key': 'contact_email', 'value': 'ponyj@qq.com', 'description': '联系邮箱'},
-                    {'key': 'icp_number', 'value': '', 'description': 'ICP备案号'},
-                    {'key': 'footer_text', 'value': '© 2024 PPress 版权所有', 'description': '页脚文本'},
-                    {'key': 'site_theme', 'value': 'default', 'description': '网站主题'},
-                ]
-                for config in default_configs:
-                    db.session.add(SiteConfig(**config))
+                custom_configs = {
+                    'site_name': site_name,
+                    'footer_text': f'© 2024 {site_name} 版权所有'
+                }
+                SiteConfig.init_default_configs(custom_configs)
 
                 # 创建管理员账号
                 admin = User(
