@@ -400,7 +400,7 @@ def upload_image():
         return jsonify({'error': '没有选择文件'}), 400
         
     # 检查文件类型
-    if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
+    if not file.filename.lower().endswith(('.png','.mp4', '.jpg', '.jpeg', '.gif', '.webp')):
         return jsonify({'error': '不支持的文件类型'}), 400
         
     success, result = BlogService.upload_image(file, current_user.id)

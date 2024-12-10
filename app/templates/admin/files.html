@@ -10,6 +10,20 @@
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white self-start sm:self-center">附件管理</h2>
             
             <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                <!-- 添加上传按钮 -->
+                <div class="flex items-center space-x-2">
+                    <input type="file" id="fileInput" class="hidden" onchange="uploadFile(this)">
+                    <button onclick="document.getElementById('fileInput').click()"
+                            class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                        <span class="flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                            </svg>
+                            <span>上传文件</span>
+                        </span>
+                    </button>
+                </div>
+                
                 <!-- 搜索表单 -->
                 <form action="{{ url_for('admin.manage_files') }}" method="get" 
                       class="flex items-center w-full sm:w-auto">
@@ -125,6 +139,45 @@ function confirmDelete(fileId) {
         }).catch(error => {
             showAlert('删除失败：' + error, 'error', '错误');
         });
+    });
+}
+
+function uploadFile(input) {
+    if (!input.files || !input.files[0]) {
+        console.log('没有选择文件');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('upload', input.files[0]);
+
+    
+    showAlert('正在上传...', 'info', null, null, false);
+    
+    fetch('{{ url_for("blog.upload_image") }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => {
+        return response.json();
+    })
+    .then(data => {
+        if (data.error) {
+            showAlert(data.error, 'error', '错误');
+        } else {
+            showAlert('上传成功', 'success', '成功');
+            setTimeout(() => location.reload(), 500);
+        }
+    })
+    .catch(error => {
+        console.error('上传错误:', error);
+        showAlert('上传失败: ' + error, 'error', '错误');
+    })
+    .finally(() => {
+        input.value = '';
     });
 }
 </script>
