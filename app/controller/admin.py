@@ -1319,3 +1319,29 @@ def batch_set_tags_access_mode():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@bp.route('/upload-settings', methods=['POST'])
+@login_required
+@admin_required
+def save_upload_settings():
+    """保存上传设置"""
+    try:
+        data = request.get_json()
+        
+        # 验证和清理数据
+        allowed_types = data.get('upload_allowed_types', '').strip()
+        max_size = int(data.get('upload_max_size', 10))
+        
+        if max_size < 1 or max_size > 100:
+            return jsonify({'error': '上传大小必须在1-100MB之间'}), 400
+            
+        # 使用专门的上传设置服务方法
+        success, message = AdminService.save_upload_settings(allowed_types, max_size)
+        
+        if not success:
+            return jsonify({'error': message}), 400
+            
+        return jsonify({'message': message})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

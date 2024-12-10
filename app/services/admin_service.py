@@ -2342,3 +2342,35 @@ class AdminService:
             db.session.rollback()
             current_app.logger.error(f"Batch set tags access mode error: {str(e)}")
             return False, str(e)
+
+    @staticmethod
+    def save_upload_settings(allowed_types, max_size):
+        """保存上传设置
+        Args:
+            allowed_types (str): 允许的文件类型，如 '.jpg,.png'
+            max_size (int): 最大上传大小(MB)
+        Returns:
+            tuple: (success, message)
+        """
+        try:
+            # 更新允许的文件类型
+            type_config = SiteConfig.query.filter_by(key='upload_allowed_types').first()
+            if type_config:
+                type_config.value = allowed_types
+                
+            # 更新最大上传大小
+            size_config = SiteConfig.query.filter_by(key='upload_max_size').first()
+            if size_config:
+                size_config.value = str(max_size)
+                
+            db.session.commit()
+            
+            # 清除相关缓存
+            cache_manager.delete('site_config:*')
+            
+            return True, '上传设置已更新'
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Save upload settings error: {str(e)}")
+            return False, str(e)

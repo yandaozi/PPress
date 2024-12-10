@@ -32,6 +32,8 @@ class SiteConfig(db.Model):
         {'key': 'site_theme', 'value': 'default', 'description': '网站主题'},
         {'key': 'gravatar_mirror', 'value': 'https://weavatar.com/avatar/', 'description': 'Gravatar镜像地址'},
         {'key': 'gravatar_default', 'value': 'mp', 'description': 'Gravatar默认头像(mp/identicon/monsterid/wavatar/retro/robohash/blank)'},
+        {'key': 'upload_allowed_types', 'value': '.jpg,.jpeg,.png,.gif,.webp,.mp4', 'description': '允许上传的文件类型'},
+        {'key': 'upload_max_size', 'value': '10', 'description': '最大上传大小(MB)'},
     ]
     
     # API相关的默认配置

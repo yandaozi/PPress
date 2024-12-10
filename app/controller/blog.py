@@ -399,9 +399,17 @@ def upload_image():
     if not file.filename:
         return jsonify({'error': '没有选择文件'}), 400
         
+    # 获取允许的文件类型
+    allowed_types = SiteConfig.get_config('upload_allowed_types', '.jpg,.jpeg,.png,.gif,.webp').split(',')
+    max_size = int(SiteConfig.get_config('upload_max_size', '10')) * 1024 * 1024  # 转换为字节
+    
     # 检查文件类型
-    if not file.filename.lower().endswith(('.png','.mp4', '.jpg', '.jpeg', '.gif', '.webp')):
+    if not any(file.filename.lower().endswith(ext.lower()) for ext in allowed_types):
         return jsonify({'error': '不支持的文件类型'}), 400
+        
+    # 检查文件大小
+    if file.content_length > max_size:
+        return jsonify({'error': f'文件大小超过限制({max_size/1024/1024:.0f}MB)'}), 400
         
     success, result = BlogService.upload_image(file, current_user.id)
     if success:

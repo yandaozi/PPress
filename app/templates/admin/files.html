@@ -22,6 +22,18 @@
                             <span>上传文件</span>
                         </span>
                     </button>
+                    
+                    <!-- 添加设置按钮 -->
+                    <button onclick="showUploadSettings()"
+                            class="w-full sm:w-auto px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200">
+                        <span class="flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span>上传设置</span>
+                        </span>
+                    </button>
                 </div>
                 
                 <!-- 搜索表单 -->
@@ -172,6 +184,58 @@
     </div>
 </div>
 
+<!-- 添加上传设置模态框 -->
+<div id="uploadSettingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50" onclick="closeModalOnOutsideClick(event)">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">上传设置</h3>
+                    <button onclick="hideUploadSettings()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <form id="uploadSettingsForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            允许上传的文件类型
+                        </label>
+                        <input type="text" name="upload_allowed_types" 
+                               value="{{ site_config.get_config('upload_allowed_types') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                               placeholder=".jpg,.jpeg,.png,.gif,.webp,.mp4">
+                        <p class="mt-1 text-sm text-gray-500">多个类型用逗号分隔，例如: .jpg,.png,.mp4</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            最大上传大小(MB)
+                        </label>
+                        <input type="number" name="upload_max_size" 
+                               value="{{ site_config.get_config('upload_max_size') }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                               min="1" max="100">
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 mt-6">
+                        <button type="button" onclick="hideUploadSettings()"
+                                class="px-4 py-2 text-gray-700 hover:text-gray-900">
+                            取消
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            保存设置
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 添加相关 JavaScript -->
 <script>
 function confirmDelete(fileId) {
@@ -288,5 +352,41 @@ function closeModalOnOutsideClick(event) {
         hideFilePreview();
     }
 }
+
+function showUploadSettings() {
+    document.getElementById('uploadSettingsModal').classList.remove('hidden');
+}
+
+function hideUploadSettings() {
+    document.getElementById('uploadSettingsModal').classList.add('hidden');
+}
+
+// 处理设置表单提交
+document.getElementById('uploadSettingsForm').onsubmit = function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{{ url_for("admin.save_upload_settings") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(Object.fromEntries(formData))
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert(data.error, 'error', '错误');
+        } else {
+            showAlert('设置已保存', 'success', '成功');
+            hideUploadSettings();
+        }
+    })
+    .catch(error => {
+        showAlert('保存失败: ' + error, 'error', '错误');
+    });
+};
 </script>
 {% endblock %} 
