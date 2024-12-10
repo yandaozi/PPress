@@ -173,8 +173,18 @@
                 </div>
             </a>
             {% else %}
-            <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg shadow-sm p-4 flex items-center justify-center">
-                <span class="text-gray-400 dark:text-gray-600">没有上一篇了</span>
+            <div class="block bg-white/50 dark:bg-gray-800/50 rounded-lg shadow-sm p-4 hover:shadow-sm transition-all duration-200">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
+                        <svg class="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs text-gray-400 dark:text-gray-500 mb-1">上一篇</div>
+                        <div class="text-gray-400 dark:text-gray-500 font-medium">已是第一篇</div>
+                    </div>
+                </div>
             </div>
             {% endif %}
         </div>
@@ -199,8 +209,18 @@
                 </div>
             </a>
             {% else %}
-            <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg shadow-sm p-4 flex items-center justify-center">
-                <span class="text-gray-400 dark:text-gray-600">没有下一篇了</span>
+            <div class="block bg-white/50 dark:bg-gray-800/50 rounded-lg shadow-sm p-4 hover:shadow-sm transition-all duration-200">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1 min-w-0 pr-3">
+                        <div class="text-xs text-gray-400 dark:text-gray-500 mb-1 text-right">下一篇</div>
+                        <div class="text-gray-400 dark:text-gray-500 font-medium text-right">已是最后一篇</div>
+                    </div>
+                    <div class="flex-shrink-0 p-2 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
+                        <svg class="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
+                </div>
             </div>
             {% endif %}
         </div>
