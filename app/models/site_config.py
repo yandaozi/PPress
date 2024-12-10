@@ -9,6 +9,15 @@ class SiteConfig(db.Model):
     key = db.Column(db.String(50), unique=True, nullable=False)
     value = db.Column(db.Text)
     description = db.Column(db.String(200))
+
+    # 文章URL模式
+    ARTICLE_URL_PATTERNS = {
+        'default': 'article/{id}',
+        'date': '{year}/{month}/{day}/{id}',
+        'category': '{category}/{id}',
+        'encode': 'p/{encodeid}',  # 添加加密模式
+        'custom': None
+    }
     
     DEFAULT_ARTICLE_URL_PATTERN = 'article/{id}'
     
