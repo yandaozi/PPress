@@ -54,11 +54,11 @@ def index():
     template_obj = current_app.jinja_env.get_template(template)
     
     # 从模板对象获取源码
-    template_source = current_app.jinja_loader.get_source(current_app.jinja_env, template_obj.name)[0]
-    
-    # 检查模板是否定义了 api_only
-    if '{% set api_only = true %}' in template_source:
-        return render_template(template)
+    # template_source = current_app.jinja_loader.get_source(current_app.jinja_env, template_obj.name)[0]
+    #
+    # # 检查模板是否定义了 api_only
+    # if '{% set api_only = true %}' in template_source:
+    #     return render_template(template)
     
     # 获取文章列表
     articles = BlogService.get_index_articles(
@@ -105,11 +105,11 @@ def category(id):
     template_obj = current_app.jinja_env.get_template(template)
 
     # 从模板对象获取源码
-    template_source = current_app.jinja_loader.get_source(current_app.jinja_env, template_obj.name)[0]
-
-    # 检查模板是否定义了 api_only
-    if '{% set api_only = true %}' in template_source:
-        return render_template(template)
+    # template_source = current_app.jinja_loader.get_source(current_app.jinja_env, template_obj.name)[0]
+    #
+    # # 检查模板是否定义了 api_only
+    # if '{% set api_only = true %}' in template_source:
+    #     return render_template(template)
 
     """分类文章列表"""
     data = BlogService.get_category_articles(
