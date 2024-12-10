@@ -151,12 +151,54 @@
 
     </article>
 
+    <!-- 上一篇/下一篇导航 -->
+    <div class="mt-8 border-t dark:border-gray-700 pt-8">
+        <div class="flex flex-col sm:flex-row justify-between space-y-4 sm:space-y-0">
+            <!-- 上一篇 -->
+            <div class="flex-1">
+                {% if prev_article %}
+                    <a href="{{ ArticleUrlGenerator.generate(prev_article.id, prev_article.category_id, prev_article.created_at) }}"
+                       class="group block">
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mb-1 flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            上一篇
+                        </div>
+                        <div class="text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 line-clamp-1">
+                            {{ prev_article.title }}
+                        </div>
+                    </a>
+                {% endif %}
+            </div>
+
+            <!-- 下一篇 -->
+            <div class="flex-1 text-right">
+                {% if next_article %}
+                    <a href="{{ ArticleUrlGenerator.generate(next_article.id, next_article.category_id, next_article.created_at) }}"
+                       class="group block">
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-end">
+                            下一篇
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                        <div class="text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 line-clamp-1">
+                            {{ next_article.title }}
+                        </div>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
 
     {% if render_recommendations is defined %}
     {{ render_recommendations()|safe }}
     {% endif %}
 
     {% include 'components/comment.html' %}
+
 </div>
 
 <script>

@@ -118,13 +118,19 @@ def article(path):
         
         # 获取文章详情
         result = BlogService.get_article_detail(article.id, password, current_user)
+
+        # 获取上一篇和下一篇文章
+        prev_article, next_article = BlogService.get_adjacent_articles(article)
         
         if isinstance(result, dict) and 'error' in result:
             flash(result['error'], 'error')
             return redirect(url_for('blog.index'))
             
         if isinstance(result, dict) and result.get('need_password'):
-            return render_template('blog/password.html', article=result['article'])
+            return render_template('blog/password.html', 
+                                article=result['article'],
+                                prev_article=prev_article,
+                                next_article=next_article)
             
         # 获取评论数据
         comment_data = BlogService.get_article_comments(article.id, current_user, page)
@@ -136,6 +142,8 @@ def article(path):
         return render_template('blog/article.html',
                              article=result,
                              comment_data=comment_data,
+                             prev_article=prev_article,
+                             next_article=next_article,
                              comment_config=CommentConfig.get_config())
                              
     except Exception as e:

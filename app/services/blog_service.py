@@ -919,3 +919,29 @@ class BlogService:
             db.session.rollback()
             current_app.logger.error(f"Add custom page comment error: {str(e)}")
             return False, str(e)
+
+    @staticmethod
+    def get_adjacent_articles(article):
+        """获取上一篇和下一篇文章"""
+        try:
+            # 获取上一篇文章(创建时间较早的)
+            prev_article = Article.query.filter(
+                Article.status == 'public',
+                Article.created_at < article.created_at
+            ).order_by(
+                Article.created_at.desc()
+            ).first()
+            
+            # 获取下一篇文章(创建时间较晚的)
+            next_article = Article.query.filter(
+                Article.status == 'public',
+                Article.created_at > article.created_at
+            ).order_by(
+                Article.created_at.asc()
+            ).first()
+            
+            return prev_article, next_article
+            
+        except Exception as e:
+            current_app.logger.error(f"Error getting adjacent articles: {str(e)}")
+            return None, None
