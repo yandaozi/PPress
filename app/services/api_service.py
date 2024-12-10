@@ -11,6 +11,7 @@ class ApiService:
             'articles': [{
                 'id': article.id,
                 'title': article.title,
+                'content': article.content,
                 'created_at': article.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'category': article.category.name if article.category else None,
                 'author': article.author.nickname if article.author else None,

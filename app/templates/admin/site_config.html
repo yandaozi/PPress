@@ -71,7 +71,7 @@
                                    value="{{ configs|selectattr('key', 'equalto', 'api_token')|first|attr('value') }}"
                                    class="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <button type="button" onclick="generateToken()"
-                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                    class="px-4 py-2 bg-teal-400 text-white rounded-lg hover:bg-teal-500">
                                 生成新Token
                             </button>
                         </div>
@@ -127,7 +127,7 @@
                                     <p class="mt-4 mb-2"># 获取分类列表</p>
                                     <p>curl -H "Accept: application/json" \</p>
                                     <p class="text-blue-400">     -H "X-API-Token: {{ configs|selectattr('key', 'equalto', 'api_token')|first|attr('value') }}" \</p>
-                                    <p>     {{ request.host_url }}category/1?page=1</p>
+                                    <p>     {{ request.host_url }}category/1?page=1 (这里看你自己定义的分类路径)</p>
                                 </div>
                             </div>
 
@@ -223,14 +223,20 @@
 </div>
 
 <script>
-function generateToken() {
-    // 生成随机Token
-    const array = new Uint8Array(32);
-    window.crypto.getRandomValues(array);
-    const token = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-    
-    // 设置到输入框
-    document.querySelector('input[name="config_api_token"]').value = token;
-}
+    function generateToken() {
+        // 生成更复杂的随机 Token
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let token = '';
+        const tokenLength = 32; // 可以根据需要调整长度
+        for (let i = 0; i < tokenLength; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length);
+            token += characters.charAt(randomIndex);
+        }
+        // 设置到输入框
+        const inputElement = document.querySelector('input[name="config_api_token"]');
+        if (inputElement) {
+            inputElement.value = token;
+        }
+    }
 </script>
 {% endblock %} 
