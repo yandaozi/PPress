@@ -69,16 +69,30 @@
             {% for file in files.items %}
             <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
                 <!-- 文件预览 -->
-                <div class="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-900">
-                    {% if file.file_type.split('/')[-1] in ['jpg', 'jpeg', 'webp', 'png', 'gif', 'bmp'] or file.file_type.startswith(('avatar/', 'images/')) %}
-                    <img src="{{ file.file_path }}" alt="{{ file.original_filename }}" 
-                         class="object-cover w-full h-full">
+                <div class="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-900 cursor-pointer" 
+                     onclick="showFilePreview('{{ file.file_path }}', '{{ file.file_type }}', '{{ file.original_filename }}')">
+                    {% if file.file_type.startswith('image/') or file.file_type.split('/')[-1] in ['jpg', 'jpeg', 'webp', 'png', 'gif', 'bmp'] %}
+                        <img src="{{ file.file_path }}" alt="{{ file.original_filename }}" 
+                             class="object-cover w-full h-full">
+                    {% elif file.file_type.startswith('video/') or file.file_type.split('/')[-1] in ['mp4'] %}
+                        <div class="relative w-full h-full">
+                            <video src="{{ file.file_path }}" class="w-full h-full object-cover">
+                                您的浏览器不支持视频标签
+                            </video>
+                            <!-- 播放图标 -->
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <svg class="w-12 h-12 text-white opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
                     {% else %}
-                    <div class="flex items-center justify-center">
-                        <svg class="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
+                        <div class="flex items-center justify-center">
+                            <svg class="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
                     {% endif %}
                 </div>
 
@@ -121,6 +135,44 @@
     </div>
 </div>
 
+<!-- 添加文件预览模态框 -->
+<div id="filePreviewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white" id="previewTitle"></h3>
+                    <button onclick="hideFilePreview()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <!-- 预览内容 -->
+                <div id="previewContent" class="mb-6"></div>
+                <!-- 外链地址 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            文件地址
+                        </label>
+                        <div class="flex">
+                            <input type="text" id="fileUrl" readonly
+                                   class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg 
+                                          bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                            <button onclick="copyToClipboard('fileUrl')"
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700">
+                                复制
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加相关 JavaScript -->
 <script>
 function confirmDelete(fileId) {
     showAlert('确定要删除这个文件吗？此操作不可恢复！', 'warning', '确认删除', function() {
@@ -179,6 +231,52 @@ function uploadFile(input) {
     .finally(() => {
         input.value = '';
     });
+}
+
+function showFilePreview(filePath, fileType, fileName) {
+    const modal = document.getElementById('filePreviewModal');
+    const content = document.getElementById('previewContent');
+    const title = document.getElementById('previewTitle');
+    const fileUrl = document.getElementById('fileUrl');
+    
+    // 设置标题和URL
+    title.textContent = fileName;
+    fileUrl.value = window.location.origin + filePath;
+    
+    // 根据文件类型设置预览内容
+    if (fileType.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(filePath)) {
+        content.innerHTML = `<img src="${filePath}" alt="${fileName}" class="max-w-full h-auto">`;
+    } else if (fileType.startsWith('video/') || /\.mp4$/i.test(filePath)) {
+        content.innerHTML = `
+            <video controls autoplay class="max-w-full h-auto">
+                <source src="${filePath}" type="${fileType}">
+                您的浏览器不支持视频标签
+            </video>`;
+    } else {
+        content.innerHTML = `
+            <div class="text-center py-8">
+                <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                <p class="mt-4 text-gray-600">此文件类型不支持预览</p>
+            </div>`;
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function hideFilePreview() {
+    const modal = document.getElementById('filePreviewModal');
+    const content = document.getElementById('previewContent');
+    modal.classList.add('hidden');
+    content.innerHTML = ''; // 清空预览内容
+}
+
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    element.select();
+    document.execCommand('copy');
+    showAlert('已复制到剪贴板', 'success', '成功');
 }
 </script>
 {% endblock %} 
