@@ -91,7 +91,9 @@
                     <div class="border-t border-gray-100 dark:border-gray-700 py-6 first:border-t-0" id="comment-{{ comment.id }}">
                         <!-- 父评论内容 -->
                         <div class="flex items-start space-x-3">
-                            <img src="{{ comment.user.avatar if comment.user else '/static/image/default_avatar.png' }}"
+                            <!--<img src="{{ comment.user.avatar if comment.user else '/static/image/default_avatar.png' }}"
+                                 alt="avatar" class="w-8 h-8 rounded-full">-->
+                            <img src="{{ get_gravatar(comment.guest_email if comment.guest_email else (comment.user.email if comment.user else None)) }}"
                                  alt="avatar" class="w-8 h-8 rounded-full">
                             <div class="flex-1">
                                 <div class="flex items-center justify-between">

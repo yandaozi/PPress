@@ -254,6 +254,15 @@ def create_app(db_type=DB_TYPE, init_components=True):
             get_author_info=get_author_info
         )
 
+    # 添加专门的 Gravatar 处理器
+    @app.context_processor
+    def gravatar_processor():
+        def get_gravatar(email=None, size=100):
+            """获取 Gravatar 头像"""
+            return Gravatar.get_url(email, size)
+        
+        return dict(get_gravatar=get_gravatar)
+
     # 添加模板全局函数
     @app.context_processor
     def inject_template_utils():
