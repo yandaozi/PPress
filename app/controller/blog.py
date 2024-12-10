@@ -407,8 +407,12 @@ def upload_image():
     if not any(file.filename.lower().endswith(ext.lower()) for ext in allowed_types):
         return jsonify({'error': '不支持的文件类型'}), 400
         
-    # 检查文件大小
-    if file.content_length > max_size:
+    # 检查文件大小 - 使用 seek 和 tell 来获取实际大小
+    file.seek(0, 2)  # 移动到文件末尾
+    file_size = file.tell()  # 获取文件大小
+    file.seek(0)  # 重置文件指针到开头
+    
+    if file_size > max_size:
         return jsonify({'error': f'文件大小超过限制({max_size/1024/1024:.0f}MB)'}), 400
         
     success, result = BlogService.upload_image(file, current_user.id)
