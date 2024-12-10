@@ -686,22 +686,40 @@ class AdminService:
             return None, str(e)
 
     @staticmethod
-    def add_tag(name):
+    def add_tag(data):
         """添加标签"""
         try:
+            name = data.get('name', '').strip()
+            slug = data.get('slug', '').strip()
+            use_slug = data.get('use_slug') == 'true'
+
+            if not name:
+                return False, '标签名不能为空', None
+
             if Tag.query.filter_by(name=name).first():
-                return False, '标签已存在', None
-            
+                return False, '标签名已存在', None
+
+            # 检查 slug 是否已存在
+            if slug and Tag.query.filter_by(slug=slug).first():
+                return False, '缩略名已存在', None
+
             tag = Tag(name=name)
+            if slug:
+                tag.slug = slug
+            tag.use_slug = use_slug
+
             db.session.add(tag)
             db.session.commit()
             
             # 清除标签缓存
             cache_manager.delete('tag_*')
-            
-            return True, None, {
+
+            return True, '标签添加成功', {
                 'id': tag.id,
-                'name': tag.name
+                'name': tag.name,
+                'slug': tag.slug,
+                'use_slug': tag.use_slug,
+                'article_count': 0
             }
             
         except Exception as e:
@@ -726,24 +744,47 @@ class AdminService:
             return False, str(e)
 
     @staticmethod
-    def edit_tag(tag_id, name):
+    def edit_tag(tag_id, data):
         """编辑标签"""
         try:
             tag = Tag.query.get_or_404(tag_id)
-            
-            # 检查名称是否已存在
-            if name != tag.name and Tag.query.filter_by(name=name).first():
-                return False, '标签称已存在', None
-            
+
+            name = data.get('name', '').strip()
+            slug = data.get('slug', '').strip()
+            use_slug = data.get('use_slug') == 'true'
+
+            if not name:
+                return False, '标签名不能为空', None
+
+            # 检查名称是否已存在(排除自身)
+            existing = Tag.query.filter(Tag.name == name, Tag.id != tag_id).first()
+            if existing:
+                return False, '标签名已存在', None
+
+            # 检查 slug 是否已存在(排除自身)
+            if slug:
+                existing = Tag.query.filter(Tag.slug == slug, Tag.id != tag_id).first()
+                if existing:
+                    return False, '缩略名已存在', None
+
             tag.name = name
+            tag.slug = slug if slug else None
+            tag.use_slug = use_slug
+
             db.session.commit()
             
             # 清除标签缓存
-            cache_manager.delete('tag_*')
-            
-            return True, None, {
+            #cache_manager.delete('tag_*')
+            cache_manager.delete(f'tag:{tag_id}:*')  # 清除标签相关缓存
+            cache_manager.delete(f'tag:{tag.slug}:*')  # 清除 slug 相关缓存
+
+
+            return True, '标签更新成功', {
                 'id': tag.id,
-                'name': tag.name
+                'name': tag.name,
+                'slug': tag.slug,
+                'use_slug': tag.use_slug,
+                'article_count': tag.article_count
             }
             
         except Exception as e:

@@ -236,17 +236,27 @@ def search():
                          sort=request.args.get('sort', 'recent'),
                          **get_categories_data())
 
-@bp.route('/tag/<int:id>')
+@bp.route('/tag/<tag_id_or_slug>')
 @handle_view_errors
-def tag(id):
-    """标签路由"""
+def tag(tag_id_or_slug):
+    """标签文章列表"""
+    page = request.args.get('page', 1, type=int)
+    
+    articles = BlogService.get_tag_articles(
+        tag_id_or_slug,
+        page=page
+    )
+    
+    # 检查是否需要返回API响应
+    api_response = api_response_if_requested(
+        ApiService.format_article_list(articles)
+    )
+    if api_response:
+        return api_response
+        
     return render_template('blog/tag.html',
-                         tag=BlogService.get_tag_info(id),
-                         articles=BlogService.get_tag_articles(
-                             id, 
-                             request.args.get('page', 1, type=int)
-                         ),
-                         **get_categories_data())
+                         articles=articles,
+                         tag=BlogService.get_tag_info(tag_id_or_slug))
 
 @bp.route('/article/<int:article_id>/comment', methods=['POST'])
 @handle_view_errors

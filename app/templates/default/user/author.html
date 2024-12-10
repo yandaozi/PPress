@@ -118,7 +118,7 @@
                         </div>
                         <div class="flex items-center">
                             {% for tag in article.tags %}
-                            <a href="{{ url_for('blog.tag', id=tag.id) }}" 
+                            <a href="{{ url_for('blog.tag', tag_id_or_slug=tag.id if not tag.use_slug else tag.slug) }}" 
                                class="text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full mr-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200">
                                 {{ tag.name }}
                             </a>

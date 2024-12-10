@@ -54,7 +54,7 @@
                     {% if article.tags %}
                     <div class="flex items-center space-x-2">
                         {% for tag in article.tags %}
-                        <a href="{{ url_for('blog.tag', id=tag.id) }}" 
+                        <a href="{{ url_for('blog.tag', tag_id_or_slug=tag.id if not tag.use_slug else tag.slug) }}" 
                            class="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
                             #{{ tag.name }}
                         </a>

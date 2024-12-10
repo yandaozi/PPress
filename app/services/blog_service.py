@@ -374,24 +374,49 @@ class BlogService:
         return cache_manager.get(cache_key, do_search, ttl=BlogService.CACHE_TIMES['SEARCH'])
 
     @staticmethod
-    def get_tag_articles(tag_id, page=1):
+    def get_tag_articles(tag_id_or_slug, page=1):
         """获取标签下的文章"""
         def query_tag_articles():
+            # 尝试通过 ID 或 slug 获取标签
+            try:
+                tag_id = int(tag_id_or_slug)
+                tag = Tag.query.get_or_404(tag_id)
+                if tag.use_slug:
+                    abort(404)  # 如果设置了使用 slug 但用 ID 访问,返回 404
+            except ValueError:
+                tag = Tag.query.filter_by(slug=tag_id_or_slug).first_or_404()
+                if not tag.use_slug:
+                    abort(404)  # 如果设置了使用 ID 但用 slug 访问,返回 404
+                
             return Article.query.options(
                 db.joinedload(Article.author),
                 db.joinedload(Article.category)
-            ).filter(Article.tags.any(Tag.id == tag_id))\
+            ).filter(Article.tags.any(Tag.id == tag.id))\
              .order_by(Article.created_at.desc())\
              .paginate(page=page, per_page=10, error_out=False)
             
-        return cache_manager.get(f'tag:{tag_id}:articles:{page}', query_tag_articles)
+        return cache_manager.get(f'tag:{tag_id_or_slug}:articles:{page}', query_tag_articles)
     
     @staticmethod
-    def get_tag_info(tag_id):
+    def get_tag_info(tag_id_or_slug):
         """获取标签信息"""
+        def query_tag():
+            try:
+                # 尝试通过 ID 获取
+                tag_id = int(tag_id_or_slug)
+                tag = Tag.query.get_or_404(tag_id)
+                if tag.use_slug:
+                    abort(404)  # 如果设置了使用 slug 但用 ID 访问,返回 404
+            except ValueError:
+                # 通过 slug 获取
+                tag = Tag.query.filter_by(slug=tag_id_or_slug).first_or_404()
+                if not tag.use_slug:
+                    abort(404)  # 如果设置了使用 ID 但用 slug 访问,返回 404
+            return tag
+
         return cache_manager.get(
-            f'tag:{tag_id}',
-            lambda: Tag.query.get_or_404(tag_id)
+            f'tag:{tag_id_or_slug}',
+            query_tag
         )
     
     @staticmethod

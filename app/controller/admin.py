@@ -333,7 +333,7 @@ def tags():
 @admin_required
 def add_tag():
     """添加标签"""
-    success, error, data = AdminService.add_tag(request.form.get('name'))
+    success, error, data = AdminService.add_tag(request.form)
     if not success:
         return jsonify({'error': error}), 400
     return jsonify(data)
@@ -355,7 +355,7 @@ def edit_tag(id):
     """编辑标签"""
     success, error, data = AdminService.edit_tag(
         id,
-        request.form.get('name')
+        request.form
     )
     if not success:
         return jsonify({'error': error}), 400
