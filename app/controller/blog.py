@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, abort, current_app, url_for, flash, redirect, jsonify
+from flask import Blueprint, render_template, request, abort, current_app, url_for, flash, redirect, jsonify, \
+    render_template_string
 from werkzeug.exceptions import NotFound
 
 from app.services.blog_service import BlogService
@@ -49,46 +50,67 @@ def index():
     """首页路由"""
     template = 'blog/index.html'
     
+    # 获取模板对象
+    template_obj = current_app.jinja_env.get_template(template)
+    
+    # 从模板对象获取源码
+    template_source = current_app.jinja_loader.get_source(current_app.jinja_env, template_obj.name)[0]
+    
+    # 检查模板是否定义了 api_only
+    if '{% set api_only = true %}' in template_source:
+        return render_template(template)
+    
     # 获取文章列表
     articles = BlogService.get_index_articles(
         request.args.get('page', 1, type=int),
         request.args.get('category', type=int),
         current_user
     )
-    
+
     # 检查是否需要返回API响应
     api_response = api_response_if_requested(
         ApiService.format_article_list(articles)
     )
     if api_response:
         return api_response
-    
-    # 获取模板对象
-    template_obj = current_app.jinja_env.get_template(template)
-    
+
     # 定义区块和对应的数据键名映射
     block_map = {
         'hot_today': 'hot_articles_today',
         'hot_week': 'hot_articles_week',
-        'random_articles': 'random_articles', 
+        'random_articles': 'random_articles',
         'random_tags': 'random_tags',
         'latest_comments': 'latest_comments'
     }
-    
+
     # 获取模板中定义的区块与需要的数据的交集
     needed_widgets = set(block_map.keys()) & set(template_obj.blocks.keys())
-    
+
     # 只获取需要的侧边栏数据
     sidebar_data = BlogService.get_sidebar_data(needed_widgets)
-    
+
     return render_template(template,
-                         articles=articles,
-                         **sidebar_data,
-                         **get_categories_data())
+                           articles=articles,
+                           **sidebar_data,
+                           **get_categories_data())
 
 @bp.route('/category/<id>')
 @handle_view_errors
 def category(id):
+
+    # 使用分类指定的模板或默认模板
+    template = 'blog/index.html'
+
+    # 获取模板对象
+    template_obj = current_app.jinja_env.get_template(template)
+
+    # 从模板对象获取源码
+    template_source = current_app.jinja_loader.get_source(current_app.jinja_env, template_obj.name)[0]
+
+    # 检查模板是否定义了 api_only
+    if '{% set api_only = true %}' in template_source:
+        return render_template(template)
+
     """分类文章列表"""
     data = BlogService.get_category_articles(
         id,
@@ -110,11 +132,6 @@ def category(id):
     if api_response:
         return api_response
 
-    # 使用分类指定的模板或默认模板
-    template = data.get('template', 'blog/index.html')
-
-    # 获取模板对象
-    template_obj = current_app.jinja_env.get_template(template)
 
     # 定义区块和对应的数据键名映射
     block_map = {
