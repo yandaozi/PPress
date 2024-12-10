@@ -13,6 +13,7 @@ from sqlalchemy import event
 from app.utils.custom_pages import custom_page_manager
 from app.utils.article_url import ArticleUrlGenerator
 import jinja2
+from app.utils.gravatar import Gravatar
 
 cache = Cache()
 
@@ -225,18 +226,22 @@ def create_app(db_type=DB_TYPE, init_components=True):
                     'id': user.id,
                     'nickname': nickname,
                     'username': user.username,
-                    'avatar': user.avatar
+                    'avatar': user.avatar,
+                    'email': user.email,
+                    'gravatar_avatar': Gravatar.get_url(user.email)
                 }
             return {
                 'id': None,
                 'nickname': '已注销用户',
                 'username': '已注销用户',
-                'avatar': url_for('static/image', filename='default_avatar.png')
+                'avatar': url_for('static/image', filename='default_avatar.png'),
+                'email': '',
+                'gravatar_avatar': Gravatar.get_url('')
             }
         
         def get_author_info(article_or_author):
             """获取作者信息，支持从文章或作者对象获取"""
-            # 如果传入的是文章对象，获取其作
+            # 如果传入的是文章对象，获取其作者
             if hasattr(article_or_author, 'author'):
                 author = article_or_author.author
             else:

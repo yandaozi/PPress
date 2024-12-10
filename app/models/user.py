@@ -55,9 +55,5 @@ class User(UserMixin, db.Model):
             f'user:email:{email}',
             lambda: cls.query.filter_by(email=email).first()
         )
-    
-    @property
-    def gravatar_avatar(self):
-        """获取Gravatar头像URL"""
-        return Gravatar.get_url(self.email)
+
 
