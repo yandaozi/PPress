@@ -45,6 +45,29 @@
                                 <span class="sm:hidden">更新计数</span>
                             </span>
                         </button>
+                        
+                        <button onclick="batchSetTagsAccessMode('slug')" 
+                                class="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm sm:text-base">
+                            <span class="flex items-center justify-center">
+                                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                                <span class="hidden sm:inline">全部使用缩略名</span>
+                                <span class="sm:hidden">用缩略名</span>
+                            </span>
+                        </button>
+                        
+                        <button onclick="batchSetTagsAccessMode('id')" 
+                                class="w-full sm:w-auto px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm sm:text-base">
+                            <span class="flex items-center justify-center">
+                                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                                </svg>
+                                <span class="hidden sm:inline">全部使用ID</span>
+                                <span class="sm:hidden">用ID</span>
+                            </span>
+                        </button>
+                        
                         <button onclick="showAddTagModal()" 
                                 class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                             新增标签
@@ -381,6 +404,43 @@ function updateAllTagCounts() {
             });
         },
         true
+    );
+}
+
+function batchSetTagsAccessMode(mode) {
+    const warningMessage = mode === 'slug' 
+        ? '确定要将所有标签设置为使用缩略名访问吗？\n\n注意：\n1. 此操作会影响所有标签的访问方式\n2. 会自动为没有缩略名的标签生成缩略名\n3. 可能会影响现有的文章链接\n4. 建议在流量较少时执行此操作'
+        : '确定要将所有标签设置为使用ID访问吗？\n\n注意：\n1. 此操作会影响所有标签的访问方式\n2. 会影响SEO效果，不推荐使用\n3. 可能会影响现有的文章链接\n4. 建议在流量较少时执行此操作';
+    
+    showAlert(
+        warningMessage,
+        'warning',
+        mode === 'slug' ? '设置为缩略名访问' : '设置为ID访问',
+        function() {
+            showAlert('正在更新所有标签...', 'info', null, null, false);
+            
+            fetch('/admin/tags/batch-set-access-mode', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ mode: mode })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert(data.error, 'error', '错误');
+                } else {
+                    showAlert(data.message, 'success', '成功');
+                    setTimeout(() => location.reload(), 500);
+                }
+            })
+            .catch(error => {
+                showAlert('操作失败: ' + error, 'error', '错误');
+            });
+        },
+        true  // 显示取消按钮
     );
 }
 </script>

@@ -1301,3 +1301,21 @@ def batch_delete_comments():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@bp.route('/tags/batch-set-access-mode', methods=['POST'])
+@login_required
+@admin_required
+def batch_set_tags_access_mode():
+    """批量设置标签访问方式"""
+    try:
+        data = request.get_json()
+        mode = data.get('mode')
+        
+        success, message = AdminService.batch_set_tags_access_mode(mode)
+        if not success:
+            return jsonify({'error': message}), 400
+            
+        return jsonify({'message': message})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

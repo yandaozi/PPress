@@ -2310,3 +2310,35 @@ class AdminService:
             db.session.rollback()
             current_app.logger.error(f"Batch delete comments error: {str(e)}")
             return False, str(e)
+
+    @staticmethod
+    def batch_set_tags_access_mode(mode):
+        """批量设置标签访问方式
+        Args:
+            mode: 'slug' 或 'id'
+        """
+        try:
+            if mode not in ['slug', 'id']:
+                return False, '无效的访问方式'
+                
+            tags = Tag.query.all()
+            for tag in tags:
+                if mode == 'slug':
+                    # 如果没有slug，使用名称生成
+                    if not tag.slug:
+                        tag.slug = slugify(tag.name)
+                    tag.use_slug = True
+                else:
+                    tag.use_slug = False
+                    
+            db.session.commit()
+            
+            # 清除所有标签相关缓存
+            cache_manager.delete('tag:*')
+            
+            return True, f'已将所有标签设置为使用{"缩略名" if mode == "slug" else "ID"}访问'
+            
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Batch set tags access mode error: {str(e)}")
+            return False, str(e)
