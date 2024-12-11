@@ -95,7 +95,7 @@
                             {% elif activity.type == 'article' %}
                             发布了文章
                             {% endif %}
-                            <a href="{{ activity.article_url }}" class="text-blue-600 hover:text-blue-700">
+                            <a href="{{ ArticleUrlGenerator.generate(activity.article.id, activity.article.category_id, activity.article.created_at) }}" class="text-blue-600 hover:text-blue-700">
                                 {{ activity.article.title }}
                             </a>
                         </p>
