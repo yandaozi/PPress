@@ -20,17 +20,24 @@ class ThemeManager:
         if os.path.isdir(admin_dir):
             theme_loaders.append(FileSystemLoader(admin_dir))
         
-        # 添加默认主题目录
-        default_theme_dir = os.path.join(templates_dir, 'default')
-        if os.path.isdir(default_theme_dir):
-            theme_loaders.append(FileSystemLoader(default_theme_dir))
+        try:
+            # 在应用上下文中获取当前主题
+            with app.app_context():
+                current_theme = SiteConfig.get_config('site_theme', 'default')
+        except RuntimeError:
+            # 如果没有应用上下文，使用默认主题
+            current_theme = 'default'
         
-        # 添加其他主题目录
-        for theme in os.listdir(templates_dir):
-            if theme not in ['default', 'admin']:  # 跳过默认主题和管理后台
-                theme_dir = os.path.join(templates_dir, theme)
-                if os.path.isdir(theme_dir):
-                    theme_loaders.append(FileSystemLoader(theme_dir))
+        # 添加当前主题目录
+        current_theme_dir = os.path.join(templates_dir, current_theme)
+        if os.path.isdir(current_theme_dir):
+            theme_loaders.append(FileSystemLoader(current_theme_dir))
+        
+        # 如果当前主题不是default，且default主题存在，则作为后备添加
+        if current_theme != 'default':
+            default_theme_dir = os.path.join(templates_dir, 'default')
+            if os.path.isdir(default_theme_dir):
+                theme_loaders.append(FileSystemLoader(default_theme_dir))
         
         # 最后添加原始模板目录作为后备
         theme_loaders.append(app.jinja_loader)
