@@ -670,6 +670,33 @@ class BlogService:
                 except (json.JSONDecodeError, TypeError):
                     article.fields = {}
 
+                # 处理 slug - 移到事务提交前
+                slug = data.get('slug', '').strip()
+                if slug:
+                    # 检查自定义 slug 唯一性
+                    existing = Article.query.filter(
+                        Article.slug == slug,
+                        Article.id != article_id
+                    ).first()
+                    if existing:
+                        return False, '你的自定义URL别名已被使用', None
+                    article.slug = slug
+                else:
+                    # 自动生成 slug
+                    base_slug = slugify(article.title)
+                    slug = base_slug
+                    counter = 1
+
+                    # 检查是否存在相同的 slug,如果存在则添加数字后缀
+                    while Article.query.filter(
+                            Article.slug == slug,
+                            Article.id != article_id
+                    ).first():
+                        slug = f"{base_slug}-{counter}"
+                        counter += 1
+
+                    article.slug = slug
+
                 # 提交事务
                 db.session.commit()
 
