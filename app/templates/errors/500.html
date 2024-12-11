@@ -1,44 +1,56 @@
-{% extends theme_path('base.html') %}
-
-{% block title %}500 - 服务器错误{% endblock %}
-
-{% block content %}
-<div class="min-h-[calc(100vh-200px)] flex items-center justify-center">
-    <div class="text-center">
-        <!-- 错误图标 -->
-        <div class="mb-8">
-            <svg class="mx-auto h-32 w-32 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M24 8V4m0 40v-4m16-16h4M4 24h4m31.6-13.6l2.8-2.8M9.6 38.4l2.8-2.8m23.2 0l2.8 2.8M9.6 9.6l2.8 2.8M24 30a6 6 0 110-12 6 6 0 010 12z"></path>
-            </svg>
-        </div>
-        
-        <!-- 错误信息 -->
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">500</h1>
-        <p class="text-xl text-gray-600 mb-8">抱歉，服务器/程序出现了一些问题</p>
-        
-        <!-- 提示信息 -->
-        <div class="text-gray-500 mb-8">
-            <p>PPress 提示您，可以重启程序尝试！</p>
-            <p>请稍后再试或返回首页</p>
-        </div>
-        
-        <!-- 操作按钮 -->
-        <div class="space-x-4">
-            <a href="javascript:history.back()" 
-               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 - 服务器错误</title>
+    <script src="{{ url_for('static', filename='default/vendor/3.4.5') }}"></script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4">
+        <div class="text-center">
+            <!-- 错误图标 -->
+            <div class="mb-8">
+                <svg class="mx-auto h-32 w-32 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M24 8V4m0 40v-4m16-16h4M4 24h4m31.6-13.6l2.8-2.8M9.6 38.4l2.8-2.8m23.2 0l2.8 2.8M9.6 9.6l2.8 2.8M24 30a6 6 0 110-12 6 6 0 010 12z"></path>
                 </svg>
-                返回上页
-            </a>
-            <a href="{{ url_for('blog.index') }}" 
-               class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                </svg>
-                返回首页
-            </a>
+            </div>
+            
+            <!-- 错误信息 -->
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">500</h1>
+            <p class="text-xl text-gray-600 dark:text-gray-300 mb-8">抱歉，服务器/程序出现了一些问题</p>
+            
+            <!-- 提示信息 -->
+            <div class="text-gray-500 dark:text-gray-400 mb-8">
+                <p>PPress 提示您，可以重启程序尝试！</p>
+                <p>请稍后再试或返回首页</p>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex justify-center space-x-4">
+                <a href="javascript:history.back()" 
+                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    返回上页
+                </a>
+                <a href="/" 
+                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    返回首页
+                </a>
+            </div>
         </div>
     </div>
-</div>
-{% endblock %}
+
+    <script>
+        // 检测系统暗色模式
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark')
+        }
+    </script>
+</body>
+</html>
