@@ -1958,113 +1958,104 @@ class AdminService:
     def save_article(article_id, form_data):
         """保存文章"""
         try:
-            # 获取表单数据
-            title = form_data.get('title')
-            content = form_data.get('content')
-            status = form_data.get('status', Article.STATUS_PUBLIC)
-            password = form_data.get('password', '')
+            # 先回滚之前的事务
+            db.session.rollback()
             
-            # 获取分类ID列表
-            category_ids = form_data.getlist('categories')
-            if not category_ids:
-                return False, '请至少选择一个分类', None
-            
-            # 获取标签
-            tags = form_data.get('tag_names', '').strip()
-            tag_names = [name.strip() for name in tags.split() if name.strip()]
-
-            new_tags = []
-
-            # 获取自定义字段
-            try:
-                fields = json.loads(form_data.get('fields', '{}'))
-            except:
-                fields = {}
-            
-            # 创建或更新文章
-            if article_id:
-                article = Article.query.get_or_404(article_id)
-            else:
-                article = Article(author_id=current_user.id)
-            
-            # 更新文章属性
-            article.title = title
-            article.content = content
-            article.status = status
-            article.password = password if status == Article.STATUS_PASSWORD else None
-            article.allow_comment = form_data.get('allow_comment') == 'on'
-            article.fields = fields
-
-            # 更新发布时间
-            created_at = form_data.get('created_at')
-            if created_at:
-                try:
-                    article.created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
-                except ValueError:
-                    return False, '发布时间格式不正确', None
-            elif not article_id:  # 新文章且未设置时间则使用当前时间
-                article.created_at = datetime.now()
-            
-            # 更新分类
-            categories = Category.query.filter(Category.id.in_(category_ids)).all()
-            if not categories:
-                return False, '无效的分类ID', None
-            
-            article.category_id = categories[0].id  # 第一个作为主分类
-            article.categories = categories
-            
-            # 更新标签
-            try:
-                # 先回滚之前的事务
-                db.session.rollback()
+            with db.session.no_autoflush:
+                # 获取表单数据
+                title = form_data.get('title')
+                content = form_data.get('content')
+                status = form_data.get('status', Article.STATUS_PUBLIC)
+                password = form_data.get('password', '')
                 
-                with db.session.no_autoflush:
-                    # 手动处理标签关联
-                    if article_id:
-                        # 先清除所有现有的标签关联
-                        db.session.execute(
-                            article_tags.delete().where(
-                                article_tags.c.article_id == article_id
-                            )
+                # 获取分类ID列表
+                category_ids = form_data.getlist('categories')
+                if not category_ids:
+                    return False, '请至少选择一个分类', None
+                
+                # 获取标签
+                tags = form_data.get('tag_names', '').strip()
+                tag_names = [name.strip() for name in tags.split() if name.strip()]
+                new_tags = []
+                
+                # 创建或更新文章
+                if article_id:
+                    article = Article.query.get_or_404(article_id)
+                else:
+                    article = Article(author_id=current_user.id)
+                
+                # 更新文章属性
+                article.title = title
+                article.content = content
+                article.status = status
+                article.password = password if status == Article.STATUS_PASSWORD else None
+                article.allow_comment = form_data.get('allow_comment') == 'on'
+                
+                # 更新发布时间
+                created_at = form_data.get('created_at')
+                if created_at:
+                    try:
+                        article.created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
+                    except ValueError:
+                        return False, '发布时间格式不正确', None
+                elif not article_id:  # 新文章且未设置时间则使用当前时间
+                    article.created_at = datetime.now()
+                
+                # 更新分类
+                categories = Category.query.filter(Category.id.in_(category_ids)).all()
+                if not categories:
+                    return False, '无效的分类ID', None
+                
+                article.category_id = categories[0].id  # 第一个作为主分类
+                article.categories = categories
+                
+                # 手动处理标签关联
+                if article_id:
+                    # 先清除所有现有的标签关联
+                    db.session.execute(
+                        article_tags.delete().where(
+                            article_tags.c.article_id == article_id
                         )
-                        db.session.flush()
-
-                    # 获取或创建标签
-                    for tag_name in tag_names:
-                        # 同时检查标签名和slug
-                        tag = Tag.query.filter(
-                            db.or_(
-                                Tag.name == tag_name,
-                                Tag.slug == slugify(tag_name)
-                            )
-                        ).first()
-                        
-                        if not tag:
-                            tag = Tag(name=tag_name)
-                            db.session.add(tag)
-                            db.session.flush()
-                        new_tags.append(tag)
-
-                    # 设置新的标签
-                    article.tags = new_tags
+                    )
                     db.session.flush()
 
-            except Exception as e:
-                current_app.logger.error(f"Error updating article tags: {str(e)}")
-                db.session.rollback()
-                return False, f'更新标签失败: {str(e)}', None
-            
-            # 保存到数据库
-            if not article_id:
-                db.session.add(article)
-            db.session.commit()
-            
-            # 清除缓存
-            from app.services.blog_service import BlogService
-            BlogService.clear_article_related_cache(article.id)
-            
-            return True, '保存成功', article
-            
+                # 获取或创建标签
+                for tag_name in tag_names:
+                    tag = Tag.query.filter(
+                        db.or_(
+                            Tag.name == tag_name,
+                            Tag.slug == slugify(tag_name)
+                        )
+                    ).first()
+                    if not tag:
+                        tag = Tag(name=tag_name)
+                        db.session.add(tag)
+                        db.session.flush()
+                    new_tags.append(tag)
+
+                # 设置新的标签
+                article.tags = new_tags
+                
+                # 处理自定义字段
+                try:
+                    fields = json.loads(form_data.get('fields', '{}'))
+                except:
+                    fields = {}
+                article.fields = fields
+                
+                # 保存到数据库
+                if not article_id:
+                    db.session.add(article)
+                
+                # 提交事务
+                db.session.commit()
+                
+                # 清除缓存
+                from app.services.blog_service import BlogService
+                BlogService.clear_article_related_cache(article.id)
+                
+                return True, '保存成功', article
+                
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Save article error: {str(e)}")
