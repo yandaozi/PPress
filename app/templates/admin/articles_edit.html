@@ -685,6 +685,17 @@ window.addEventListener('message', function(event) {
         
         // 插入后关闭模态框
         hideFileManager();
+    } else if (event.data.type === 'filesSelected') {
+        // 处理多个文件
+        const files = event.data.files;
+        const editor = tinymce.get('editor');
+        
+        // 将所有文件的内容拼接起来插入编辑器
+        const content = files.map(file => file.content).join('\n');
+        editor.insertContent(content);
+        
+        // 插入后关闭模态框
+        hideFileManager();
     }
 });
 

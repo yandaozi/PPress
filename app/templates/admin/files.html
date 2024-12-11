@@ -44,8 +44,9 @@
                     </div>
                 </form>
 
-                <!-- 添加上传按钮 -->
-                <div class="flex items-center space-x-2">
+                <!-- 修改按钮组容器 -->
+                <div class="flex flex-col sm:flex-row w-full sm:w-auto space-y-2 sm:space-y-0 sm:space-x-2">
+                    <!-- 上传按钮 -->
                     <input type="file" id="fileInput" class="hidden" multiple onchange="uploadFiles(this)">
                     <button onclick="document.getElementById('fileInput').click()"
                             class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
@@ -57,7 +58,7 @@
                         </span>
                     </button>
 
-                    <!-- 添加设置按钮 -->
+                    <!-- 设置按钮 -->
                     <button onclick="showUploadSettings()"
                             class="w-full sm:w-auto px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200">
                         <span class="flex items-center justify-center">
@@ -69,7 +70,7 @@
                         </span>
                     </button>
 
-                    <!-- 添加批量删除按钮 -->
+                    <!-- 批量删除按钮 -->
                     <button id="batchDeleteBtn" 
                             onclick="batchDelete()"
                             disabled
@@ -596,11 +597,11 @@ function insertSelectedFiles() {
         const url = checkbox.dataset.url;
         const fileName = checkbox.dataset.name;
         const fileType = checkbox.dataset.type;
-        const fileExt = checkbox.dataset.ext;
+        const fileExt = fileName.split('.').pop().toLowerCase();
         
         let content = '';
         
-        // 根据文件类型生成不同的插入内容
+        // 根据扩展名生成对应的HTML
         if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(fileExt)) {
             content = `<img src="${url}" alt="${fileName}" style="max-width:100%;">`;
         }
@@ -622,7 +623,7 @@ function insertSelectedFiles() {
         };
     });
 
-    // 向父窗口发送所有选中的文件信息
+    // 向父窗口发送批量文件信息
     window.parent.postMessage({
         type: 'filesSelected',
         files: files
