@@ -394,7 +394,7 @@ class BlogService:
                 db.joinedload(Article.author),
                 db.joinedload(Article.category)
             ).filter(Article.tags.any(Tag.id == tag.id))\
-             .order_by(Article.created_at.desc())\
+             .order_by(Article.id.desc())\
              .paginate(page=page, per_page=10, error_out=False)
             
         return cache_manager.get(f'tag:{tag_id_or_slug}:articles:{page}', query_tag_articles)
@@ -645,7 +645,7 @@ class BlogService:
                     tag = Tag.query.filter(
                         db.or_(
                             Tag.name == tag_name,
-                            Tag.slug == slugify(tag_name)
+                            #Tag.slug == slugify(tag_name)
                         )
                     ).first()
 

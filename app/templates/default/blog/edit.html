@@ -352,7 +352,9 @@ tagInput.addEventListener('keydown', function(e) {
 });
 // 给输入框添加 blur 事件监听器，当失去焦点时调用 addTag 函数
 tagInput.addEventListener('blur', function() {
-    addTag(this.value);
+    if(!tagSuggestions.contains(e.target)){
+        addTag(this.value);
+    }
 });
 // 获取标签建议
 let debounceTimer;

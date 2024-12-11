@@ -2024,7 +2024,7 @@ class AdminService:
                     tag = Tag.query.filter(
                         db.or_(
                             Tag.name == tag_name,
-                            Tag.slug == slugify(tag_name)
+                            #Tag.slug == slugify(tag_name)
                         )
                     ).first()
                     if not tag:
