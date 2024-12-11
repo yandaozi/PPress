@@ -45,6 +45,18 @@ class ThemeManager:
         return ChoiceLoader(theme_loaders)
 
     @staticmethod
+    def update_theme_loader(app):
+        """动态更新主题加载器"""
+        # 获取新的加载器
+        new_loader = ThemeManager.get_theme_loader(app)
+        
+        # 更新应用的加载器
+        app.jinja_loader = new_loader
+        
+        # 清除模板缓存
+        app.jinja_env.cache.clear()
+
+    @staticmethod
     def get_available_themes():
         """获取所有可用的主题"""
         themes_dir = os.path.join(current_app.root_path, 'templates')

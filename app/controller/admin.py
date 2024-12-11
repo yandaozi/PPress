@@ -477,6 +477,7 @@ def themes():
 def change_theme():
     """更改主题"""
     success, message = AdminService.change_theme(request.form.get('theme'))
+    ThemeManager.update_theme_loader(current_app)   #jinja2更新主题
     flash(message)
     if not success:
         return redirect(url_for('admin.themes'))
