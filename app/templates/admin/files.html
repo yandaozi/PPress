@@ -46,7 +46,7 @@
 
                 <!-- 添加上传按钮 -->
                 <div class="flex items-center space-x-2">
-                    <input type="file" id="fileInput" class="hidden" onchange="uploadFile(this)">
+                    <input type="file" id="fileInput" class="hidden" multiple onchange="uploadFiles(this)">
                     <button onclick="document.getElementById('fileInput').click()"
                             class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
                         <span class="flex items-center justify-center">
@@ -68,6 +68,29 @@
                             <span>上传设置</span>
                         </span>
                     </button>
+
+                    <!-- 添加批量删除按钮 -->
+                    <button id="batchDeleteBtn" 
+                            onclick="batchDelete()"
+                            disabled
+                            class="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            <span>批量删除</span>
+                        </span>
+                    </button>
+                </div>
+
+                <!-- 添加上传进度显示 -->
+                <div id="uploadProgress" class="hidden mt-4">
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        正在上传: <span id="currentFile">0</span>/<span id="totalFiles">0</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
                 </div>
 
             </div>
@@ -84,8 +107,39 @@
 
         <!-- 文件列表 -->
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            <!-- 全选区域 -->
+            <div class="col-span-full flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="selectAll" 
+                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <label for="selectAll" class="text-sm text-gray-600 dark:text-gray-400">全选</label>
+                </div>
+                {% if request.args.get('mode') == 'selector' %}
+                <button onclick="insertSelectedFiles()" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    批量插入
+                </button>
+                {% endif %}
+            </div>
+
             {% for file in files.items %}
-            <div class="border dark:border-gray-700 rounded-lg overflow-hidden">
+            <div class="relative border dark:border-gray-700 rounded-lg overflow-hidden">
+                <!-- 复选框统一放在左上角 -->
+                <div class="absolute top-2 left-2 z-10">
+                    {% if request.args.get('mode') == 'selector' %}
+                    <input type="checkbox" 
+                           class="file-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                           data-url="{{ url_for('static', filename=file.relative_path) }}"
+                           data-name="{{ file.original_filename }}"
+                           data-type="{{ file.file_type }}"
+                           data-ext="{{ file.original_filename.split('.')[-1] }}">
+                    {% else %}
+                    <input type="checkbox" 
+                           class="delete-checkbox rounded border-gray-300 text-red-600 focus:ring-red-500"
+                           data-id="{{ file.id }}">
+                    {% endif %}
+                </div>
+
                 <!-- 文件预览 -->
                 <div class="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-900 cursor-pointer" 
                      onclick="showFilePreview('{{ file.file_path }}', '{{ file.file_type }}', '{{ file.original_filename }}')">
@@ -289,42 +343,58 @@ function confirmDelete(fileId) {
     });
 }
 
-function uploadFile(input) {
-    if (!input.files || !input.files[0]) {
-        console.log('没有选择文件');
-        return;
-    }
+async function uploadFiles(input) {
+    const files = input.files;
+    if (!files.length) return;
 
-    const formData = new FormData();
-    formData.append('upload', input.files[0]);
-
+    // 显示进度条
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    const currentFileSpan = document.getElementById('currentFile');
+    const totalFilesSpan = document.getElementById('totalFiles');
     
-    showAlert('正在上传...', 'info', null, null, false);
+    progressDiv.classList.remove('hidden');
+    totalFilesSpan.textContent = files.length;
     
-    fetch('{{ url_for("blog.upload_image") }}', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token() }}'
-        },
-        body: formData
-    })
-    .then(response => {
-        return response.json();
-    })
-    .then(data => {
-        if (data.error) {
-            showAlert(data.error, 'error', '错误');
-        } else {
-            showAlert('上传成功', 'success', '成功');
-            setTimeout(() => location.reload(), 500);
+    // 遍历上传文件
+    for (let i = 0; i < files.length; i++) {
+        currentFileSpan.textContent = i + 1;
+        const progress = ((i + 1) / files.length) * 100;
+        progressBar.style.width = `${progress}%`;
+        
+        const formData = new FormData();
+        formData.append('upload', files[i]);
+        
+        try {
+            const response = await fetch('{{ url_for("blog.upload_image") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || '上传失败');
+            }
+            
+        } catch (error) {
+            showAlert(`文件 ${files[i].name} 上传失败: ${error.message}`, 'error');
         }
-    })
-    .catch(error => {
-        console.error('上传错误:', error);
-        showAlert('上传失败: ' + error, 'error', '错误');
-    })
-    .finally(() => {
-        input.value = '';
+    }
+    
+    // 上传完成后
+    progressDiv.classList.add('hidden');
+    progressBar.style.width = '0%';
+    input.value = ''; // 清空input
+    
+    // 刷新文件列表
+    //location.reload();
+
+    showAlert(`批量上传文件完毕`, 'success', '完成' , function() {
+        setTimeout(() => window.location.reload(), 200);
     });
 }
 
@@ -506,5 +576,124 @@ function insertToEditor(url, fileType, fileName) {
         }
     }, '*');
 }
+
+// 全选功能
+document.getElementById('selectAll')?.addEventListener('change', function() {
+    document.querySelectorAll('.file-checkbox').forEach(cb => {
+        cb.checked = this.checked;
+    });
+});
+
+// 批量插入选中的文件
+function insertSelectedFiles() {
+    const selectedFiles = document.querySelectorAll('.file-checkbox:checked');
+    if(!selectedFiles.length) {
+        showAlert('请至少选择一个文件', 'warning');
+        return;
+    }
+
+    const files = Array.from(selectedFiles).map(checkbox => {
+        const url = checkbox.dataset.url;
+        const fileName = checkbox.dataset.name;
+        const fileType = checkbox.dataset.type;
+        const fileExt = checkbox.dataset.ext;
+        
+        let content = '';
+        
+        // 根据文件类型生成不同的插入内容
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(fileExt)) {
+            content = `<img src="${url}" alt="${fileName}" style="max-width:100%;">`;
+        }
+        else if (['mp4', 'webm', 'ogg'].includes(fileExt)) {
+            content = `<video controls style="max-width:100%;"><source src="${url}" type="video/${fileExt}">您的浏览器不支持视频标签</video>`;
+        }
+        else if (['mp3', 'wav', 'ogg'].includes(fileExt)) {
+            content = `<audio controls><source src="${url}" type="audio/${fileExt}">您的浏览器不支持音频标签</audio>`;
+        }
+        else {
+            content = `<a href="${url}" target="_blank">${fileName}</a>`;
+        }
+
+        return {
+            url,
+            name: fileName,
+            file_type: fileType,
+            content
+        };
+    });
+
+    // 向父窗口发送所有选中的文件信息
+    window.parent.postMessage({
+        type: 'filesSelected',
+        files: files
+    }, '*');
+}
+
+// 监听复选框变化,更新删除按钮状态
+document.querySelectorAll('.delete-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', updateBatchDeleteButton);
+});
+
+// 更新批量删除按钮状态
+function updateBatchDeleteButton() {
+    const checkedBoxes = document.querySelectorAll('.delete-checkbox:checked');
+    const deleteBtn = document.getElementById('batchDeleteBtn');
+    deleteBtn.disabled = checkedBoxes.length === 0;
+}
+
+// 批量删除功能
+function batchDelete() {
+    const selectedFiles = document.querySelectorAll('.delete-checkbox:checked');
+    if(!selectedFiles.length) return;
+
+    const fileIds = Array.from(selectedFiles).map(cb => cb.dataset.id);
+
+    showAlert('确定要删除选中的文件吗？此操作不可恢复！', 'warning', '确认删除', async () => {
+        let successCount = 0;
+        let failCount = 0;
+
+        // 显示进度提示
+        showAlert(`正在删除文件...`, 'info', null, null, false);
+
+        // 依次删除文件
+        for(const fileId of fileIds) {
+            try {
+                const response = await fetch(`/admin/files/${fileId}/delete`, {
+                    method: 'POST',  // 改为 POST 方法
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    }
+                });
+
+                if(response.ok) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+            } catch(error) {
+                failCount++;
+                console.error(`删除文件 ${fileId} 失败:`, error);
+            }
+        }
+
+        // 显示删除结果
+        if(failCount === 0) {
+            showAlert(`成功删除 ${successCount} 个文件`, 'success');
+        } else {
+            showAlert(`删除完成: ${successCount} 个成功, ${failCount} 个失败`, 'warning');
+        }
+
+        // 刷新页面
+        setTimeout(() => location.reload(), 400);
+    });
+}
+
+// 添加全选删除功能
+document.getElementById('selectAll')?.addEventListener('change', function() {
+    document.querySelectorAll('.delete-checkbox').forEach(cb => {
+        cb.checked = this.checked;
+    });
+    updateBatchDeleteButton();
+});
 </script>
 {% endblock %} 
