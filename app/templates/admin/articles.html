@@ -65,6 +65,7 @@
                         <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">浏览</th>
                         <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">评论</th>
                         <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">发布时间</th>
+                        <th class="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最后编辑</th>
                         <th class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">操作</th>
                     </tr>
                 </thead>
@@ -155,6 +156,9 @@
                         </td>
                         <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ article.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </td>
+                        <td class="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ article.updated_at.strftime('%Y-%m-%d %H:%M') }}
                         </td>
                         <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
                             <div class="flex items-center space-x-3">
