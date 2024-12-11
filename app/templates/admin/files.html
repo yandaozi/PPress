@@ -117,12 +117,25 @@
                 <!-- 文件信息 -->
                 <div class="p-3 sm:p-4">
                     <!-- 文件名(可编辑) -->
-                    <div class="mb-1 sm:mb-2">
-                        <input type="text" 
-                               value="{{ file.original_filename }}"
-                               data-file-id="{{ file.id }}"
-                               onchange="updateFileName(this)"
-                               class="w-full text-xs sm:text-sm font-medium text-gray-900 dark:text-white bg-transparent border-0 border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:ring-0 p-0">
+                    <div class="mb-1 sm:mb-2 group">
+                        <div class="relative">
+                            <input type="text" 
+                                   value="{{ file.original_filename }}"
+                                   data-file-id="{{ file.id }}"
+                                   onchange="updateFileName(this)"
+                                   class="w-full text-xs sm:text-sm font-medium text-gray-900 dark:text-white 
+                                          bg-transparent border-0 border-b border-transparent 
+                                          group-hover:border-gray-200 dark:group-hover:border-gray-700
+                                          focus:border-blue-500 dark:focus:border-blue-400
+                                          focus:ring-0 px-1 py-1
+                                          transition-colors duration-200">
+                            <!-- 编辑图标 -->
+                            <svg class="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </div>
                     </div>
                     
                     <div class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 space-y-0.5 sm:space-y-1">
@@ -411,9 +424,11 @@ document.getElementById('uploadSettingsForm').onsubmit = function(e) {
 function updateFileName(input) {
     const fileId = input.dataset.fileId;
     const newName = input.value.trim();
+    const originalValue = input.defaultValue;
     
     if (!newName) {
         showAlert('文件名不能为空', 'error', '错误');
+        input.value = originalValue;
         return;
     }
     
@@ -429,26 +444,38 @@ function updateFileName(input) {
     .then(data => {
         if (data.error) {
             showAlert(data.error, 'error', '错误');
+            input.value = originalValue;
         } else {
             showAlert('文件名已更新', 'success', '成功');
+            input.defaultValue = newName;  // 更新默认值
         }
     })
     .catch(error => {
         showAlert('更新失败: ' + error, 'error', '错误');
+        input.value = originalValue;
     });
 }
 
 // 插入文件到编辑器
 function insertToEditor(url, fileType, fileName) {
     let content = '';
+    // 获取文件类型的最后一部分
+    const type = fileType.split('/').pop().toLowerCase();
     
-    if (fileType.startsWith('image/')) {
+    // 图片类型
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(type)) {
         content = `<img src="${url}" alt="${fileName}" style="max-width:100%;">`;
-    } else if (fileType.startsWith('video/')) {
-        content = `<video controls style="max-width:100%;"><source src="${url}" type="${fileType}">您的浏览器不支持视频标签</video>`;
-    } else if (fileType.startsWith('audio/')) {
-        content = `<audio controls><source src="${url}" type="${fileType}">您的浏览器不支持音频标签</audio>`;
-    } else {
+    }
+    // 视频类型
+    else if (['mp4', 'webm', 'ogg'].includes(type)) {
+        content = `<video controls style="max-width:100%;"><source src="${url}" type="video/${type}">您的浏览器不支持视频标签</video>`;
+    }
+    // 音频类型
+    else if (['mp3', 'wav', 'ogg'].includes(type)) {
+        content = `<audio controls><source src="${url}" type="audio/${type}">您的浏览器不支持音频标签</audio>`;
+    }
+    // 其他类型
+    else {
         content = `<a href="${url}" target="_blank">${fileName}</a>`;
     }
     
@@ -458,7 +485,8 @@ function insertToEditor(url, fileType, fileName) {
         file: {
             url: url,
             name: fileName,
-            file_type: fileType
+            file_type: fileType,
+            content: content  // 直接发送生成的HTML内容
         }
     }, '*');
 }
