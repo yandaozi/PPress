@@ -20,9 +20,14 @@ bp = Blueprint('admin', __name__, url_prefix='/admin')
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != 'admin':
+        if not current_user.is_authenticated:
+            # 未登录时重定向到管理员登录页面
+            return redirect(url_for('admin.login'))
+
+        if current_user.role != 'admin':
             flash('需要管理员权限')
-            return redirect(url_for('blog.index'))
+            return redirect(url_for('blog.index'))  # 或者 abort(404) 如果你想对普通用户隐藏该页面存在
+
         return f(*args, **kwargs)
     return decorated_function
 
