@@ -142,7 +142,7 @@ function handleThemeUpload(form) {
     .then(data => {
         if (data.status === 'success') {
             showAlert(data.message, 'success');
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => location.reload(), 400);
         } else {
             showAlert(data.message, 'error');
         }
@@ -164,7 +164,7 @@ function confirmUninstall(themeId) {
         .then(data => {
             if (data.status === 'success') {
                 showAlert(data.message, 'success');
-                setTimeout(() => location.reload(), 1000);
+                setTimeout(() => location.reload(), 300);
             } else {
                 showAlert(data.message, 'error');
             }
