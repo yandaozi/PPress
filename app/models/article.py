@@ -141,7 +141,7 @@ class Article(db.Model):
         """获取自定义字段值"""
         if not self.fields:
             return default
-        return self.fields.get(key, default)
+        return self.fields.get(key) or default
 
     def generate_slug(self):
         """生成 slug"""

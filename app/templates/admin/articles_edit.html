@@ -38,7 +38,7 @@
                             标题
                         </label>
                         <input type="text" name="title" required
-                               value="{{ article.title if article else '' }}"
+                               value="{{ article.title or '' }}"
                                class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
                                       focus:outline-none focus:ring-2 focus:ring-blue-500 
                                       bg-white dark:bg-gray-700 
@@ -51,7 +51,7 @@
                             URL 别名
                         </label>
                         <input type="text" name="slug" 
-                               value="{{ article.slug if article else '' }}"
+                               value="{{ article.slug or '' }}"
                                placeholder="自定义文章URL,留空将使用默认规则"
                                class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
                                       focus:outline-none focus:ring-2 focus:ring-blue-500 
@@ -67,7 +67,7 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             内容
                         </label>
-                        <textarea id="editor" name="content">{{ article.content if article else '' }}</textarea>
+                        <textarea id="editor" name="content">{{ article.content or '' }}</textarea>
                     </div>
 
                     <!-- 在内容编辑器下方添加附件库按钮 -->
@@ -106,7 +106,7 @@
                                     {% if field.type == 'image' %}
                                     <div class="flex-1 flex items-center space-x-2">
                                         <input type="text" name="field_values[]"
-                                               value="{{ article.get_field(field_key) if article else '' }}"
+                                               value="{{ article.get_field(field_key, '') }}"
                                                placeholder="{{ field.description or '字段值' }}"
                                                class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
                                                       focus:outline-none focus:ring-2 focus:ring-blue-500 
@@ -116,7 +116,7 @@
                                     </div>
                                     {% else %}
                                     <input type="text" name="field_values[]"
-                                           value="{{ article.get_field(field_key) if article else '' }}"
+                                           value="{{ article.get_field(field_key, '') }}"
                                            placeholder="{{ field.description or '字段值' }}"
                                            class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
                                                   focus:outline-none focus:ring-2 focus:ring-blue-500 
@@ -239,7 +239,7 @@
                             </label>
                             <input type="password" 
                                    name="password" 
-                                   value="{{ article.password if article else '' }}"
+                                   value="{{ article.password or '' }}"
                                    placeholder="留空将使用默认密码: 123456"
                                    class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg 
                                           focus:outline-none focus:ring-2 focus:ring-blue-500 
