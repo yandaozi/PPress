@@ -8,12 +8,12 @@
 
 <h4 align="center">一个基于Python的博客CMS系统，采用Flask极致构建</h4>
 
-## 简介
+## PPress简介
 PPress 是一个基于 Flask 框架构建的功能丰富的博客CMS系统，具备内存缓存、缓存预热等优化机制，支持 sqlite 和 mysql 两种数据库。
 
 拥有完善的前后台管理系统，涵盖用户管理、文章管理、评论管理、系统配置管理等多个方面，是一个适合任何Web的开源 Blog / CMS 平台。
 
-## 功能
+## 系统功能
 
 文章模块
 - 文章管理
@@ -44,37 +44,12 @@ PPress 是一个基于 Flask 框架构建的功能丰富的博客CMS系统，具
 - 网站管理
 - 附件管理
 
-## 特点
-
-模版模块
-- 模版在线配置、管理
-
-插件模块
-- 插件在线安装、卸载
-- 插件在线启用、停止
-- 插件在线更新
-- 支持插件的导入、导出
-
-用户模块
-- 独立的登录和注册页面
-- 验证码判断登录注册放行
-- 记录用户浏览历史
-- 管理用户个人信息
-
-角色和权限
-- 角色管理
-- 角色升降级分配
-
-其他
-- Python文本情感分析TextBlog分析文章情感
-- 可选sqlite代替MySQL免数据库环境安装
-
-## 截图
+## 程序截图
 ![A.png](preview/A.png)
 
 ![B.png](preview/B.png)
 
-## 运行
+## 快速开始
 Centos7下PPress启动教程：https://www.bilibili.com/video/BV1jezSY3Eag/
 
 Windows下PPress启动教程：https://www.bilibili.com/video/BV1sEzSYHEHc/
@@ -85,7 +60,7 @@ Windows下PPress启动教程：https://www.bilibili.com/video/BV1sEzSYHEHc/
 3. 运行 run.py - 进入网页安装 - 填写对应的配置信息 - 安装成功后重启本应用
 4. 后台地址：`/admin/`  默认管理员账号（admin/123456）
 
-## 文档
+## 开发文档
 
 doc：http://doc.gank.fun/web/#/627038158/
 
