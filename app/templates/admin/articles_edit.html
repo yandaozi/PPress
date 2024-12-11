@@ -648,14 +648,20 @@ window.addEventListener('message', function(event) {
         const file = event.data.file;
         const editor = tinymce.get('editor');
         
-        if (file.file_type && file.file_type.startsWith('image/')) {
-            editor.insertContent(`<img src="${file.url}" alt="${file.name}" style="max-width:100%;">`);
-        } else if (file.file_type && file.file_type.startsWith('video/')) {
-            editor.insertContent(`<video controls style="max-width:100%;"><source src="${file.url}" type="${file.file_type}">您的浏览器不支持视频标签</video>`);
-        } else if (file.file_type && file.file_type.startsWith('audio/')) {
-            editor.insertContent(`<audio controls><source src="${file.url}" type="${file.file_type}">您的浏览器不支持音频标签</audio>`);
+        // 直接使用传过来的content内容
+        if (file.content) {
+            editor.insertContent(file.content);
         } else {
-            editor.insertContent(`<a href="${file.url}" target="_blank">${file.name}</a>`);
+            // 降级处理，以防content不存在
+            if (file.file_type && file.file_type.startsWith('image/')) {
+                editor.insertContent(`<img src="${file.url}" alt="${file.name}" style="max-width:100%;">`);
+            } else if (file.file_type && file.file_type.startsWith('video/')) {
+                editor.insertContent(`<video controls style="max-width:100%;"><source src="${file.url}" type="${file.file_type}">您的浏览器不支持视频标签</video>`);
+            } else if (file.file_type && file.file_type.startsWith('audio/')) {
+                editor.insertContent(`<audio controls><source src="${file.url}" type="${file.file_type}">您的浏览器不支持音频标签</audio>`);
+            } else {
+                editor.insertContent(`<a href="${file.url}" target="_blank">${file.name}</a>`);
+            }
         }
         
         // 插入后关闭模态框

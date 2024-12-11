@@ -459,25 +459,41 @@ function updateFileName(input) {
 // 插入文件到编辑器
 function insertToEditor(url, fileType, fileName) {
     let content = '';
-    // 获取文件类型的最后一部分
-    const type = fileType.split('/').pop().toLowerCase();
+    
+    // 处理文件类型
+    let type = '';
+    if (fileType.includes('/')) {
+        // 如果是 MIME 类型 (如 'image/jpeg')
+        type = fileType.split('/')[1].toLowerCase();
+    } else {
+        // 如果是文件扩展名
+        type = fileType.toLowerCase();
+    }
+    
+    // 从文件名获取扩展名作为备选
+    const fileExt = fileName.split('.').pop().toLowerCase();
     
     // 图片类型
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(type)) {
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(type) || 
+        ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(fileExt)) {
         content = `<img src="${url}" alt="${fileName}" style="max-width:100%;">`;
     }
     // 视频类型
-    else if (['mp4', 'webm', 'ogg'].includes(type)) {
+    else if (['mp4', 'webm', 'ogg', 'mpeg', 'quicktime'].includes(type) || 
+             ['mp4', 'webm', 'ogg'].includes(fileExt)) {
         content = `<video controls style="max-width:100%;"><source src="${url}" type="video/${type}">您的浏览器不支持视频标签</video>`;
     }
     // 音频类型
-    else if (['mp3', 'wav', 'ogg'].includes(type)) {
+    else if (['mp3', 'wav', 'ogg', 'mpeg'].includes(type) || 
+             ['mp3', 'wav', 'ogg'].includes(fileExt)) {
         content = `<audio controls><source src="${url}" type="audio/${type}">您的浏览器不支持音频标签</audio>`;
     }
     // 其他类型
     else {
         content = `<a href="${url}" target="_blank">${fileName}</a>`;
     }
+    
+    console.log('File type:', type, 'Extension:', fileExt, 'Content:', content); // 调试用
     
     // 向父窗口发送消息
     window.parent.postMessage({
@@ -486,7 +502,7 @@ function insertToEditor(url, fileType, fileName) {
             url: url,
             name: fileName,
             file_type: fileType,
-            content: content  // 直接发送生成的HTML内容
+            content: content
         }
     }, '*');
 }
