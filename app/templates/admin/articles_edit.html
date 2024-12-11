@@ -53,6 +53,25 @@
                         <textarea id="editor" name="content">{{ article.content if article else '' }}</textarea>
                     </div>
 
+                    <!-- 在内容编辑器下方添加附件库按钮和iframe -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">附件库</h3>
+                            <button type="button" onclick="toggleFileManager()"
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                {{ '关闭' if show_files else '打开' }}附件库
+                            </button>
+                        </div>
+                        
+                        <!-- 文件管理器iframe -->
+                        <div id="fileManagerWrapper" class="{% if not show_files %}hidden{% endif %}">
+                            <iframe src="{{ url_for('admin.manage_files', mode='selector') }}" 
+                                    class="w-full rounded-lg border-0"
+                                    style="height: 600px;"
+                                    id="fileManagerFrame"></iframe>
+                        </div>
+                    </div>
+
                     <!-- 在内容编辑器后面添加自定义字段部分 -->
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
                         <div class="flex justify-between items-center mb-4">
@@ -582,5 +601,38 @@ function removeCustomField(button) {
 }
 
 
+</script>
+
+<!-- 切换文件管理器显示/隐藏 -->
+<script>
+function toggleFileManager() {
+    const wrapper = document.getElementById('fileManagerWrapper');
+    const btn = wrapper.previousElementSibling.querySelector('button');
+    if (wrapper.classList.contains('hidden')) {
+        wrapper.classList.remove('hidden');
+        btn.textContent = '关闭附件库';
+    } else {
+        wrapper.classList.add('hidden');
+        btn.textContent = '打开附件库';
+    }
+}
+
+// 监听来自iframe的消息
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'fileSelected') {
+        const file = event.data.file;
+        const editor = tinymce.get('editor');
+        
+        if (file.file_type && file.file_type.startsWith('image/')) {
+            editor.insertContent(`<img src="${file.url}" alt="${file.name}" style="max-width:100%;">`);
+        } else if (file.file_type && file.file_type.startsWith('video/')) {
+            editor.insertContent(`<video controls style="max-width:100%;"><source src="${file.url}" type="${file.file_type}">您的浏览器不支持视频标签</video>`);
+        } else if (file.file_type && file.file_type.startsWith('audio/')) {
+            editor.insertContent(`<audio controls><source src="${file.url}" type="${file.file_type}">您的浏览器不支持音频标签</audio>`);
+        } else {
+            editor.insertContent(`<a href="${file.url}" target="_blank">${file.name}</a>`);
+        }
+    }
+});
 </script>
 {% endblock %} 

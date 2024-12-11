@@ -583,16 +583,16 @@ def manage_files():
             search_type=request.args.get('type', 'filename'),
             search_query=request.args.get('q', '').strip()
         )
-        
+
         if error:
             flash(error)
             return redirect(url_for('admin.dashboard'))
-            
+
         if not data:
             abort(500)
-            
+
         return render_template('admin/files.html', **data)
-        
+
     except Exception as e:
         current_app.logger.error(f"Files error: {str(e)}")
         abort(500)
@@ -1327,7 +1327,7 @@ def save_upload_settings():
     """保存上传设置"""
     try:
         data = request.get_json()
-        
+
         # 验证和清理数据
         allowed_types = data.get('upload_allowed_types', '').strip()
         max_size = int(data.get('upload_max_size', 10))

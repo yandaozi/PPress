@@ -2063,13 +2063,15 @@ class AdminService:
 
     @staticmethod
     def get_article_for_edit(article_id):
-        """获取用于编辑的文章"""
+        """获取要编辑的文章"""
         try:
             article = Article.query.options(
                 db.joinedload(Article.author),
                 db.joinedload(Article.tags),
                 db.joinedload(Article.categories)
             ).get_or_404(article_id)
+            
+            # 返回文章和文件列表
             return article
         except Exception as e:
             current_app.logger.error(f"Get article for edit error: {str(e)}")

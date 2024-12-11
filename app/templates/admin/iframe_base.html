@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <script src="{{ url_for('static', filename='default/vendor/3.4.5') }}"></script>
+    <script src="{{ url_for('static', filename='default/vendor/alpinejs3.14.3.js') }}"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900">
+    {% block content %}{% endblock %}
+    {% include 'components/alert.html' %}
+</body>
+</html> 
