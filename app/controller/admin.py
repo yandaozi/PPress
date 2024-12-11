@@ -1,6 +1,6 @@
 import os
 
-from flask import Blueprint, render_template, render_template_string, request, flash, redirect, url_for, jsonify, send_file, current_app, abort
+from flask import Blueprint, render_template, render_template_string, request, flash, redirect, url_for, jsonify, send_file, current_app, abort, session
 from flask_login import login_required, current_user
 from functools import wraps
 import json
@@ -32,7 +32,6 @@ def admin_required(f):
     return decorated_function
 
 @bp.route('/')
-@login_required
 @admin_required
 def dashboard():
     """管理后台首页"""
@@ -46,7 +45,6 @@ def dashboard():
         abort(500)
 
 @bp.route('/users')
-@login_required
 @admin_required
 def users():
     """用户管理"""
@@ -74,7 +72,6 @@ def users():
         abort(500)
 
 @bp.route('/articles')
-@login_required
 @admin_required
 def articles():
     """文章管理"""
@@ -102,7 +99,7 @@ def articles():
         abort(500)
 
 @bp.route('/comments')
-@login_required
+
 @admin_required
 def comments():
     """评论管理"""
@@ -135,7 +132,7 @@ def comments():
         abort(500)
 
 @bp.route('/comments/<int:comment_id>', methods=['DELETE'])
-@login_required
+
 @admin_required
 def delete_comment(comment_id):
     """删除评论"""
@@ -145,7 +142,7 @@ def delete_comment(comment_id):
     return '', 204
 
 @bp.route('/comments/<int:comment_id>/status', methods=['POST'])
-@login_required
+
 @admin_required
 def update_comment_status(comment_id):
     """更新评论状态"""
@@ -160,7 +157,7 @@ def update_comment_status(comment_id):
     return '', 204
 
 @bp.route('/users/<int:user_id>/toggle-role', methods=['POST'])
-@login_required
+
 @admin_required
 def toggle_user_role(user_id):
     """切换用户角色"""
@@ -171,7 +168,7 @@ def toggle_user_role(user_id):
     return '', 204
 
 @bp.route('/users/<int:user_id>', methods=['DELETE'])
-@login_required
+
 @admin_required
 def delete_user(user_id):
     """删除用户"""
@@ -181,7 +178,7 @@ def delete_user(user_id):
     return '', 204
 
 @bp.route('/article/<int:article_id>', methods=['DELETE'])
-@login_required
+
 @admin_required
 def delete_article(article_id):
     """删除文章"""
@@ -191,7 +188,7 @@ def delete_article(article_id):
     return '', 204
 
 @bp.route('/site-config', methods=['GET', 'POST'])
-@login_required
+
 @admin_required
 def site_config():
     """网站配置管理"""
@@ -217,7 +214,7 @@ def site_config():
         abort(500)
 
 @bp.route('/categories')
-@login_required
+
 @admin_required
 def categories():
     """分类管理"""
@@ -242,7 +239,7 @@ def categories():
         abort(500)
 
 @bp.route('/categories/add', methods=['POST'])
-@login_required
+
 @admin_required
 def add_category():
     """添加分类"""
@@ -252,7 +249,7 @@ def add_category():
     return jsonify(data)
 
 @bp.route('/categories/<int:id>/edit', methods=['POST'])
-@login_required
+
 @admin_required
 def edit_category(id):
     """编辑分类"""
@@ -262,7 +259,7 @@ def edit_category(id):
     return jsonify(data)
 
 @bp.route('/categories/<int:id>/move', methods=['POST'])
-@login_required
+
 @admin_required
 def move_category(id):
     """移动分类"""
@@ -272,7 +269,7 @@ def move_category(id):
     return jsonify({'message': message})
 
 @bp.route('/categories/<int:id>', methods=['DELETE'])
-@login_required
+
 @admin_required
 def delete_category(id):
     """删除分类"""
@@ -282,7 +279,7 @@ def delete_category(id):
     return jsonify({'message': message})
 
 @bp.route('/categories/sort', methods=['POST'])
-@login_required
+
 @admin_required
 def sort_categories():
     """排序分类"""
@@ -296,7 +293,7 @@ def sort_categories():
     return jsonify({'message': message})
 
 @bp.route('/categories/<int:id>')
-@login_required
+
 @admin_required
 def get_category(id):
     """获取单个分类信息"""
@@ -306,7 +303,7 @@ def get_category(id):
     return jsonify(data)
 
 @bp.route('/tags')
-@login_required
+
 @admin_required
 def tags():
     """标签管理"""
@@ -334,7 +331,7 @@ def tags():
         abort(500)
 
 @bp.route('/tags/add', methods=['POST'])
-@login_required
+
 @admin_required
 def add_tag():
     """添加标签"""
@@ -344,7 +341,7 @@ def add_tag():
     return jsonify(data)
 
 @bp.route('/tags/<int:id>', methods=['DELETE'])
-@login_required
+
 @admin_required
 def delete_tag(id):
     """删除标签"""
@@ -354,7 +351,7 @@ def delete_tag(id):
     return '', 204
 
 @bp.route('/tags/<int:id>/edit', methods=['POST'])
-@login_required
+
 @admin_required
 def edit_tag(id):
     """编辑标签"""
@@ -367,7 +364,7 @@ def edit_tag(id):
     return jsonify(data)
 
 @bp.route('/users/add', methods=['POST'])
-@login_required
+
 @admin_required
 def add_user():
     """添加用户"""
@@ -382,7 +379,7 @@ def add_user():
     return jsonify(data)
 
 @bp.route('/users/<int:user_id>/edit', methods=['POST'])
-@login_required
+
 @admin_required
 def edit_user(user_id):
     """编辑用户"""
@@ -396,7 +393,7 @@ def edit_user(user_id):
     return jsonify(data)
 
 @bp.route('/histories')
-@login_required
+
 @admin_required
 def histories():
     """浏览历史管理"""
@@ -424,7 +421,7 @@ def histories():
         abort(500)
 
 @bp.route('/histories/<int:history_id>', methods=['DELETE'])
-@login_required
+
 @admin_required
 def delete_history(history_id):
     """删除浏览历史"""
@@ -434,7 +431,7 @@ def delete_history(history_id):
     return '', 204
 
 @bp.route('/histories/clear/<int:user_id>', methods=['DELETE'])
-@login_required
+
 @admin_required
 def clear_user_history(user_id):
     """清除用户的所有浏览历史"""
@@ -444,7 +441,7 @@ def clear_user_history(user_id):
     return '', 204
 
 @bp.route('/themes')
-@login_required
+
 @admin_required
 def themes():
     """主题管理"""
@@ -477,7 +474,7 @@ def themes():
         return redirect(url_for('admin.dashboard'))
 
 @bp.route('/change-theme', methods=['POST'])
-@login_required
+
 @admin_required
 def change_theme():
     """更改主题"""
@@ -489,7 +486,7 @@ def change_theme():
     return redirect(url_for('admin.themes'))
 
 @bp.route('/theme-preview/<theme>')
-@login_required
+
 @admin_required
 def theme_preview(theme):
     """主题预览"""
@@ -497,7 +494,7 @@ def theme_preview(theme):
     return send_file(preview_path, mimetype='image/png')
 
 @bp.route('/plugins')
-@login_required
+
 @admin_required
 def plugins():
     """插件管理页面"""
@@ -521,7 +518,7 @@ def plugins():
         return redirect(url_for('admin.dashboard'))
 
 @bp.route('/plugins/<plugin_name>/uninstall', methods=['POST'])
-@login_required
+
 @admin_required
 def uninstall_plugin(plugin_name):
     """卸载插件"""
@@ -531,7 +528,7 @@ def uninstall_plugin(plugin_name):
     return jsonify({'status': 'success', 'message': message})
 
 @bp.route('/plugins/<path:plugin_name>/toggle', methods=['POST'])
-@login_required
+
 @admin_required
 def toggle_plugin(plugin_name):
     """启用/禁用插件"""
@@ -545,7 +542,7 @@ def toggle_plugin(plugin_name):
     })
 
 @bp.route('/plugins/<plugin_name>/export')
-@login_required
+
 @admin_required
 def export_plugin(plugin_name):
     """导出插件"""
@@ -567,7 +564,7 @@ def export_plugin(plugin_name):
     return response
 
 @bp.route('/plugins/<path:plugin_name>/reload', methods=['POST'])
-@login_required
+
 @admin_required
 def reload_plugin(plugin_name):
     """重新加载插件"""
@@ -579,7 +576,7 @@ def reload_plugin(plugin_name):
     })
 
 @bp.route('/files')
-@login_required
+
 @admin_required
 def manage_files():
     """文件管理"""
@@ -604,7 +601,7 @@ def manage_files():
         abort(500)
 
 @bp.route('/files/<int:file_id>/delete', methods=['POST'])
-@login_required
+
 @admin_required
 def delete_file(file_id):
     """删除文件"""
@@ -614,7 +611,7 @@ def delete_file(file_id):
     return '', 204
 
 @bp.route('/files/<int:file_id>/rename', methods=['POST'])
-@login_required
+
 @admin_required
 def rename_file(file_id):
     """重命名文件"""
@@ -655,7 +652,7 @@ def utility_processor():
     ) 
 
 @bp.route('/cache')
-@login_required
+
 @admin_required
 def cache_stats():
     """缓存统计"""
@@ -678,7 +675,7 @@ def cache_stats():
         abort(500)
 
 @bp.route('/cache/clear/category/<category>', methods=['POST'])
-@login_required
+
 @admin_required
 def clear_cache_by_category(category):
     """按类别清除缓存"""
@@ -696,7 +693,7 @@ def clear_cache_by_category(category):
         return jsonify({'error': f'清除缓存失败：{str(e)}'}), 500
 
 @bp.route('/plugins/<path:plugin_name>/settings')
-@login_required
+
 @admin_required
 def plugin_settings(plugin_name):
     """插件设置页面"""
@@ -711,7 +708,7 @@ def plugin_settings(plugin_name):
                          settings_html=settings_html)
 
 @bp.route('/plugins/<path:plugin_name>/settings/check')
-@login_required
+
 @admin_required
 def check_plugin_settings(plugin_name):
     """检查插件是否有设置页面"""
@@ -722,7 +719,7 @@ def check_plugin_settings(plugin_name):
     })
 
 @bp.route('/plugins/upload', methods=['POST'])
-@login_required
+
 @admin_required
 def upload_plugin():
     """上传插件"""
@@ -733,7 +730,7 @@ def upload_plugin():
     })
 
 @bp.route('/plugins/<path:plugin_name>/settings/save', methods=['POST'])
-@login_required
+
 @admin_required
 def save_plugin_settings(plugin_name):
     """保存插件设置"""
@@ -744,7 +741,7 @@ def save_plugin_settings(plugin_name):
     })
 
 @bp.route('/cache/clear/<path:key>', methods=['POST'])
-@login_required
+
 @admin_required
 def clear_cache(key):
     """清除指定的缓存"""
@@ -754,7 +751,7 @@ def clear_cache(key):
     return jsonify({'message': message}), 200 
 
 @bp.route('/routes')
-@login_required
+
 @admin_required
 def routes():
     """路由管理"""
@@ -794,7 +791,7 @@ def routes():
         abort(500)
 
 @bp.route('/routes/add', methods=['POST'])
-@login_required
+
 @admin_required
 def add_route():
     """添加路由"""
@@ -803,7 +800,7 @@ def add_route():
     return redirect(url_for('admin.routes'))
 
 @bp.route('/routes/<int:id>/edit', methods=['POST'])
-@login_required
+
 @admin_required
 def edit_route(id):
     """编辑路由"""
@@ -812,7 +809,7 @@ def edit_route(id):
     return redirect(url_for('admin.routes'))
 
 @bp.route('/routes/<int:id>/delete', methods=['POST'])
-@login_required
+
 @admin_required
 def delete_route(id):
     """删除路由"""
@@ -821,7 +818,7 @@ def delete_route(id):
     return redirect(url_for('admin.routes')) 
 
 @bp.route('/custom_pages')
-@login_required
+
 @admin_required
 def custom_pages():
     """自定义页面管理"""
@@ -845,7 +842,7 @@ def custom_pages():
         return redirect(url_for('admin.dashboard'))
 
 @bp.route('/custom_pages/add', methods=['POST'])
-@login_required
+
 @admin_required
 def add_custom_page():
     """添加自定义页面"""
@@ -875,7 +872,7 @@ def add_custom_page():
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/custom_pages/<int:id>', methods=['GET'])
-@login_required
+
 @admin_required
 def get_custom_page(id):
     """获取自定义页面"""
@@ -894,7 +891,7 @@ def get_custom_page(id):
     })
 
 @bp.route('/custom_pages/<int:id>/edit', methods=['GET'])
-@login_required
+
 @admin_required
 def edit_custom_page(id):
     """编辑自定义页面表单"""
@@ -912,7 +909,7 @@ def edit_custom_page(id):
                            )
 
 @bp.route('/custom_pages/<int:id>/update', methods=['POST'])
-@login_required
+
 @admin_required 
 def update_custom_page(id):
     """更新自定义页面"""
@@ -939,7 +936,7 @@ def update_custom_page(id):
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/custom_pages/<int:id>', methods=['DELETE'])
-@login_required
+
 @admin_required
 def delete_custom_page(id):
     """删除自定义页面"""
@@ -950,7 +947,7 @@ def delete_custom_page(id):
     return jsonify({'message': message}) 
 
 @bp.route('/custom_pages/create')
-@login_required
+
 @admin_required
 def create_custom_page():
     """创建自定义页面"""
@@ -962,7 +959,7 @@ def create_custom_page():
                          CustomPage=CustomPage)
 
 @bp.route('/categories/all')
-@login_required
+
 @admin_required
 def get_all_categories():
     """获取所有分类(用于移动分类选择)"""
@@ -972,7 +969,7 @@ def get_all_categories():
     return jsonify(categories)
 
 @bp.route('/comments/config', methods=['POST'])
-@login_required
+
 @admin_required
 def update_comment_config():
     """更新评论配置"""
@@ -982,7 +979,7 @@ def update_comment_config():
     return jsonify({'message': message})
 
 @bp.route('/comments/<int:comment_id>/approve', methods=['POST'])
-@login_required
+
 @admin_required
 def approve_comment(comment_id):
     """通过评论"""
@@ -992,7 +989,7 @@ def approve_comment(comment_id):
     return '', 204
 
 @bp.route('/comments/<int:comment_id>/reject', methods=['POST'])
-@login_required
+
 @admin_required
 def reject_comment(comment_id):
     """拒绝评论"""
@@ -1002,7 +999,7 @@ def reject_comment(comment_id):
     return '', 204
 
 @bp.route('/article-url-config', methods=['GET', 'POST'])
-@login_required
+
 @admin_required
 def article_url_config():
     """文章URL配置"""
@@ -1033,7 +1030,7 @@ def article_url_config():
                          site_config=SiteConfig)
 
 @bp.route('/plugins/reload-list', methods=['POST'])
-@login_required
+
 @admin_required
 def reload_plugin_list():
     """重新加载插件列表"""
@@ -1044,7 +1041,7 @@ def reload_plugin_list():
     })
 
 @bp.route('/themes/<theme_id>/settings/page')
-@login_required
+
 @admin_required
 def theme_settings_page(theme_id):
     """主题设置页面"""
@@ -1075,7 +1072,7 @@ def theme_settings_page(theme_id):
                          settings_html=rendered_settings)
 
 @bp.route('/themes/<theme_id>/settings/save', methods=['POST'])
-@login_required
+
 @admin_required
 def save_theme_settings(theme_id):
     """保存主题设置"""
@@ -1086,7 +1083,7 @@ def save_theme_settings(theme_id):
     })
 
 @bp.route('/themes/upload', methods=['POST'])
-@login_required
+
 @admin_required
 def upload_theme():
     """上传主题"""
@@ -1107,7 +1104,7 @@ def upload_theme():
     })
 
 @bp.route('/themes/<theme_id>/export')
-@login_required
+
 @admin_required
 def export_theme(theme_id):
     """导出主题"""
@@ -1128,7 +1125,7 @@ def export_theme(theme_id):
     return response
 
 @bp.route('/themes/<theme>/preview_image')
-@login_required
+
 @admin_required
 def theme_preview_image(theme):
     """主题预览图"""
@@ -1143,7 +1140,7 @@ def theme_preview_image(theme):
     return send_file('static/default_theme_preview.png', mimetype='image/png')
 
 @bp.route('/themes/<theme_id>/uninstall', methods=['POST'])
-@login_required
+
 @admin_required
 def uninstall_theme(theme_id):
     """卸载主题"""
@@ -1154,7 +1151,7 @@ def uninstall_theme(theme_id):
     })
 
 @bp.route('/categories/batch-per-page', methods=['POST'])
-@login_required
+
 @admin_required
 def batch_update_category_per_page():
     """批量更新分类每页文章数"""
@@ -1174,7 +1171,7 @@ def batch_update_category_per_page():
 
 @bp.route('/article/edit', methods=['GET', 'POST'])
 @bp.route('/article/<int:id>/edit', methods=['GET', 'POST'])
-@login_required
+
 @admin_required
 def edit_article(id=None):
     """编辑/创建文章"""
@@ -1207,7 +1204,7 @@ def edit_article(id=None):
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/categories/update-counts', methods=['POST'])
-@login_required
+
 @admin_required
 def update_category_counts():
     """更新分类文章数"""
@@ -1227,7 +1224,7 @@ def update_category_counts():
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/tags/update-counts', methods=['POST'])
-@login_required
+
 @admin_required
 def update_tag_counts():
     """更新标签文章数"""
@@ -1247,7 +1244,7 @@ def update_tag_counts():
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/categories/update-all-counts', methods=['POST'])
-@login_required
+
 @admin_required
 def update_all_category_counts():
     """更新所有分类文章数"""
@@ -1267,7 +1264,7 @@ def update_all_category_counts():
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/tags/update-all-counts', methods=['POST'])
-@login_required
+
 @admin_required
 def update_all_tag_counts():
     """更新所有标签文章数"""
@@ -1287,7 +1284,7 @@ def update_all_tag_counts():
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/articles/batch-delete', methods=['POST'])
-@login_required
+
 @admin_required
 def batch_delete_articles():
     """批量删除文章"""
@@ -1311,7 +1308,7 @@ def batch_delete_articles():
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/comments/batch-delete', methods=['POST'])
-@login_required
+
 @admin_required
 def batch_delete_comments():
     """批量删除评论"""
@@ -1331,7 +1328,7 @@ def batch_delete_comments():
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/tags/batch-set-access-mode', methods=['POST'])
-@login_required
+
 @admin_required
 def batch_set_tags_access_mode():
     """批量设置标签访问方式"""
@@ -1349,7 +1346,7 @@ def batch_set_tags_access_mode():
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/upload-settings', methods=['POST'])
-@login_required
+
 @admin_required
 def save_upload_settings():
     """保存上传设置"""
@@ -1373,3 +1370,27 @@ def save_upload_settings():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@bp.route('/login', methods=['GET', 'POST'])
+def login():
+    """管理员登录"""
+    if current_user.is_authenticated and current_user.role == 'admin':
+        return redirect(url_for('admin.dashboard'))
+        
+    if request.method == 'POST':
+        success, message, user = AdminService.admin_login(
+            username=request.form.get('username'),
+            password=request.form.get('password'),
+            remember=request.form.get('remember', False)
+        )
+        
+        if success:
+            # 获取next参数
+            next_page = request.args.get('next')
+            if not next_page or not next_page.startswith('/admin'):
+                next_page = url_for('admin.dashboard')
+            return redirect(next_page)
+        else:
+            flash(message, 'error')
+            
+    return render_template('admin/login.html')

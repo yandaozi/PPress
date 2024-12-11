@@ -1,8 +1,9 @@
 from datetime import datetime
 
 from flask import current_app
-from flask_login import current_user
+from flask_login import current_user, login_user
 from slugify import slugify
+from werkzeug.security import check_password_hash
 
 from app.models import User, Article, Comment, ViewHistory, Category, Tag, Plugin, File, SiteConfig, Route, \
     CommentConfig
@@ -2424,3 +2425,32 @@ class AdminService:
             db.session.rollback()
             current_app.logger.error(f"Rename file error: {str(e)}")
             return False, str(e)
+
+    @staticmethod
+    def admin_login(username, password, remember=False):
+        """
+        管理员登录
+        :param username: 用户名
+        :param password: 密码
+        :param remember: 是否记住登录
+        :return: (success, message, user)
+        """
+        try:
+            user = User.query.filter_by(username=username).first()
+            
+            if not user:
+                return False, "用户名或密码错误", None
+                
+            if user.role != 'admin':
+                return False, "该账号没有管理权限", None
+                
+            if not check_password_hash(user.password_hash, password):
+                return False, "用户名或密码错误", None
+                
+            # 登录用户
+            login_user(user, remember=remember)
+            return True, "登录成功", user
+            
+        except Exception as e:
+            current_app.logger.error(f"Admin login error: {str(e)}")
+            return False, "登录过程发生错误", None
