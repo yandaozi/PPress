@@ -165,13 +165,18 @@ class BlogService:
 
     @staticmethod
     def get_article_detail(article_id, password=None, user=None):
-        """获取文章详"""
+        """获取文章详情"""
         try:
             article = Article.query.options(
                 db.joinedload(Article.author),
                 db.joinedload(Article.tags),
                 db.joinedload(Article.categories)
             ).get_or_404(article_id)
+            
+            # 如果文章没有 slug 且标题不为空,自动生成 slug
+            if not article.slug and article.title:
+                article.generate_slug()
+                db.session.commit()
             
             # 如果文章没有任何分类，添加到默认分类
             if not article.category and not article.categories:
@@ -201,7 +206,7 @@ class BlogService:
                     return {'need_password': True, 'article': article}
                 if password != article.password:
                     return {'error': '密码错误', 'need_password': True, 'article': article}
-                # 密码正确，获取评论数据并返回章
+                # 密码正确，获取评论数据并返回文章
                 article.comment_data = BlogService.get_article_comments(article_id, user)
                 return article
             

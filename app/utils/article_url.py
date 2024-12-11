@@ -1,5 +1,5 @@
 from flask import current_app
-from app.models import SiteConfig, Category
+from app.models import SiteConfig, Category, Article
 from .id_encoder import IdEncoder
 
 class ArticleUrlGenerator:
@@ -50,6 +50,14 @@ class ArticleUrlGenerator:
             pattern = cls._get_pattern()
             variables = {'id': id}
             
+            # 如果需要使用 slug
+            if '{slug}' in pattern:
+                article = Article.query.get(id)
+                if article and article.slug:
+                    variables['slug'] = article.slug
+                else:
+                    return f'/article/{id}'  # 改为默认的 article/{id} 格式
+            
             # 加密ID
             if '{encodeid}' in pattern:
                 variables['encodeid'] = IdEncoder.encode(id)
@@ -95,7 +103,8 @@ class ArticleUrlGenerator:
                     '{year}': r'\d{4}',
                     '{month}': r'\d{2}',
                     '{day}': r'\d{2}',
-                    '{category}': r'(?P<category>[^/]+)'
+                    '{category}': r'(?P<category>[^/]+)',
+                    '{slug}': r'(?P<slug>[^/]+)'  # 添加 slug 支持
                 }
                 
                 for var, regex in replacements.items():
@@ -107,6 +116,12 @@ class ArticleUrlGenerator:
             match = cls._regex_cache[pattern].match(path)
             if not match:
                 return None
+            
+            # 如果匹配到 slug,通过 slug 查找文章
+            if 'slug' in match.groupdict():
+                article = Article.query.filter_by(slug=match.group('slug')).first()
+                if article:
+                    return article.id
             
             # 如果有分类，验证访问方式
             if 'category' in match.groupdict():

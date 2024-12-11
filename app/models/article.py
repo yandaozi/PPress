@@ -5,6 +5,7 @@ from sqlalchemy.orm.attributes import NO_VALUE
 from sqlalchemy import event
 from sqlalchemy.orm import reconstructor
 from sqlalchemy.orm import object_session
+from slugify import slugify
 
 # 创建文章-标签关联表
 article_tags = db.Table('article_tags',
@@ -67,6 +68,8 @@ class Article(db.Model):
     __table_args__ = (
         db.Index('idx_article_sort', 'created_at', 'view_count'),
     )
+
+    slug = db.Column(db.String(200), nullable=True, unique=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -139,6 +142,20 @@ class Article(db.Model):
         if not self.fields:
             return default
         return self.fields.get(key, default)
+
+    def generate_slug(self):
+        """生成 slug"""
+        if not self.slug and self.title:
+            base_slug = slugify(self.title)
+            slug = base_slug
+            counter = 1
+            
+            # 检查是否存在相同的 slug
+            while Article.query.filter_by(slug=slug).first():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+                
+            self.slug = slug
 
 # 将事件监听器移到文件末尾，并使用延迟导入
 def init_article_events():

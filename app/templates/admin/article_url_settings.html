@@ -100,6 +100,17 @@
                                 </div>
                             </div>
                         </label>
+
+                        <!-- 添加 archives 模式选项 -->
+                        <label class="flex items-start p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
+                            <input type="radio" name="pattern_type" value="archives"
+                                   class="mt-1 form-radio text-blue-600" {% if current_pattern == 'archives/{slug}' %}checked{% endif %}>
+                            <div class="ml-3 flex-1">
+                                <span class="block font-medium text-gray-900">别名模式</span>
+                                <span class="block mt-1 text-sm text-gray-500">archives/{slug}</span>
+                                <div class="mt-2 text-xs text-gray-500">使用文章别名生成友好的URL</div>
+                            </div>
+                        </label>
                         
                         <!-- 自定义模式 -->
                         <label class="flex items-start p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-200">
@@ -129,6 +140,7 @@
                                                     <li>{year} - 发布年份</li>
                                                     <li>{month} - 发布月份</li>
                                                     <li>{day} - 发布日期</li>
+                                                    <li>{slug} - 文章URL别名</li>
                                                 </ul>
                                                 <p class="mt-2">注意：开头不要带 /，不能双id共存，不能加密id和真实id一起放</p>
                                             </div>
@@ -137,6 +149,8 @@
                                 </div>
                             </div>
                         </label>
+                        
+
                     </div>
                 </div>
                 

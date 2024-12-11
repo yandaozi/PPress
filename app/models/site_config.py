@@ -16,6 +16,7 @@ class SiteConfig(db.Model):
         'date': '{year}/{month}/{day}/{id}',
         'category': '{category}/{id}',
         'encode': 'p/{encodeid}',  # 添加加密模式
+        'archives': 'archives/{slug}',  # 添加 slug 模式
         'custom': None
     }
     

@@ -1977,6 +1977,7 @@ class AdminService:
                 tags = form_data.get('tag_names', '').strip()
                 tag_names = [name.strip() for name in tags.split() if name.strip()]
                 new_tags = []
+
                 
                 # 创建或更新文章
                 if article_id:
@@ -2020,18 +2021,20 @@ class AdminService:
                     db.session.flush()
 
                 # 获取或创建标签
-                for tag_name in tag_names:
-                    tag = Tag.query.filter(
-                        db.or_(
-                            Tag.name == tag_name,
-                            #Tag.slug == slugify(tag_name)
-                        )
-                    ).first()
-                    if not tag:
-                        tag = Tag(name=tag_name)
+                for name in tag_names:
+                    # 先查找是否已存在同名标签
+                    tag = Tag.query.filter_by(name=name).first()
+                    if tag:
+                        # 如果标签已存在,直接使用
+                        if tag not in new_tags:  # 避免同一标签添加多次
+                            new_tags.append(tag)
+                    else:
+                        # 如果标签不存在,创建新标签
+                        tag = Tag(name=name)
+                        tag.slug = slugify(name)  # 设置 slug
                         db.session.add(tag)
-                        db.session.flush()
-                    new_tags.append(tag)
+                        db.session.flush()  # 立即执行以获取 id
+                        new_tags.append(tag)
 
                 # 设置新的标签
                 article.tags = new_tags
@@ -2042,6 +2045,20 @@ class AdminService:
                 except:
                     fields = {}
                 article.fields = fields
+                
+                # 处理 slug - 移到事务提交前
+                slug = form_data.get('slug', '').strip()
+                if slug:
+                    # 检查 slug 唯一性
+                    existing = Article.query.filter(
+                        Article.slug == slug,
+                        Article.id != article_id
+                    ).first()
+                    if existing:
+                        return False, 'URL别名已被使用', None
+                    article.slug = slug
+                if not slug:
+                    article.slug = slugify(article.title)
                 
                 # 保存到数据库
                 if not article_id:
