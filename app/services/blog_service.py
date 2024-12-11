@@ -1,3 +1,5 @@
+from slugify import slugify
+
 from app.models import Article, Category, Tag, Comment, ViewHistory, File, User, CommentConfig, SiteConfig, CustomPage
 from app.models.article import article_tags
 from sqlalchemy import func
@@ -586,113 +588,103 @@ class BlogService:
             except (ValueError, TypeError):
                 return False, '分类ID必须是数字', None
 
-            # 获取或创建文章
-            if article_id:
-                article = Article.query.get_or_404(article_id)
-                if not is_admin and article.author_id != user_id:
-                    return False, '没有权限编辑此文章', None
-            else:
-                article = Article(author_id=user_id)
-                db.session.add(article)
+            # 先回滚之前的事务
+            db.session.rollback()
+            
+            with db.session.no_autoflush:
+                # 获取或创建文章
+                if article_id:
+                    article = Article.query.get_or_404(article_id)
+                    if not is_admin and article.author_id != user_id:
+                        return False, '没有权限编辑此文章', None
+                else:
+                    article = Article(author_id=user_id)
+                    db.session.add(article)
 
-            # 记录原始状态
-            old_status = article.status if article_id else None
+                # 更新文章基本信息
+                article.title = data['title'].strip()
+                article.content = data['content']
+                article.status = data.get('status', Article.STATUS_PUBLIC)
+                article.allow_comment = data.get('allow_comment') == 'on'
+                
+                # 更新发布时间
+                created_at = data.get('created_at')
+                if created_at:
+                    try:
+                        article.created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
+                    except ValueError:
+                        return False, '发布时间格式不正确', None
+                elif not article_id:
+                    article.created_at = datetime.now()
+                
+                # 更新分类关联
+                article.categories = categories
+                article.category_id = categories[0].id if categories else None
+                
+                # 处理密码保护
+                if article.status == Article.STATUS_PASSWORD:
+                    article.password = data.get('password') or '123456'
+                else:
+                    article.password = None
 
-            # 更新文章状态
-            new_status = data.get('status', Article.STATUS_PUBLIC)
-            article.status = new_status
+                # 处理标签
+                tag_names = [name.strip() for name in data.get('tag_names', '').split() if name.strip()]
+                new_tags = []
 
-            # 更新本信息
-            article.title = data['title'].strip()
-            article.content = data['content']
-            
-            # 更新发布时间
-            created_at = data.get('created_at')
-            if created_at:
-                try:
-                    article.created_at = datetime.strptime(created_at, '%Y-%m-%dT%H:%M')
-                except ValueError:
-                    return False, '发布时间格式不正确', None
-            elif not article_id:  # 新文章且未设置时间则使用当前时间
-                article.created_at = datetime.now()
-            
-            # 更新分类关联
-            article.categories = categories
-            # 设置主分类（使用第一个选的类作为主分类）
-            article.category_id = categories[0].id if categories else None
-            
-            # 新文章状态
-            article.status = data.get('status', Article.STATUS_PUBLIC)
-            if article.status == Article.STATUS_PASSWORD:
-                # 如果密码为空，使用默认密码
-                article.password = data.get('password') or '123456'
-            else:
-                article.password = None
-            
-            # 更新评论设置
-            article.allow_comment = data.get('allow_comment') == 'on'
-            
-            # 处理标签
-            tag_names = [name.strip() for name in data.get('tag_names', '').split() if name.strip()]
-            new_tags = []
-            
-            # 获取或创建标签
-            for tag_name in tag_names:
-                tag = Tag.query.filter_by(name=tag_name).first()
-                if not tag:
-                    tag = Tag(name=tag_name)
-                    db.session.add(tag)
-                new_tags.append(tag)
-            
-            try:
                 # 手动处理标签关联
                 if article_id:
-                    # 先清除所有现有的标签关联
                     db.session.execute(
                         article_tags.delete().where(
                             article_tags.c.article_id == article_id
                         )
                     )
                     db.session.flush()
-                
+
+                # 获取或创建标签
+                for tag_name in tag_names:
+                    tag = Tag.query.filter(
+                        db.or_(
+                            Tag.name == tag_name,
+                            Tag.slug == slugify(tag_name)
+                        )
+                    ).first()
+
+                    if not tag:
+                        tag = Tag(name=tag_name)
+                        db.session.add(tag)
+                        db.session.flush()
+                    new_tags.append(tag)
+
                 # 设置新的标签
                 article.tags = new_tags
-                db.session.flush()
-                
-            except Exception as e:
-                current_app.logger.error(f"Error updating article tags: {str(e)}")
-                db.session.rollback()
-                return False, f'更新标签失败: {str(e)}', None
-            
-            # 处理自定义字段
-            try:
-                fields = json.loads(data.get('fields', '{}'))
-                if isinstance(fields, dict):  # 确保是字典类型
-                    article.fields = fields
-                else:
+
+                # 处理自定义字段
+                try:
+                    fields = json.loads(data.get('fields', '{}'))
+                    article.fields = fields if isinstance(fields, dict) else {}
+                except (json.JSONDecodeError, TypeError):
                     article.fields = {}
-            except (json.JSONDecodeError, TypeError):
-                article.fields = {}  # 如果解析失败,使用空字典
-            
-            db.session.commit()
-            
-            # 清除相关缓存
-            BlogService.clear_article_related_cache(article.id)
-            cache_manager.delete(f'user:{user_id}:articles:*')
-            cache_manager.delete('routes_last_refresh')
-            
-            # 生成URL并返回
-            from app.utils.article_url import ArticleUrlGenerator
-            return True, '文章保存成功', {
-                'id': article.id,
-                'url': ArticleUrlGenerator.generate(
-                    article.id,  # 直接传递参数,不使用关键字参数
-                    article.category_id,
-                    article.created_at
-                ),
-                'message': '文章保存成功'
-            }
-            
+
+                # 提交事务
+                db.session.commit()
+
+                # 清除相关缓存
+                BlogService.clear_article_related_cache(article.id)
+                cache_manager.delete(f'user:{user_id}:articles:*')
+                cache_manager.delete('routes_last_refresh')
+
+                # 生成URL并返回
+                from app.utils.article_url import ArticleUrlGenerator
+                return True, '文章保存成功', {
+                    'id': article.id,
+                    'url': ArticleUrlGenerator.generate(
+                        article.id,
+                        article.category_id,
+                        article.created_at
+                    ),
+                    'message': '文章保存成功'
+                }
+
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Save article error: {str(e)}")

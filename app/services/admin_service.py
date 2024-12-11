@@ -1963,7 +1963,6 @@ class AdminService:
             content = form_data.get('content')
             status = form_data.get('status', Article.STATUS_PUBLIC)
             password = form_data.get('password', '')
-            allow_comment = form_data.get('allow_comment', 'true') == 'true'
             
             # 获取分类ID列表
             category_ids = form_data.getlist('categories')
@@ -1975,14 +1974,6 @@ class AdminService:
             tag_names = [name.strip() for name in tags.split() if name.strip()]
 
             new_tags = []
-
-            # 获取或创建标签
-            for tag_name in tag_names:
-                tag = Tag.query.filter_by(name=tag_name).first()
-                if not tag:
-                    tag = Tag(name=tag_name)
-                    db.session.add(tag)
-                new_tags.append(tag)
 
             # 获取自定义字段
             try:
@@ -2024,19 +2015,39 @@ class AdminService:
             
             # 更新标签
             try:
-                # 手动处理标签关联
-                if article_id:
-                    # 先清除所有现有的标签关联
-                    db.session.execute(
-                        article_tags.delete().where(
-                            article_tags.c.article_id == article_id
+                # 先回滚之前的事务
+                db.session.rollback()
+                
+                with db.session.no_autoflush:
+                    # 手动处理标签关联
+                    if article_id:
+                        # 先清除所有现有的标签关联
+                        db.session.execute(
+                            article_tags.delete().where(
+                                article_tags.c.article_id == article_id
+                            )
                         )
-                    )
-                    db.session.flush()
+                        db.session.flush()
 
-                # 设置新的标签
-                article.tags = new_tags
-                db.session.flush()
+                    # 获取或创建标签
+                    for tag_name in tag_names:
+                        # 同时检查标签名和slug
+                        tag = Tag.query.filter(
+                            db.or_(
+                                Tag.name == tag_name,
+                                Tag.slug == slugify(tag_name)
+                            )
+                        ).first()
+                        
+                        if not tag:
+                            tag = Tag(name=tag_name)
+                            db.session.add(tag)
+                            db.session.flush()
+                        new_tags.append(tag)
+
+                    # 设置新的标签
+                    article.tags = new_tags
+                    db.session.flush()
 
             except Exception as e:
                 current_app.logger.error(f"Error updating article tags: {str(e)}")
