@@ -2378,3 +2378,16 @@ class AdminService:
             db.session.rollback()
             current_app.logger.error(f"Save upload settings error: {str(e)}")
             return False, str(e)
+
+    @staticmethod
+    def rename_file(file_id, new_name):
+        """重命名文件"""
+        try:
+            file = File.query.get_or_404(file_id)
+            file.original_filename = new_name
+            db.session.commit()
+            return True, '文件名已更新'
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Rename file error: {str(e)}")
+            return False, str(e)

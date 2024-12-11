@@ -607,6 +607,28 @@ def delete_file(file_id):
         return jsonify({'error': error}), 400
     return '', 204
 
+@bp.route('/files/<int:file_id>/rename', methods=['POST'])
+@login_required
+@admin_required
+def rename_file(file_id):
+    """重命名文件"""
+    try:
+        data = request.get_json()
+        new_name = data.get('name', '').strip()
+        
+        if not new_name:
+            return jsonify({'error': '文件名不能为空'}), 400
+            
+        success, message = AdminService.rename_file(file_id, new_name)
+        if not success:
+            return jsonify({'error': message}), 400
+            
+        return jsonify({'message': '文件名已更新'})
+        
+    except Exception as e:
+        current_app.logger.error(f"Rename file error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 # 添加一个模板上下文处器
 @bp.context_processor
 def utility_processor():

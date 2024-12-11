@@ -116,21 +116,33 @@
 
                 <!-- 文件信息 -->
                 <div class="p-3 sm:p-4">
-                    <div class="mb-1 sm:mb-2 truncate" title="{{ file.original_filename }}">
-                        <a href="{{ file.file_path }}" target="_blank" 
-                           class="text-xs sm:text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600">
-                            {{ file.original_filename }}
-                        </a>
+                    <!-- 文件名(可编辑) -->
+                    <div class="mb-1 sm:mb-2">
+                        <input type="text" 
+                               value="{{ file.original_filename }}"
+                               data-file-id="{{ file.id }}"
+                               onchange="updateFileName(this)"
+                               class="w-full text-xs sm:text-sm font-medium text-gray-900 dark:text-white bg-transparent border-0 border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:ring-0 p-0">
                     </div>
+                    
                     <div class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 space-y-0.5 sm:space-y-1">
                         <p>类型：{{ file.file_type }}</p>
                         <p>大小：{{ (file.file_size / 1024)|round(2) }} KB</p>
                         <p>上传时间：{{ file.upload_time.strftime('%Y-%m-%d %H:%M') }}</p>
                         <p>上传者：{{ file.uploader.username }}</p>
                     </div>
-                    <div class="mt-2 sm:mt-4 flex justify-end">
+
+                    <!-- 操作按钮 -->
+                    <div class="mt-2 sm:mt-4 flex justify-end space-x-2">
+                        {% if request.args.get('mode') == 'selector' %}
                         <button type="button"
-                                onclick="confirmDelete({{ file.id }})" 
+                                onclick="insertToEditor('{{ file.file_path }}', '{{ file.file_type }}', '{{ file.original_filename }}')"
+                                class="text-xs sm:text-sm text-blue-600 hover:text-blue-800">
+                            插入
+                        </button>
+                        {% endif %}
+                        <button type="button"
+                                onclick="confirmDelete({{ file.id }})"
                                 class="text-xs sm:text-sm text-red-600 hover:text-red-800">
                             删除
                         </button>
@@ -394,5 +406,61 @@ document.getElementById('uploadSettingsForm').onsubmit = function(e) {
         showAlert('保存失败: ' + error, 'error', '错误');
     });
 };
+
+// 更新文件名
+function updateFileName(input) {
+    const fileId = input.dataset.fileId;
+    const newName = input.value.trim();
+    
+    if (!newName) {
+        showAlert('文件名不能为空', 'error', '错误');
+        return;
+    }
+    
+    fetch(`/admin/files/${fileId}/rename`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ name: newName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert(data.error, 'error', '错误');
+        } else {
+            showAlert('文件名已更新', 'success', '成功');
+        }
+    })
+    .catch(error => {
+        showAlert('更新失败: ' + error, 'error', '错误');
+    });
+}
+
+// 插入文件到编辑器
+function insertToEditor(url, fileType, fileName) {
+    let content = '';
+    
+    if (fileType.startsWith('image/')) {
+        content = `<img src="${url}" alt="${fileName}" style="max-width:100%;">`;
+    } else if (fileType.startsWith('video/')) {
+        content = `<video controls style="max-width:100%;"><source src="${url}" type="${fileType}">您的浏览器不支持视频标签</video>`;
+    } else if (fileType.startsWith('audio/')) {
+        content = `<audio controls><source src="${url}" type="${fileType}">您的浏览器不支持音频标签</audio>`;
+    } else {
+        content = `<a href="${url}" target="_blank">${fileName}</a>`;
+    }
+    
+    // 向父窗口发送消息
+    window.parent.postMessage({
+        type: 'fileSelected',
+        file: {
+            url: url,
+            name: fileName,
+            file_type: fileType
+        }
+    }, '*');
+}
 </script>
 {% endblock %} 
