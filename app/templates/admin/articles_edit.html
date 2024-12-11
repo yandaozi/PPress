@@ -53,22 +53,14 @@
                         <textarea id="editor" name="content">{{ article.content if article else '' }}</textarea>
                     </div>
 
-                    <!-- 在内容编辑器下方添加附件库按钮和iframe -->
+                    <!-- 在内容编辑器下方添加附件库按钮 -->
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-medium text-gray-900 dark:text-white">附件库</h3>
-                            <button type="button" onclick="toggleFileManager()"
+                            <button type="button" onclick="showFileManager()"
                                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                                {{ '关闭' if show_files else '打开' }}附件库
+                                打开附件库
                             </button>
-                        </div>
-                        
-                        <!-- 文件管理器iframe -->
-                        <div id="fileManagerWrapper" class="{% if not show_files %}hidden{% endif %}">
-                            <iframe src="{{ url_for('admin.manage_files', mode='selector') }}" 
-                                    class="w-full rounded-lg border-0"
-                                    style="height: 600px;"
-                                    id="fileManagerFrame"></iframe>
                         </div>
                     </div>
 
@@ -299,6 +291,28 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- 附件库模态框 -->
+<div id="fileManagerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+            <!-- 模态框头部 -->
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">附件库</h3>
+                <button onclick="hideFileManager()" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- iframe容器 -->
+            <div id="fileManagerContainer" class="h-[calc(90vh-80px)]">
+                <!-- iframe将在打开模态框时动态加载 -->
+            </div>
         </div>
     </div>
 </div>
@@ -603,18 +617,29 @@ function removeCustomField(button) {
 
 </script>
 
-<!-- 切换文件管理器显示/隐藏 -->
 <script>
-function toggleFileManager() {
-    const wrapper = document.getElementById('fileManagerWrapper');
-    const btn = wrapper.previousElementSibling.querySelector('button');
-    if (wrapper.classList.contains('hidden')) {
-        wrapper.classList.remove('hidden');
-        btn.textContent = '关闭附件库';
-    } else {
-        wrapper.classList.add('hidden');
-        btn.textContent = '打开附件库';
+let fileManagerLoaded = false;
+
+function showFileManager() {
+    const modal = document.getElementById('fileManagerModal');
+    const container = document.getElementById('fileManagerContainer');
+    
+    // 如果iframe还没加载过,则加载iframe
+    if (!fileManagerLoaded) {
+        container.innerHTML = `
+            <iframe src="{{ url_for('admin.manage_files', mode='selector') }}" 
+                    class="w-full h-full border-0"
+                    id="fileManagerFrame"></iframe>
+        `;
+        fileManagerLoaded = true;
     }
+    
+    modal.classList.remove('hidden');
+}
+
+function hideFileManager() {
+    const modal = document.getElementById('fileManagerModal');
+    modal.classList.add('hidden');
 }
 
 // 监听来自iframe的消息
@@ -632,6 +657,16 @@ window.addEventListener('message', function(event) {
         } else {
             editor.insertContent(`<a href="${file.url}" target="_blank">${file.name}</a>`);
         }
+        
+        // 插入后关闭模态框
+        hideFileManager();
+    }
+});
+
+// 点击模态框背景关闭
+document.getElementById('fileManagerModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideFileManager();
     }
 });
 </script>
