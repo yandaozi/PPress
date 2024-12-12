@@ -1,0 +1,77 @@
+{% set pages = pagination if pagination is defined else view_history if view_history is defined else articles %}
+{% set current_kwargs = {} %}
+{% if kwargs is defined %}
+    {% for key, value in kwargs.items() %}
+        {% if key != 'page' %}
+            {% set _ = current_kwargs.update({key: value}) %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div class="flex items-center space-x-1 sm:space-x-2 overflow-x-auto w-full sm:w-auto">
+        {% if pages.has_prev %}
+            {% if custom_page %}
+                <a href="/{{ endpoint }}?page={{ pages.prev_num }}"
+                   class="px-2 sm:px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 text-sm sm:text-base whitespace-nowrap">
+                    上一页
+                </a>
+            {% else %}
+                <a href="{{ url_for(endpoint, page=pages.prev_num, **current_kwargs) }}"
+                   class="px-2 sm:px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 text-sm sm:text-base whitespace-nowrap">
+                    上一页
+                </a>
+            {% endif %}
+        {% else %}
+            <span class="px-2 sm:px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800 cursor-not-allowed text-sm sm:text-base whitespace-nowrap">
+                上一页
+            </span>
+        {% endif %}
+
+        {% for page in pages.iter_pages() %}
+            {% if page %}
+                {% if page != pages.page %}
+                    {% if custom_page %}
+                        <a href="/{{ endpoint }}?page={{ page }}"
+                           class="px-2 sm:px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 text-sm sm:text-base min-w-[2rem] text-center">
+                            {{ page }}
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for(endpoint, page=page, **current_kwargs) }}"
+                           class="px-2 sm:px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 text-sm sm:text-base min-w-[2rem] text-center">
+                            {{ page }}
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <span class="px-2 sm:px-3 py-1 bg-blue-600 text-white rounded-lg text-sm sm:text-base min-w-[2rem] text-center">
+                        {{ page }}
+                    </span>
+                {% endif %}
+            {% else %}
+                <span class="px-1 sm:px-2 text-gray-500 dark:text-gray-400 text-sm sm:text-base">...</span>
+            {% endif %}
+        {% endfor %}
+
+        {% if pages.has_next %}
+            {% if custom_page %}
+                <a href="/{{ endpoint }}?page={{ pages.next_num }}"
+                   class="px-2 sm:px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 text-sm sm:text-base whitespace-nowrap">
+                    下一页
+                </a>
+            {% else %}
+                <a href="{{ url_for(endpoint, page=pages.next_num, **current_kwargs) }}"
+                   class="px-2 sm:px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 text-sm sm:text-base whitespace-nowrap">
+                    下一页
+                </a>
+            {% endif %}
+        {% else %}
+            <span class="px-2 sm:px-3 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-800 cursor-not-allowed text-sm sm:text-base whitespace-nowrap">
+                下一页
+            </span>
+        {% endif %}
+    </div>
+
+    <div class="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+        第 {{ pages.page }} 页 / 共 {{ pages.pages }} 页
+    </div>
+</div> 
