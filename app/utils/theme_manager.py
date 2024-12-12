@@ -252,7 +252,7 @@ class ThemeManager:
                     
                 # 如果版本相同，提示已存在
                 if installed_version == new_version:
-                    return False, f'主题 {theme_id} - {installed_info.get('name')} (v{installed_version}) 已存在，无需重复安装'
+                    return False, f"主题 {theme_id} - {installed_info.get('name')} (v{installed_version}) 已存在，无需重复安装"
                 
                 # 版本不同，删除旧版本
                 shutil.rmtree(target_theme_dir)
