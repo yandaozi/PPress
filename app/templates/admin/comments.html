@@ -179,11 +179,23 @@
                                 </div>
 
                                 <!-- 回复信息 -->
-                                {% if comment.parent_id %}
-                                <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                                    <div class="font-medium">回复给:</div>
-                                    <div class="mt-1">{{ comment.parent.content|truncate(50) }}</div>
-                                </div>
+                                {% if comment.parent_id or comment.reply_to_id %}
+                                    <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                                        <div class="font-medium">
+                                            {% if comment.reply_to_id %}
+                                                回复给 {{ comment.reply_to.guest_name or comment.reply_to.user.nickname or comment.reply_to.user.username }}:
+                                            {% else %}
+                                                回复给 {{ comment.parent.guest_name or comment.parent.user.nickname or comment.parent.user.username }}:
+                                            {% endif %}
+                                        </div>
+                                        <div class="mt-1">
+                                            {% if comment.reply_to_id %}
+                                                {{ comment.reply_to.content|truncate(50) }}
+                                            {% else %}
+                                                {{ comment.parent.content|truncate(50) }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
