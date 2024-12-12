@@ -505,14 +505,19 @@ class BlogService:
             # 获取评论配置
             config = CommentConfig.get_config()
             
-            # 添加调试日志
-            current_app.logger.info(f"Adding comment for article {article_id}, user {user_id}")
-            current_app.logger.info(f"Comment config - require_audit: {config.require_audit}")
+            # 检查游客评论权限
+            if not user_id and not config.allow_guest:
+                return False, '不允许游客评论，请先登录'
+            
+            # 检查必填项
+            if not user_id:  # 游客评论时检查必填项
+                if config.require_email and not data.get('guest_email'):
+                    return False, '邮箱地址为必填项'
+                if config.require_contact and not data.get('guest_contact'):
+                    return False, '联系方式为必填项'
             
             # 创建评论
             status = 'pending' if config.require_audit else 'approved'
-            current_app.logger.info(f"New comment status will be: {status}")
-            
             comment = Comment(
                 content=data['content'].strip(),
                 article_id=article_id,
@@ -941,6 +946,17 @@ class BlogService:
             # 获取评论配置
             config = CommentConfig.get_config()
             
+            # 检查游客评论权限
+            if not user_id and not config.allow_guest:
+                return False, '不允许游客评论，请先登录'
+            
+            # 检查必填项
+            if not user_id:  # 游客评论时检查必填项
+                if config.require_email and not data.get('guest_email'):
+                    return False, '邮箱地址为必填项'
+                if config.require_contact and not data.get('guest_contact'):
+                    return False, '联系方式为必填项'
+            
             # 创建评论
             status = 'pending' if config.require_audit else 'approved'
             comment = Comment(
@@ -967,7 +983,7 @@ class BlogService:
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Add custom page comment error: {str(e)}")
-            return False, str(e)
+            return False, f'评论失败: {str(e)}'
 
     @staticmethod
     def get_adjacent_articles(article):
