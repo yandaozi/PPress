@@ -284,8 +284,21 @@ def add_comment(article_id):
             data=data
         )
         
+        # 检查是否是 AJAX 请求
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            if success:
+                return jsonify({
+                    'message': message,
+                    'url': ArticleUrlGenerator.generate(
+                        article.id, 
+                        article.category_id, 
+                        article.created_at
+                    )
+                })
+            return jsonify({'error': message}), 400
+            
+        # 普通表单提交
         flash(message)
-        # 使用文章对象生成URL
         return redirect(ArticleUrlGenerator.generate(
             article.id, 
             article.category_id, 
@@ -478,6 +491,15 @@ def add_custom_page_comment(page_id):
             user_id=user_id,
             data=data
         )
+
+        # 检查是否是 AJAX 请求
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            if success:
+                return jsonify({
+                    'message': message,
+                    'url': page.route
+                })
+            return jsonify({'error': message}), 400
         
         flash(message)
         return redirect(page.route)
