@@ -104,6 +104,7 @@ def render_custom_page(page):
             page_data = dict(
                 title=page.title,
                 content=page.content,
+                created_at=page.created_at,
                 fields=page.fields,
                 template=page.template,
                 allow_comment=page.allow_comment,
