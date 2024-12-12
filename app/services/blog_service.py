@@ -516,6 +516,13 @@ class BlogService:
                 if config.require_contact and not data.get('guest_contact'):
                     return False, '联系方式为必填项'
             
+            # 处理空字符串为 None
+            parent_id = data.get('parent_id')
+            parent_id = int(parent_id) if parent_id else None
+            
+            reply_to_id = data.get('reply_to_id')
+            reply_to_id = int(reply_to_id) if reply_to_id else None
+            
             # 创建评论
             status = 'pending' if config.require_audit else 'approved'
             comment = Comment(
@@ -525,8 +532,8 @@ class BlogService:
                 guest_name=data.get('guest_name'),
                 guest_email=data.get('guest_email'),
                 guest_contact=data.get('guest_contact'),
-                parent_id=data.get('parent_id'),
-                reply_to_id=data.get('reply_to_id'),
+                parent_id=parent_id,  # 使用处理后的值
+                reply_to_id=reply_to_id,  # 使用处理后的值
                 status=status
             )
             
@@ -957,6 +964,13 @@ class BlogService:
                 if config.require_contact and not data.get('guest_contact'):
                     return False, '联系方式为必填项'
             
+            # 处理空字符串为 None
+            parent_id = data.get('parent_id')
+            parent_id = int(parent_id) if parent_id else None
+            
+            reply_to_id = data.get('reply_to_id')
+            reply_to_id = int(reply_to_id) if reply_to_id else None
+            
             # 创建评论
             status = 'pending' if config.require_audit else 'approved'
             comment = Comment(
@@ -966,8 +980,8 @@ class BlogService:
                 guest_name=data.get('guest_name'),
                 guest_email=data.get('guest_email'),
                 guest_contact=data.get('guest_contact'),
-                parent_id=data.get('parent_id'),
-                reply_to_id=data.get('reply_to_id'),
+                parent_id=parent_id,  # 使用处理后的值
+                reply_to_id=reply_to_id,  # 使用处理后的值
                 status=status
             )
             
