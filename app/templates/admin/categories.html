@@ -102,7 +102,7 @@
                                 {% else %}
                                 <div class="w-6 mr-2"></div>
                                 {% endif %}
-                                <span class="font-medium text-gray-900">{{ category.name }}</span>
+                                <span class="font-medium text-gray-900"><a target="_blank" href="{{ url_for('blog.category', id=category.slug if category.use_slug else category.id) }}" >{{ category.name }}</a></span>
                             </div>
                             <!-- 移动端显示的额外信息 -->
                             <div class="sm:hidden mt-2 text-xs space-y-2 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
@@ -220,7 +220,7 @@
                         {% else %}
                         <div class="w-6 mr-2"></div>
                         {% endif %}
-                        <span class="text-lg font-medium text-gray-900 dark:text-white">{{ category.name }}</span>
+                        <span class="text-lg font-medium text-gray-900 dark:text-white"><a target="_blank" href="{{ url_for('blog.category', id=category.slug if category.use_slug else category.id) }}" >{{ category.name }}</a></span>
                     </div>
 
                     <!-- 分类信息卡片 -->
