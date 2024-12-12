@@ -130,7 +130,7 @@
                             <div class="mt-4 ml-11 space-y-4">
                                 {% for reply in comment.replies %}
                                     <div class="flex items-start space-x-3" id="comment-{{ reply.id }}">
-                                        <img src="{{ reply.user.avatar if reply.user else '/static/image/default_avatar.png' }}"
+                                        <img alt="{{ reply.display_name }}" src="{{ get_gravatar(reply.guest_email if reply.guest_email else (reply.user.email if reply.user else None)) }}"
                                              alt="avatar" class="w-6 h-6 rounded-full">
                                         <div class="flex-1">
                                             <div class="flex items-center justify-between">
@@ -143,6 +143,14 @@
                                                     {% else %}
                                                         <span class="font-medium text-gray-500">{{ reply.guest_name or '游客' }}</span>
                                                     {% endif %}
+                                                    
+                                                    {% if reply.reply_to_id %}
+                                                        <span class="font-medium text-gray-500">回复了 {{ 
+                                                            reply.reply_to.user.nickname if reply.reply_to.user else 
+                                                            (reply.reply_to.guest_name or '游客') 
+                                                        }}</span>
+                                                    {% endif %}
+                                                    
                                                     <span class="text-xs text-gray-400">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
                                                 </div>
                                                 <div class="flex items-center space-x-4">
