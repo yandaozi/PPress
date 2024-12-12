@@ -105,6 +105,7 @@ def render_custom_page(page):
                 title=page.title,
                 content=page.content,
                 created_at=page.created_at,
+                updated_at=page.updated_at,
                 fields=page.fields,
                 template=page.template,
                 allow_comment=page.allow_comment,
