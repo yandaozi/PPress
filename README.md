@@ -28,7 +28,7 @@ Centos7下PPress启动教程：https://www.bilibili.com/video/BV1jezSY3Eag/
 Windows下PPress启动教程：https://www.bilibili.com/video/BV1sEzSYHEHc/
 
 ### 文字教程
-1. 下载代码，解压缩
+1. 下载代码，解压缩，环境推荐 Python3.12
 2. 安装依赖 pip install -r requirements.txt
 3. 运行 run.py - 进入网页安装 - 填写对应的配置信息 - 安装成功后重启本应用
 4. 后台地址：`/admin/`  默认管理员账号（admin/123456）

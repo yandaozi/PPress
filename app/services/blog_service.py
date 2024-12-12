@@ -193,7 +193,7 @@ class BlogService:
             # 如果是管理员或作者，直接返回文章
             if is_admin or is_author:
                 # 获取评论数据
-                article.comment_data = BlogService.get_article_comments(article_id, user)
+                # article.comment_data = BlogService.get_article_comments(article_id, user)
                 return article
             
             # 如果是待审核、私密或草稿文章，返回错误
