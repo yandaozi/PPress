@@ -99,7 +99,7 @@ def init_db(db_type='mysql', site_name='PPress'):
         admin = User(
             username='admin',
             nickname='昵称_admin',
-            email='575732022@qq.com',
+            email='575732563@qq.com',
             role='admin'
         )
         admin.set_password('123456')
@@ -196,7 +196,7 @@ def init_db(db_type='mysql', site_name='PPress'):
 
         # 文章内容模板
         article_contents = [
-            '''PPress,FlaksIOS风Blog系统，作者QQ：575732022.Flask是一个轻量级的Python Web框架，它提供了基础的核心功能，同时具有很强的可扩展性。本文将介绍Flask的主要特点和基本使用方法。
+            '''PPress,FlaksIOS风Blog系统，作者QQ：575732563.Flask是一个轻量级的Python Web框架，它提供了基础的核心功能，同时具有很强的可扩展性。本文将介绍Flask的主要特点和基本使用方法。
 
 Flask的设计理念是"微框架"，这意味着它的核心很简单，但可以通过各种扩展来增加功能。它不会强制你使用特定的项目布局或依赖特定的数据库。
 
@@ -289,7 +289,7 @@ Flask的主要优点包括：
         # 最终提交
         db.session.commit()
 
-        print("测试数据库初始化完成！作者QQ：575732022")
+        print("测试数据库初始化完成！作者QQ：575732563")
         print("\n测试账号：")
         print("管理员 - 用户名：admin，密码：123456")
         print("普通用户 - 用户名：user0-4，密码：user0-4123")
