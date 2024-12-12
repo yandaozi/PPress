@@ -31,6 +31,28 @@ class CustomPageMiddleware:
 def render_custom_page(page):
     """渲染自定义页面"""
     try:
+        # 获取当前主题
+        current_theme = SiteConfig.get_config('site_theme', 'default')
+        
+        # 使用 os.path.join 构建完整路径
+        template_file = os.path.abspath(os.path.join(
+            current_app.root_path,
+            'templates',
+            current_theme,
+            'custom',
+            page.template
+        ))
+        
+        # 用于 render_template 的相对路径
+        template_path = f'{current_theme}/custom/{page.template}'
+
+        
+        # 如果当前主题下没有该模板，直接报错
+        if not os.path.exists(template_file):
+            current_app.logger.error(f"Template not found: {template_path}")
+            current_app.logger.error(f"Checked path: {template_file}")
+            abort(404)
+            
         # 获取评论配置
         comment_config = CommentConfig.get_config()
         
@@ -69,9 +91,9 @@ def render_custom_page(page):
             
             # 获取评论及其回复
             comments = comments_query.options(
-                db.joinedload(Comment.user),  # 预加载用户信息
-                db.joinedload(Comment.parent),  # 预加载父评论
-                db.joinedload(Comment.reply_to)  # 预加载回复对象
+                db.joinedload(Comment.user),
+                db.joinedload(Comment.parent),
+                db.joinedload(Comment.reply_to)
             ).paginate(
                 page=current_page,
                 per_page=comment_config.comments_per_page,
@@ -92,7 +114,7 @@ def render_custom_page(page):
             
             # 缓存页面数据
             cache_manager.set(cache_key, page_data)
-        
+            
         # 重新获取评论分页数据（因为分页对象不能被缓存）
         # 1. 获取所有评论
         comments = Comment.query.filter(
@@ -141,53 +163,49 @@ def render_custom_page(page):
         
         comments = Pagination(
             items=parent_comments[start:end],
+            total=total,
             page=current_page,
             per_page=per_page,
-            total=total,
             total_pages=total_pages
         )
         
-        # 使用数据渲染模板，同时传递评论配置和分页数据
-        current_theme = SiteConfig.get_config('site_theme', 'default')
-        template = f'{current_theme}/custom/{page.template}'
-        
-        if not os.path.exists(os.path.join(current_app.template_folder, template)):
-            template = f'default/custom/{page.template}'
-            
-        return render_template(template, 
+        # 在渲染模板时传入当前主题信息
+        return render_template(template_path,
                              page=page_data if page_data else page,
                              comment_config=comment_config,
                              comment_data=comments,
-                             original_path=original_path)
+                             original_path=original_path,
+                             current_theme=current_theme)
             
     except Exception as e:
         current_app.logger.error(f"Render custom page error: {str(e)}")
-        return render_template('default/custom/example.html', 
-                             page=page,
-                             comment_config=comment_config)
+        abort(404)  # 出错时直接返回404，不再尝试使用默认模板
 
 def _render_template(page, page_data=None, comment_config=None):
     """渲染模板"""
     try:
+        # 获取当前主题
         current_theme = SiteConfig.get_config('site_theme', 'default')
-        template = f'{current_theme}/custom/{page.template}'
+        template_path = f'{current_theme}/custom/{page.template}'
+        template_file = os.path.join(current_app.template_folder, current_theme, 'custom', page.template)
         
-        if not os.path.exists(os.path.join(current_app.template_folder, template)):
-            template = f'default/custom/{page.template}'
+        # 如果当前主题下没有该模板，直接报错
+        if not os.path.exists(template_file):
+            current_app.logger.error(f"Template not found: {template_path}")
+            abort(404)
         
         # 准备模板上下文
         context = {
             'page': page_data if page_data else page,
-            'comment_config': comment_config or CommentConfig.get_config()  # 确保始终有评论配置
+            'comment_config': comment_config or CommentConfig.get_config(),
+            'current_theme': current_theme  # 添加当前主题信息
         }
         
-        return render_template(template, **context)
+        return render_template(template_path, **context)
         
     except Exception as e:
         current_app.logger.error(f"Render template error: {str(e)}")
-        return render_template('default/custom/example.html', 
-                             page=page, 
-                             comment_config=comment_config or CommentConfig.get_config())
+        abort(404)  # 出错时直接返回404
 
 class CustomPageManager:
     @staticmethod
@@ -195,29 +213,22 @@ class CustomPageManager:
         """获取自定义页面模板列表"""
         templates = []
         theme_path = os.path.join(current_app.root_path, 'templates')
-        
-        # 获取默认主题模板
-        default_path = os.path.join(theme_path, 'default/custom')
-        if os.path.exists(default_path):
-            for file in os.listdir(default_path):
+        current_theme = SiteConfig.get_config('site_theme', 'default')
+
+        # 获取当前主题模板
+        theme_custom_path = os.path.join(theme_path, f'{current_theme}/custom')
+
+        if os.path.exists(theme_custom_path):
+            for file in os.listdir(theme_custom_path):
+                print(f"- {file}")
                 if file.endswith('.html'):
                     templates.append({
                         'name': file.replace('.html', '').title(),
-                        'path': file  # 只保留文件名
+                        'path': file
                     })
-        
-        # 获取当前主题模板
-        current_theme = SiteConfig.get_config('site_theme', 'default')
-        if current_theme != 'default':
-            theme_custom_path = os.path.join(theme_path, f'{current_theme}/custom')
-            if os.path.exists(theme_custom_path):
-                for file in os.listdir(theme_custom_path):
-                    if file.endswith('.html'):
-                        templates.append({
-                            'name': file.replace('.html', '').title(),
-                            'path': file  # 只保留文件名
-                        })
-        
+        else:
+            print("目录不存在!")
+
         return templates
 
     @staticmethod
