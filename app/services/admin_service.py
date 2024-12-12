@@ -2076,6 +2076,12 @@ class AdminService:
                     
                     article.slug = slug
 
+                # 处理密码保护
+                if article.status == Article.STATUS_PASSWORD:
+                    article.password = form_data.get('password') or '123456'
+                else:
+                    article.password = None
+
                 
                 # 保存到数据库
                 if not article_id:
