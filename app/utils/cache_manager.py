@@ -21,7 +21,6 @@ class CacheManager:
             # 检查是否过期
             if key in self._cache and self._is_expired(key):
                 with self._lock:
-                    current_app.logger.debug(f"Cache expired for key: {key}")
                     self._cache.pop(key, None)
                     self._expires.pop(key, None)
                     self._misses += 1
@@ -31,19 +30,25 @@ class CacheManager:
                 self._hits += 1
                 value = self._cache[key]
                 
-                # 检查是否是 SQLAlchemy 对象或分页对象
+                # 快速路径：如果不是 SQLAlchemy 对象或分页对象，直接返回
+                if not (hasattr(value, 'items') or hasattr(value, '_sa_instance_state')):
+                    #print("快速路径 cache")
+                    return value
+                
+                # 检查 SQLAlchemy 对象
                 try:
                     if hasattr(value, 'items'):  # 分页对象
                         if value.items:
-                            # 尝试访问第一个对象的属性，如果失败则需要重新查询
                             _ = value.items[0].id
-                    elif hasattr(value, '_sa_instance_state'):  # SQLAlchemy 对象
-                        # 尝试访问对象的属性，如果失败则需要重新查询
+                    elif hasattr(value, '_sa_instance_state'):
                         _ = value.id
+                    #print("SQLAlchemy cache")
                     return value
-                except Exception as e:
-                    current_app.logger.debug(f"Cache object detached, refreshing: {str(e)}")
-                    # 缓存对象已分离，执行原始查询
+                except Exception:
+                    # 只在对象分离时记录日志
+                    if current_app.debug:
+                        current_app.logger.debug(f"Cache object detached for key: {key}")
+                    # 执行原始查询
                     if default_factory is not None:
                         with db.session.no_autoflush:
                             value = default_factory()
