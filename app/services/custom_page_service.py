@@ -108,9 +108,9 @@ class CustomPageService:
         try:
             # 清除所有用户状态的缓存
             patterns = [
-                f'custom_page_data:{page.key}:admin',  # 管理员缓存
-                f'custom_page_data:{page.key}:user',   # 登录用户缓存
-                f'custom_page_data:{page.key}:guest'   # 游客缓存
+                f'custom_page_data:{page.key}:admin:{page.key}',  # 管理员缓存
+                f'custom_page_data:{page.key}:user:{page.key}',   # 登录用户缓存
+                f'custom_page_data:{page.key}:guest:{page.key}'   # 游客缓存
             ]
             for pattern in patterns:
                 cache_manager.delete(pattern)
@@ -155,9 +155,9 @@ class CustomPageService:
             if old_key != page.key:
                 # 如果修改了key,还需要清除旧key的缓存
                 patterns = [
-                    f'custom_page_data:{old_key}:admin',
-                    f'custom_page_data:{old_key}:user',
-                    f'custom_page_data:{old_key}:guest'
+                    f'custom_page_data:{old_key}:admin:{old_key}',
+                    f'custom_page_data:{old_key}:user:{old_key}',
+                    f'custom_page_data:{old_key}:guest:{old_key}'
                 ]
                 for pattern in patterns:
                     cache_manager.delete(pattern)
