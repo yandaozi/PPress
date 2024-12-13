@@ -150,7 +150,7 @@ class BlogService:
             # 如果没有自定义模板或模板不存在，使用默认模板
             if not template:
                 template = 'blog/index.html'
-            
+
             return {
                 'pagination': paginated,
                 'current_category': category,

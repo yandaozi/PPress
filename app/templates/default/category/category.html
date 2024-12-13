@@ -5,7 +5,7 @@
 {% block meta %}
     {% if current_category %}
         <meta name="keywords" content="{{ current_category.name }},{{ site_config.get_config('site_keywords', 'PPress,技术,博客') }}">
-        <meta name="description" content="浏览{{ current_category.name }}分类下的所有文章 - {{ site_config.get_config('site_description', '分享技术知识和经验') }}">
+        <meta name="description" content="浏览{{ current_category.name }}分类下的所有文章 - {{ current_category.description }}">
     {% else %}
         {{ super() }}
     {% endif %}
@@ -266,4 +266,4 @@
             </div>
         {% endblock %}
     </div>
-{% endblock %} 
+{% endblock %}

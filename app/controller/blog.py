@@ -97,11 +97,6 @@ def index():
 @handle_view_errors
 def category(id):
 
-    # 使用分类指定的模板或默认模板
-    template = 'blog/index.html'
-
-    # 获取模板对象
-    template_obj = current_app.jinja_env.get_template(template)
 
     # 从模板对象获取源码
     # template_source = current_app.jinja_loader.get_source(current_app.jinja_env, template_obj.name)[0]
@@ -140,6 +135,13 @@ def category(id):
         'random_tags': 'random_tags',
         'latest_comments': 'latest_comments'
     }
+
+
+    # 使用分类指定的模板或默认模板
+    template = data['template']
+
+    # 获取模板对象
+    template_obj = current_app.jinja_env.get_template(template)
 
     # 获取模板中定义的区块与需要的数据的交集
     needed_widgets = set(block_map.keys()) & set(template_obj.blocks.keys())
