@@ -21,6 +21,7 @@ class CacheManager:
             # 检查是否过期
             if key in self._cache and self._is_expired(key):
                 with self._lock:
+                    current_app.logger.debug(f"Cache expired for key: {key}")
                     self._cache.pop(key, None)
                     self._expires.pop(key, None)
                     self._misses += 1
@@ -28,8 +29,28 @@ class CacheManager:
             # 缓存命中
             if key in self._cache:
                 self._hits += 1
-                return self._cache[key]
-            
+                value = self._cache[key]
+                
+                # 检查是否是 SQLAlchemy 对象或分页对象
+                try:
+                    if hasattr(value, 'items'):  # 分页对象
+                        if value.items:
+                            # 尝试访问第一个对象的属性，如果失败则需要重新查询
+                            _ = value.items[0].id
+                    elif hasattr(value, '_sa_instance_state'):  # SQLAlchemy 对象
+                        # 尝试访问对象的属性，如果失败则需要重新查询
+                        _ = value.id
+                    return value
+                except Exception as e:
+                    current_app.logger.debug(f"Cache object detached, refreshing: {str(e)}")
+                    # 缓存对象已分离，执行原始查询
+                    if default_factory is not None:
+                        with db.session.no_autoflush:
+                            value = default_factory()
+                            self.set(key, value, ttl)
+                            return value
+                    return None
+                
             # 缓存未命中
             self._misses += 1
             if default_factory is not None:
@@ -40,7 +61,9 @@ class CacheManager:
             return None
             
         except Exception as e:
-            current_app.logger.error(f"Cache get error: {str(e)}")
+            current_app.logger.error(f"Cache error for key: {key}")
+            current_app.logger.error(f"Error type: {type(e).__name__}")
+            current_app.logger.error(f"Error message: {str(e)}")
             # 出错时直接执行原始查询
             if default_factory is not None:
                 with db.session.no_autoflush:
