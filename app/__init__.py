@@ -198,10 +198,6 @@ def create_app(db_type=DB_TYPE, init_components=True):
     def inject_site_config():
         return {'site_config': SiteConfig}
 
-    @app.context_processor
-    def inject_categories():
-        from app.utils.common import get_categories_data
-        return get_categories_data()
 
     # 添加全局函数到模板
     @app.context_processor
@@ -273,16 +269,6 @@ def create_app(db_type=DB_TYPE, init_components=True):
     # 修改 Jinja2 模板加载器配置
     app.jinja_loader = ThemeManager.get_theme_loader(app)
 
-    # 添加全局上下文处理器
-    @app.context_processor
-    def inject_categories_data():
-        from app.utils.common import get_categories_data
-        data = get_categories_data()
-        return dict(
-            categories=data['categories'],
-            article_counts=data['article_counts'],
-            all_categories=data['all_categories']
-        )
 
     # 注册加密版权信息函数
     @app.template_global()
