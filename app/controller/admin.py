@@ -188,21 +188,23 @@ def delete_article(article_id):
     return '', 204
 
 @bp.route('/site-config', methods=['GET', 'POST'])
-
 @admin_required
 def site_config():
     """网站配置管理"""
     try:
         if request.method == 'POST':
             success, message = AdminService.update_site_config(request.form)
-            flash(message)
-            if success:
-                return redirect(url_for('admin.site_config'))
+            return jsonify({
+                'success': success,
+                'message': message
+            })
         
         configs, error = AdminService.get_site_configs()
         if error:
-            flash(error)
-            return redirect(url_for('admin.dashboard'))
+            return jsonify({
+                'success': False,
+                'message': error
+            })
             
         if configs is None:
             abort(500)
@@ -211,6 +213,10 @@ def site_config():
         
     except Exception as e:
         current_app.logger.error(f"Site config error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        })
         abort(500)
 
 @bp.route('/categories')

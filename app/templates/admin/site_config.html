@@ -14,14 +14,14 @@
             <h2 class="text-xl font-bold">网站配置</h2>
         </div>
         <div class="p-6">
-            <form method="post" class="space-y-8">
+            <form method="post" class="space-y-8" id="configForm" onsubmit="return handleSubmit(event)">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 
                 <!-- 基本设置 -->
                 <div class="space-y-6">
                     <h3 class="text-lg font-medium text-gray-900">基本设置</h3>
                     {% for config in configs %}
-                        {% if config.key in ['site_name', 'site_keywords', 'site_description', 'contact_email', 'footer_text'] %}
+                        {% if config.key in ['site_name', 'site_keywords', 'site_description', 'contact_email', 'icp_number', 'footer_text'] %}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 {{ config.description }}
@@ -198,7 +198,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             默认头像样式
                         </label>
-                        <select name="config_gravatar_default"
+                        <select name="config_gravatar_default" id="gravatarStyle"
                                 class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="mp" {% if configs|selectattr('key', 'equalto', 'gravatar_default')|first|attr('value') == 'mp' %}selected{% endif %}>神秘人(mp)</option>
                             <option value="identicon" {% if configs|selectattr('key', 'equalto', 'gravatar_default')|first|attr('value') == 'identicon' %}selected{% endif %}>抽象图案(identicon)</option>
@@ -208,6 +208,10 @@
                             <option value="robohash" {% if configs|selectattr('key', 'equalto', 'gravatar_default')|first|attr('value') == 'robohash' %}selected{% endif %}>机器人(robohash)</option>
                             <option value="blank" {% if configs|selectattr('key', 'equalto', 'gravatar_default')|first|attr('value') == 'blank' %}selected{% endif %}>空白(blank)</option>
                         </select>
+                        <!-- 添加预览图片 -->
+                        <div class="mt-2">
+                            <img id="gravatarPreview" src="" alt="头像预览" class="w-16 h-16 rounded-full">
+                        </div>
                     </div>
                 </div>
 
@@ -223,6 +227,36 @@
 </div>
 
 <script>
+    // 添加表单提交处理函数
+    function handleSubmit(e) {
+        e.preventDefault();
+        const form = document.getElementById('configForm');
+        
+        fetch(window.location.href, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                showAlert(data.message, 'success', '成功');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 300);
+            } else {
+                showAlert(data.message, 'error', '失败');
+            }
+        })
+        .catch(error => {
+            showAlert(data.message + error, 'error', '失败');
+        });
+        
+        return false;
+    }
+
     function generateToken() {
         // 生成更复杂的随机 Token
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -238,5 +272,24 @@
             inputElement.value = token;
         }
     }
+
+
+    // 处理头像预览
+    function updateGravatarPreview() {
+        const style = document.getElementById('gravatarStyle').value;
+        const mirror = document.querySelector('input[name="config_gravatar_mirror"]').value || 'https://www.gravatar.com/avatar/';
+        const hash = '00000000000000000000000000000000'; // 默认hash
+        const previewUrl = `${mirror}${hash}?d=${style}&s=128`;
+        document.getElementById('gravatarPreview').src = previewUrl;
+    }
+
+    // 监听样式选择变化
+    document.getElementById('gravatarStyle').addEventListener('change', updateGravatarPreview);
+
+    // 监听镜像地址变化
+    document.querySelector('input[name="config_gravatar_mirror"]').addEventListener('input', updateGravatarPreview);
+
+    // 页面加载时初始化预览
+    document.addEventListener('DOMContentLoaded', updateGravatarPreview);
 </script>
 {% endblock %} 
