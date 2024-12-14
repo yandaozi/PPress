@@ -221,7 +221,7 @@
 <script>
 function toggleUserRole(userId) {
     showAlert('确定要更改此用户的角色吗？', 'warning', '确认操作', function() {
-        fetch(`/admin/users/${userId}/toggle-role`, {
+        fetch(`{{ admin_url }}/users/${userId}/toggle-role`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': '{{ csrf_token() }}'
@@ -242,7 +242,7 @@ function toggleUserRole(userId) {
 
 function deleteUser(userId) {
     showAlert('确定要删除此用户吗？此操作不可恢复！', 'warning', '确认删除', function() {
-        fetch(`/admin/users/${userId}`, {
+        fetch(`{{ admin_url }}/users/${userId}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRFToken': '{{ csrf_token() }}'
@@ -272,7 +272,7 @@ function addUser() {
     const form = document.getElementById('addUserForm');
     const formData = new FormData(form);
     
-    fetch('/admin/users/add', {
+    fetch('{{ admin_url }}/users/add', {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token() }}'
@@ -295,7 +295,7 @@ function updateUser() {
     const userId = form.user_id.value;
     const formData = new FormData(form);
     
-    fetch(`/admin/users/${userId}/edit`, {
+    fetch(`{{ admin_url }}/users/${userId}/edit`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token() }}'

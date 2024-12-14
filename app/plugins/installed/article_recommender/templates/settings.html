@@ -1,4 +1,4 @@
-<form class="space-y-8" method="post" action="/admin/plugins/article_recommender/settings/save"
+<form class="space-y-8" method="post" action="{{ admin_url }}/plugins/article_recommender/settings/save"
       onsubmit="event.preventDefault(); handleSettingsSubmit(this);">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     

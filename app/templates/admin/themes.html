@@ -154,7 +154,7 @@ function handleThemeUpload(form) {
 
 function confirmUninstall(themeId) {
     showAlert('确定要卸载此主题吗？此操作不可恢复！', 'warning', '确认卸载', () => {
-        fetch(`/admin/themes/${themeId}/uninstall`, {
+        fetch(`{{ admin_url }}/themes/${themeId}/uninstall`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': '{{ csrf_token() }}'

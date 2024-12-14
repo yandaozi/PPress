@@ -1,7 +1,7 @@
 import os
 
 from flask import Blueprint, render_template, render_template_string, request, flash, redirect, url_for, jsonify, send_file, current_app, abort, session
-from flask_login import login_required, current_user
+from flask_login import current_user
 from functools import wraps
 import json
 import io
@@ -1393,10 +1393,22 @@ def login():
         if success:
             # 获取next参数
             next_page = request.args.get('next')
-            if not next_page or not next_page.startswith('/admin'):
+            admin_url = url_for('admin.dashboard')  # 获取后台URL前缀
+            if not next_page or not next_page.startswith(admin_url):
                 next_page = url_for('admin.dashboard')
             return redirect(next_page)
         else:
             flash(message, 'error')
             
     return render_template('admin/login.html')
+
+@bp.context_processor
+def admin_context():
+    """添加后台相关的上下文变量"""
+    # 在函数开始时就计算好 admin_url，避免重复计算
+    admin_url = url_for('admin.dashboard')
+    
+    return {
+        'admin_url': admin_url,
+        'is_admin_url': lambda path: path.startswith(admin_url)
+    }
