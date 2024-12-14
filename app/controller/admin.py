@@ -1393,7 +1393,7 @@ def login():
         if success:
             # 获取next参数
             next_page = request.args.get('next')
-            if not next_page or not next_page.startswith('/admin'):
+            if not next_page or not next_page.startswith(bp.name):
                 next_page = url_for('admin.dashboard')
             return redirect(next_page)
         else:
