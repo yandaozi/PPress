@@ -219,7 +219,7 @@ function savePage() {
     
     // 发送请求
     const id = document.getElementById('pageId').value;
-    fetch(id ? `/admin/custom_pages/${id}/edit` : '/admin/custom_pages/add', {
+    fetch(id ? `custom_pages/${id}/edit` : 'custom_pages/add', {
         method: 'POST',
         body: formData
     })
@@ -235,7 +235,7 @@ function savePage() {
 }
 
 function editPage(id) {
-    fetch(`/admin/custom_pages/${id}`)
+    fetch(`custom_pages/${id}`)
         .then(response => response.json())
         .then(page => {
             document.getElementById('modalTitle').textContent = '编辑页面';
@@ -260,7 +260,7 @@ function editPage(id) {
 
 function deletePage(id) {
     showAlert('确定要删除此页面吗？', 'warning', '确认删除', function() {
-        fetch(`/admin/custom_pages/${id}`, {
+        fetch(`custom_pages/${id}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRFToken': '{{ csrf_token() }}'

@@ -1,7 +1,7 @@
 import os
 
 from flask import Blueprint, render_template, render_template_string, request, flash, redirect, url_for, jsonify, send_file, current_app, abort, session
-from flask_login import login_required, current_user
+from flask_login import current_user
 from functools import wraps
 import json
 import io

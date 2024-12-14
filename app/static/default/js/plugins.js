@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function openPluginSettings(pluginName) {
     try {
         // 先检查插件是否有设置页面
-        const response = await fetch(`/admin/plugins/${pluginName}/settings/check`, {
+        const response = await fetch(`plugins/${pluginName}/settings/check`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
@@ -78,7 +78,7 @@ async function openPluginSettings(pluginName) {
         
         if (response.ok && data.status === 'success') {
             // 如果有设置页面，跳转过去
-            window.location.href = `/admin/plugins/${pluginName}/settings`;
+            window.location.href = `plugins/${pluginName}/settings`;
         } else {
             // 如果没有设置页面，显示提示
             showToast(data.message || '该插件没有设置页面', 'error');

@@ -411,7 +411,7 @@ function saveCommentConfig() {
     formData.append('comments_per_page', document.getElementById('commentsPerPage').value);
     formData.append('csrf_token', form.querySelector('[name="csrf_token"]').value);
     
-    fetch('/admin/comments/config', {
+    fetch('comments/config', {
         method: 'POST',
         body: formData
     })
@@ -428,7 +428,7 @@ function saveCommentConfig() {
 
 function deleteComment(commentId) {
     showAlert('确定要删除此评论吗？此操作不可恢复！', 'warning', '确认删除', function() {
-        fetch(`/admin/comments/${commentId}`, {
+        fetch(`comments/${commentId}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRFToken': '{{ csrf_token() }}'
@@ -447,7 +447,7 @@ function deleteComment(commentId) {
 }
 
 function approveComment(commentId) {
-    fetch(`/admin/comments/${commentId}/approve`, {
+    fetch(`comments/${commentId}/approve`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token() }}'
@@ -465,7 +465,7 @@ function approveComment(commentId) {
 }
 
 function rejectComment(commentId) {
-    fetch(`/admin/comments/${commentId}/reject`, {
+    fetch(`comments/${commentId}/reject`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token() }}'
@@ -483,7 +483,7 @@ function rejectComment(commentId) {
 }
 
 function updateCommentStatus(commentId, status) {
-    fetch(`/admin/comments/${commentId}/status`, {
+    fetch(`comments/${commentId}/status`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -634,7 +634,7 @@ function batchDeleteComments() {
         'warning',
         '确认删除',
         function() {
-            fetch('/admin/comments/batch-delete', {
+            fetch('comments/batch-delete', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
