@@ -7,6 +7,23 @@ if [ $(id -u) -ne 0 ]; then
 fi
 
 echo "Starting PPress installation..."
+
+# 检查 Python 版本
+echo "Checking Python version..."
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+    if [ "$(echo "$PYTHON_VERSION >= 3.8" | bc)" -eq 1 ]; then
+        echo "Python $PYTHON_VERSION is already installed and meets requirements."
+        INSTALL_PYTHON=0
+    else
+        echo "Python $PYTHON_VERSION is too old, need >= 3.8"
+        INSTALL_PYTHON=1
+    fi
+else
+    echo "Python 3 not found"
+    INSTALL_PYTHON=1
+fi
+
 echo "Checking your location..."
 
 # 通过访问谷歌来判断是否在中国
@@ -18,17 +35,6 @@ else
     is_china_ip=1
 fi
 
-# 设置 Python 源
-if [ "$is_china_ip" -eq 1 ]; then
-    echo "Using China mirrors..."
-    export PYTHON_SOURCE='https://mirrors.huaweicloud.com/python/3.12.3/Python-3.12.3.tgz'
-    export PIP_SOURCE='https://pypi.tuna.tsinghua.edu.cn/simple/'
-else
-    echo "Using international mirrors..."
-    export PYTHON_SOURCE='https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tgz'
-    export PIP_SOURCE='https://pypi.org/simple/'
-fi
-
 # 设置仓库地址
 if [ "$is_china_ip" -eq 1 ]; then
     echo "Using Gitee repository..."
@@ -38,72 +44,77 @@ else
     export REPOSITORY_URL='https://github.com/yandaozi/PPress.git'
 fi
 
-# 安装必要的工具和依赖
-echo "Installing required packages..."
-yum groupinstall -y "Development Tools"
-yum install -y gcc gcc-c++ make \
-    openssl-devel bzip2-devel libffi-devel \
-    zlib-devel xz-devel sqlite-devel \
-    readline-devel tk-devel ncurses-devel \
-    gdbm-devel db4-devel expat-devel \
-    curl git wget
+# 如果需要安装 Python
+if [ "$INSTALL_PYTHON" -eq 1 ]; then
+    # 设置 Python 源
+    if [ "$is_china_ip" -eq 1 ]; then
+        echo "Using China mirrors..."
+        export PYTHON_SOURCE='https://mirrors.huaweicloud.com/python/3.12.3/Python-3.12.3.tgz'
+        export PIP_SOURCE='https://pypi.tuna.tsinghua.edu.cn/simple/'
+    else
+        echo "Using international mirrors..."
+        export PYTHON_SOURCE='https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tgz'
+        export PIP_SOURCE='https://pypi.org/simple/'
+    fi
 
-# 安装 Python 3.12
-echo "Installing Python 3.12..."
-cd /opt
-echo "Downloading Python source code..."
-wget $PYTHON_SOURCE 2>&1 | \
-    while read line; do
-        echo -ne "\rDownloading... $line"
-    done
-echo -e "\nDownload completed."
+    # 安装必要的工具和依赖
+    echo "Installing required packages..."
+    yum groupinstall -y "Development Tools"
+    yum install -y gcc gcc-c++ make \
+        openssl-devel bzip2-devel libffi-devel \
+        zlib-devel xz-devel sqlite-devel \
+        readline-devel tk-devel ncurses-devel \
+        gdbm-devel db4-devel expat-devel \
+        curl git wget
 
-echo "Extracting Python source code..."
-if [ -f "$(basename $PYTHON_SOURCE)" ]; then
-    tar -zxf $(basename $PYTHON_SOURCE)
-else
-    echo "Error: Python source file not found"
-    exit 1
-fi
+    # 安装 Python 3.12
+    echo "Installing Python 3.12..."
+    cd /opt
+    echo "Downloading Python source code..."
+    wget $PYTHON_SOURCE 2>&1 | \
+        while read line; do
+            echo -ne "\rDownloading... $line"
+        done
+    echo -e "\nDownload completed."
 
-if [ ! -d "Python-3.12.3" ]; then
-    echo "Error: Python source directory not found"
-    exit 1
-fi
+    echo "Extracting Python source code..."
+    if [ -f "$(basename $PYTHON_SOURCE)" ]; then
+        tar -zxf $(basename $PYTHON_SOURCE)
+    else
+        echo "Error: Python source file not found"
+        exit 1
+    fi
 
-cd $(basename $PYTHON_SOURCE | sed 's/.tgz//')
-echo "Configuring Python build..."
-# 清理之前的构建
-make clean || true
+    if [ ! -d "Python-3.12.3" ]; then
+        echo "Error: Python source directory not found"
+        exit 1
+    fi
 
-# 配置 Python 构建
-./configure \
-    --prefix=/usr/local \
-    --enable-shared \
-    --with-system-expat \
-    --with-system-ffi \
-    --enable-loadable-sqlite-extensions \
-    --with-ensurepip=yes \
-    LDFLAGS="-Wl,-rpath /usr/local/lib"
+    cd $(basename $PYTHON_SOURCE | sed 's/.tgz//')
+    echo "Configuring Python build..."
+    # 清理之前的构建
+    make clean || true
 
-echo "Building Python (this may take a while)..."
-# 编译和安装
-CPU_CORES=$(nproc)
-echo "Using $CPU_CORES CPU cores for compilation..."
-make -j$CPU_CORES
-make install
+    # 配置 Python 构建
+    ./configure \
+        --prefix=/usr/local \
+        --enable-shared \
+        --with-system-expat \
+        --with-system-ffi \
+        --enable-loadable-sqlite-extensions \
+        --with-ensurepip=yes \
+        LDFLAGS="-Wl,-rpath /usr/local/lib"
 
-# 创建软链接
-ln -sf /usr/local/bin/python3.12 /usr/local/bin/python3
-ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip3
+    echo "Building Python (this may take a while)..."
+    # 编译和安装
+    CPU_CORES=$(nproc)
+    echo "Using $CPU_CORES CPU cores for compilation..."
+    make -j$CPU_CORES
+    make install
 
-# 安装 pip
-echo "Installing pip..."
-if [ "$is_china_ip" -eq 1 ]; then
-    # 使用清华大学镜像
-    curl -s https://mirrors.tuna.tsinghua.edu.cn/pypi/get-pip.py | python3.12
-else
-    curl -s https://bootstrap.pypa.io/get-pip.py | python3.12
+    # 创建软链接
+    ln -sf /usr/local/bin/python3.12 /usr/local/bin/python3
+    ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip3
 fi
 
 # 配置pip默认源
