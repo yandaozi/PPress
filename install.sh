@@ -46,11 +46,32 @@ yum install -y gcc openssl-devel bzip2-devel libffi-devel zlib-devel curl git
 echo "Installing Python 3.12..."
 cd /opt
 echo "Downloading Python source code..."
-wget -q --show-progress $PYTHON_SOURCE
+wget $PYTHON_SOURCE 2>&1 | \
+    while read line; do
+        echo -ne "\rDownloading... $line"
+    done
+echo -e "\nDownload completed."
+
 echo "Extracting Python source code..."
-tar -zxf $(basename $PYTHON_SOURCE)
+if [ -f "$(basename $PYTHON_SOURCE)" ]; then
+    tar -zxf $(basename $PYTHON_SOURCE)
+else
+    echo "Error: Python source file not found"
+    exit 1
+fi
+
+if [ ! -d "Python-3.12.3" ]; then
+    echo "Error: Python source directory not found"
+    exit 1
+fi
+
 cd $(basename $PYTHON_SOURCE | sed 's/.tgz//')
 echo "Configuring Python build..."
+if [ ! -f "./configure" ]; then
+    echo "Error: configure script not found"
+    exit 1
+fi
+
 ./configure --prefix=/usr/local/python3.12 --enable-shared LDFLAGS="-Wl,-rpath /usr/local/python3.12/lib"
 echo "Building Python (this may take a while)..."
 make -j$(nproc) altinstall
