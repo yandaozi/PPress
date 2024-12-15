@@ -9,11 +9,14 @@ fi
 echo "Starting PPress installation..."
 echo "Checking your location..."
 
-# 获取 IP 地址信息
-ip_info=$(curl -s 'https://ipapi.co/json/')
-
-# 判断是否是中国 IP
-is_china_ip=$(echo "$ip_info" | grep -i "\"country_name\": \"China\"" | wc -l)
+# 通过访问谷歌来判断是否在中国
+if curl -s --connect-timeout 3 --max-time 5 www.google.com &>/dev/null; then
+    echo "Detected international network..."
+    is_china_ip=0
+else
+    echo "Detected China network..."
+    is_china_ip=1
+fi
 
 # 设置 Python 源
 if [ "$is_china_ip" -eq 1 ]; then
