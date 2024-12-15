@@ -231,24 +231,34 @@ restart() {
 change_port() {
     read -p "Enter new port number: " new_port
     if [[ "$new_port" =~ ^[0-9]+$ ]]; then
+        # 保存旧端口号
+        old_port=$PORT
+        
         # 配置防火墙
         if command -v firewall-cmd >/dev/null 2>&1; then
-            firewall-cmd --permanent --remove-port=$PORT/tcp
+            firewall-cmd --permanent --remove-port=$old_port/tcp
             firewall-cmd --permanent --add-port=$new_port/tcp
             firewall-cmd --reload
         elif command -v iptables >/dev/null 2>&1; then
-            iptables -D INPUT -p tcp --dport $PORT -j ACCEPT
+            iptables -D INPUT -p tcp --dport $old_port -j ACCEPT
             iptables -I INPUT -p tcp --dport $new_port -j ACCEPT
             service iptables save
         fi
         
         # 更新配置文件
         sed -i "s/PORT=.*/PORT=$new_port/" "$CONFIG_FILE"
+        # 重新加载配置
+        source "$CONFIG_FILE"
         echo "Port changed to $new_port"
         
         # 如果服务正在运行，则重启
         if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
-            restart
+            echo "Restarting PPress with new port..."
+            stop
+            sleep 2
+            start
+        else
+            echo "PPress is not running. Start it with 'ppress start' to use the new port."
         fi
     else
         echo "Invalid port number"
