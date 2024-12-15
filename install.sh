@@ -73,14 +73,27 @@ fi
 
 cd $(basename $PYTHON_SOURCE | sed 's/.tgz//')
 echo "Configuring Python build..."
-if [ ! -f "./configure" ]; then
-    echo "Error: configure script not found"
-    exit 1
-fi
+# 清理之前的构建
+make clean || true
 
-./configure --prefix=/usr/local/python3.12 --enable-shared LDFLAGS="-Wl,-rpath /usr/local/python3.12/lib"
+# 配置 Python 构建
+./configure \
+    --prefix=/usr/local \
+    --enable-shared \
+    --with-system-expat \
+    --with-system-ffi \
+    --enable-loadable-sqlite-extensions \
+    --with-ensurepip=yes \
+    LDFLAGS="-Wl,-rpath /usr/local/lib"
+
 echo "Building Python (this may take a while)..."
-make -j$(nproc) altinstall
+# 编译和安装
+make -j$(nproc)
+make install
+
+# 创建软链接
+ln -sf /usr/local/bin/python3.12 /usr/local/bin/python3
+ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip3
 
 # 安装 pip
 echo "Installing pip..."
