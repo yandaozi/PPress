@@ -46,7 +46,23 @@ PPress 是一个基于 Flask 框架开发的功能丰富的博客内容管理系
     # 运行脚本
     ./install.sh
    ```
+用脚本安装完成后，可以使用 ppress 命令管理服务，支持以下命令：
 
+   ```bash
+    ppress status #显示当前状态
+    
+    ppress start #启动服务
+    
+    ppress stop #停止服务
+    
+    ppress restart #重启服务
+    
+    ppress port #修改端囗
+    
+    ppress help #显示帮助信息
+   ```
+
+状态会显示：运行状态 、进程 ID 、当前端口 、访问地址
 
 ### 视频教程
 - [CentOS 7 安装教程](https://www.bilibili.com/video/BV1jezSY3Eag/)
