@@ -84,17 +84,14 @@ make clean || true
     --with-system-ffi \
     --enable-loadable-sqlite-extensions \
     --with-ensurepip=yes \
-    --enable-optimizations \
-    --with-lto \
-    --enable-ipv6 \
     LDFLAGS="-Wl,-rpath /usr/local/lib"
 
 echo "Building Python (this may take a while)..."
 # 编译和安装
 CPU_CORES=$(nproc)
 echo "Using $CPU_CORES CPU cores for compilation..."
-MAKEFLAGS="-j$CPU_CORES" make
-MAKEFLAGS="-j$CPU_CORES" make install
+make -j$CPU_CORES
+make install
 
 # 创建软链接
 ln -sf /usr/local/bin/python3.12 /usr/local/bin/python3
