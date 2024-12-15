@@ -65,7 +65,7 @@ PPress 是一个基于 Flask 框架开发的功能丰富的博客内容管理系
 
 ## 📚 开发文档
 
-详细的开发文档请访问：[https://www.ppress.cc/doc.html](http://doc.gank.fun/web/#/627038158/)
+详细的开发文档请访问：[https://www.ppress.cc/doc.html](https://www.ppress.cc/doc.html)
 
 ## 🛠️ 技术栈
 
