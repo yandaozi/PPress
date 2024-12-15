@@ -40,7 +40,13 @@ fi
 
 # 安装必要的工具和依赖
 echo "Installing required packages..."
-yum install -y gcc openssl-devel bzip2-devel libffi-devel zlib-devel curl git
+yum groupinstall -y "Development Tools"
+yum install -y gcc gcc-c++ make \
+    openssl-devel bzip2-devel libffi-devel \
+    zlib-devel xz-devel sqlite-devel \
+    readline-devel tk-devel ncurses-devel \
+    gdbm-devel db4-devel expat-devel \
+    curl git wget
 
 # 安装 Python 3.12
 echo "Installing Python 3.12..."
