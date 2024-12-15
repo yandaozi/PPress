@@ -34,6 +34,20 @@ PPress 是一个基于 Flask 框架开发的功能丰富的博客内容管理系
 
 ## 🚀 快速开始
 
+### Centos7 一键安装脚本
+
+   ```bash
+    # 使用 wget 下载
+    wget https://gitee.com/fojie/PPress/raw/master/install.sh
+    
+    # 给脚本添加执行权限
+    chmod +x install.sh
+    
+    # 运行脚本
+    ./install.sh
+   ```
+
+
 ### 视频教程
 - [CentOS 7 安装教程](https://www.bilibili.com/video/BV1jezSY3Eag/)
 - [Windows 安装教程](https://www.bilibili.com/video/BV1sEzSYHEHc/)
