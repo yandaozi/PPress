@@ -78,7 +78,20 @@ make -j$(nproc) altinstall
 
 # 安装 pip
 echo "Installing pip..."
-curl -s https://bootstrap.pypa.io/get-pip.py | python3.12
+if [ "$is_china_ip" -eq 1 ]; then
+    # 使用清华大学镜像
+    curl -s https://mirrors.tuna.tsinghua.edu.cn/pypi/get-pip.py | python3.12
+else
+    curl -s https://bootstrap.pypa.io/get-pip.py | python3.12
+fi
+
+# 配置pip默认源
+mkdir -p ~/.pip
+if [ "$is_china_ip" -eq 1 ]; then
+    echo "[global]
+    index-url = https://pypi.tuna.tsinghua.edu.cn/simple/
+    trusted-host = pypi.tuna.tsinghua.edu.cn" > ~/.pip/pip.conf
+fi
 
 # 克隆 PPress 代码
 echo "Cloning PPress repository..."
