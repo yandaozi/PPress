@@ -19,7 +19,7 @@ from config.database import MYSQL_CONFIG
 @bp.route('/install', methods=['GET', 'POST'])
 def install():
     """安装路由"""
-    # 读取 Tailwind CSS 内容
+    # 读取 Tailwind CSS 的内容
     tailwind_path = os.path.join(current_app.static_folder, 'default/vendor/3.4.5')
     try:
         with open(tailwind_path, 'r', encoding='utf-8') as f:
