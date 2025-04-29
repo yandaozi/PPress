@@ -104,7 +104,8 @@ docker-compose down
    - 通过浏览器访问安装页面
    - 填写系统配置信息
    - 安装完成后重启应用
-   - 新增加Redis + 发送邮件验证码功能，需在config/database.py自行配置Redis链接和SMTP
+   - Redis + 发送邮件验证码功能，需在config/database.py自行配置Redis链接和SMTP
+   - coze工作流配置 services/article_api_service.py文件,配好API_KEY和WORKFLOW_ID，API规则需得自行修改，管理函数是admin的aiartauto
 
 5. **访问后台**
    - 后台地址：`/admin/`

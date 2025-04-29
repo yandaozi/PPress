@@ -16,5 +16,5 @@ python-dotenv
 flask-socketio
 elasticsearch
 gevent
-eventlet
 gunicorn
+requests

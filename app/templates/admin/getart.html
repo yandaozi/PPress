@@ -1,0 +1,57 @@
+<div class="card mt-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">API文章获取</h5>
+        <div>
+            <form action="{{ url_for('admin.toggle_auto_fetch') }}" method="post" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                    <span id="auto-fetch-status-label">加载中...</span>
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('admin.fetch_articles') }}" method="post" class="mb-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group mb-3">
+                <label for="topic">主题关键词</label>
+                <input type="text" class="form-control" id="topic" name="topic" value="热门" required>
+                <small class="form-text text-muted">输入关键词，获取相关主题的文章</small>
+            </div>
+            <button type="submit" class="btn btn-primary">立即获取文章</button>
+        </form>
+        <div class="alert alert-info mt-3" role="alert">
+            <i class="fas fa-info-circle"></i> 系统会根据设定的主题关键词，通过API获取并发布新文章。
+            <div id="auto-fetch-info" class="mt-2">
+                <strong>定时获取状态：</strong><span id="auto-fetch-status">加载中...</span><br>
+                <strong>运行间隔：</strong><span id="auto-fetch-interval">加载中...</span><br>
+                <strong>上次执行：</strong><span id="auto-fetch-last-run">加载中...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 获取自动获取状态
+function updateAutoFetchStatus() {
+    fetch('{{ url_for("admin.auto_fetch_status") }}')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('auto-fetch-status').textContent = data.running ? '运行中' : '已停止';
+            document.getElementById('auto-fetch-status-label').textContent = data.running ? '停止定时获取' : '启动定时获取';
+            document.getElementById('auto-fetch-interval').textContent = data.interval ? `${data.interval} 秒` : '-';
+            document.getElementById('auto-fetch-last-run').textContent = data.last_run || '从未运行';
+        })
+        .catch(error => {
+            console.error('获取自动获取状态失败:', error);
+            document.getElementById('auto-fetch-status').textContent = '获取失败';
+        });
+}
+
+// 页面加载完成后获取状态
+document.addEventListener('DOMContentLoaded', function() {
+    updateAutoFetchStatus();
+    // 每30秒更新一次状态
+    setInterval(updateAutoFetchStatus, 30000);
+});
+</script> 

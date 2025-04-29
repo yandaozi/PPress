@@ -44,6 +44,16 @@ def dashboard():
         current_app.logger.error(f"Dashboard error: {str(e)}")
         abort(500)
 
+@bp.route('/aiartauto')
+@admin_required
+def aiartauto():
+    """获取文章首页"""
+    try:
+        return render_template('admin/getart.html')
+    except Exception as e:
+        current_app.logger.error(f"Dashboard error: {str(e)}")
+        abort(500)
+
 @bp.route('/users')
 @admin_required
 def users():
@@ -1184,6 +1194,7 @@ def edit_article(id=None):
     try:
         if request.method == 'POST':
             success, message, data = AdminService.save_article(id, request.form)
+            print(request.form)
             return jsonify({
                 'error': message if not success else None,
                 'message': message if success else None,
@@ -1351,6 +1362,26 @@ def batch_set_tags_access_mode():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@bp.route('/api/fetch_articles', methods=['POST'])
+@admin_required
+def fetch_articles():
+    """手动触发文章获取"""
+
+    from app.services.article_api_service import fetch_and_save_articles
+    topic = request.form.get('topic', '热门')
+
+    # 直接执行文章获取
+    success, message = fetch_and_save_articles(topic)
+
+    if success:
+        flash(message, 'success')
+    else:
+        flash(f'获取文章失败: {message}', 'error')
+
+    return redirect(url_for('admin.aiartauto'))
+
+
 @bp.route('/upload-settings', methods=['POST'])
 
 @admin_required
@@ -1412,3 +1443,30 @@ def admin_context():
         'admin_url': admin_url,
         'is_admin_url': lambda path: path.startswith(admin_url)
     }
+
+@bp.route('/api/auto_fetch/status')
+@admin_required
+def auto_fetch_status():
+    """获取自动获取文章状态"""
+
+    from app.utils.auto_fetch import article_scheduler
+    status = article_scheduler.get_status()
+
+    return jsonify(status)
+
+@bp.route('/api/auto_fetch/toggle', methods=['POST'])
+@admin_required
+def toggle_auto_fetch():
+    """切换自动获取文章状态"""
+    from app.utils.auto_fetch import article_scheduler
+    
+    if article_scheduler.running:
+        article_scheduler.stop()
+        message = "自动获取文章已停止"
+    else:
+        article_scheduler.start()
+        message = "自动获取文章已启动"
+    
+    flash(message)
+    return redirect(url_for('admin.aiartauto'))
+

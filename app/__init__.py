@@ -180,6 +180,10 @@ def create_app(db_type=DB_TYPE, init_components=True):
         # 初始化 Elasticsearch
         from app.services.search_service import create_indices
         create_indices()
+        
+        # 初始化文章自动获取定时任务
+        from app.utils.auto_fetch import init_schedulers
+        init_schedulers(app)
 
     # 注册蓝图
     #from .controller import auth, blog, admin, user, chat, search
