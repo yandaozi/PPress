@@ -1,0 +1,169 @@
+{% extends theme_path('base.html') %}
+
+{% block title %}实时聊天室{% endblock %}
+
+{% block styles %}
+<style>
+  #chat-container {
+    height: 500px;
+    display: flex;
+  }
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    max-height: 400px;
+  }
+  #online-users {
+    width: 200px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-left: 1rem;
+  }
+  .message {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+  }
+  .message-user {
+    background-color: #e2e8f0;
+  }
+  .message-system {
+    background-color: #f8fafc;
+    color: #64748b;
+    font-style: italic;
+  }
+  .message-time {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+  .message-author {
+    font-weight: bold;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">实时聊天室</h1>
+    <p class="text-gray-600 dark:text-gray-400">在线交流，即时沟通</p>
+  </div>
+
+  <div id="chat-container" class="mb-4">
+    <div id="chat-messages" class="bg-white dark:bg-gray-800"></div>
+    <div id="online-users" class="bg-white dark:bg-gray-800">
+      <h3 class="text-lg font-semibold mb-2">在线用户</h3>
+      <div id="user-list"></div>
+    </div>
+  </div>
+
+  <div class="flex">
+    <input type="text" id="message-input" 
+           class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+           placeholder="输入消息..." />
+    <button id="send-button" 
+            class="px-4 py-2 bg-blue-600 text-white rounded-r hover:bg-blue-700 transition-colors">
+      发送
+    </button>
+  </div>
+</div>
+
+    {% block scripts %}
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // 连接到聊天命名空间
+                const socket = io('/chat');
+                const chatMessages = document.getElementById('chat-messages');
+                const userList = document.getElementById('user-list');
+                const messageInput = document.getElementById('message-input');
+                const sendButton = document.getElementById('send-button');
+
+                // 格式化时间
+                function formatTime(isoString) {
+                    const date = new Date(isoString);
+                    return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                }
+
+                // 添加消息到聊天窗口
+                function addMessage(message) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message ${message.type === 'system' ? 'message-system' : 'message-user'}`;
+
+                    if (message.type === 'system') {
+                        messageDiv.innerHTML = `
+          <div class="message-time">${formatTime(message.timestamp)}</div>
+          <div>${message.content}</div>
+        `;
+                    } else {
+                        messageDiv.innerHTML = `
+          <div class="flex justify-between">
+            <span class="message-author">${message.username}</span>
+            <span class="message-time">${formatTime(message.timestamp)}</span>
+          </div>
+          <div>${message.content}</div>
+        `;
+                    }
+
+                    chatMessages.appendChild(messageDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+
+                // 更新在线用户列表
+                function updateUserList(users) {
+                    userList.innerHTML = '';
+                    users.forEach(user => {
+                        const userDiv = document.createElement('div');
+                        userDiv.className = 'py-1';
+                        userDiv.textContent = user.username;
+                        userList.appendChild(userDiv);
+                    });
+                }
+
+                // 发送消息
+                function sendMessage() {
+                    const content = messageInput.value.trim();
+                    if (content) {
+                        socket.emit('send_message', { content });
+                        messageInput.value = '';
+                    }
+                }
+
+                // 事件监听
+                sendButton.addEventListener('click', sendMessage);
+                messageInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendMessage();
+                    }
+                });
+
+                // Socket.IO 事件
+                socket.on('connect', function() {
+                    console.log('连接到聊天服务器');
+                });
+
+                socket.on('message', function(message) {
+                    addMessage(message);
+                });
+
+                socket.on('chat_history', function(history) {
+                    chatMessages.innerHTML = '';
+                    history.forEach(addMessage);
+                });
+
+                socket.on('user_list', function(users) {
+                    updateUserList(users);
+                });
+
+                socket.on('disconnect', function() {
+                    console.log('与聊天服务器断开连接');
+                });
+            });
+        </script>
+    {% endblock %}
+{% endblock %}

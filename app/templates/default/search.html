@@ -1,0 +1,140 @@
+{% extends theme_path('base.html') %}
+
+{% block title %}搜索结果 - {{ query }}{% endblock %}
+
+{% block styles %}
+<style>
+  .highlight {
+    background-color: rgba(255, 255, 0, 0.3);
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+  .search-result {
+    margin-bottom: 2rem;
+  }
+  .search-snippet {
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    color: #4b5563;
+  }
+  .search-meta {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <!-- 搜索框 -->
+  <div class="mb-8">
+    <form action="{{ url_for('search.search') }}" method="get" class="flex w-full md:w-3/4 lg:w-2/3 mx-auto">
+      <input type="text" name="q" value="{{ query }}" 
+             class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+             placeholder="搜索文章..." required>
+      <button type="submit" 
+              class="px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 transition-colors">
+        搜索
+      </button>
+    </form>
+  </div>
+
+  <!-- 搜索结果 -->
+  <div class="w-full lg:w-3/4 mx-auto">
+    <!-- 搜索结果标题 -->
+    <div class="mb-6">
+      {% if query %}
+        {% if results and results.total > 0 %}
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
+            "{{ query }}" 的搜索结果 ({{ results.total }}条)
+          </h2>
+        {% else %}
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
+            没有找到 "{{ query }}" 的搜索结果
+          </h2>
+          <p class="mt-2 text-gray-600 dark:text-gray-400">
+            请尝试使用其他关键词或缩短搜索词
+          </p>
+        {% endif %}
+      {% else %}
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
+          输入关键词开始搜索
+        </h2>
+      {% endif %}
+    </div>
+
+    <!-- 结果列表 -->
+    {% if results and results.posts %}
+      <div class="space-y-6">
+        {% for post in results.posts %}
+          <div class="search-result p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+            <h3 class="text-lg font-medium">
+              <a href="{{ url_for('blog.post_detail', slug=post.id) }}" class="text-blue-600 dark:text-blue-400 hover:underline">
+                {{ post.title | safe }}
+              </a>
+            </h3>
+            
+            {% if post.content %}
+              <div class="search-snippet">
+                {% for snippet in post.content %}
+                  <p class="mb-1">...{{ snippet | safe }}...</p>
+                {% endfor %}
+              </div>
+            {% elif post.summary %}
+              <div class="search-snippet">
+                <p>{{ post.summary | safe }}</p>
+              </div>
+            {% endif %}
+            
+            <div class="search-meta flex flex-wrap gap-x-4 gap-y-1">
+              <span>
+                <i class="fas fa-user mr-1"></i> {{ post.author.username }}
+              </span>
+              {% if post.category and post.category.name %}
+                <span>
+                  <i class="fas fa-folder mr-1"></i> {{ post.category.name }}
+                </span>
+              {% endif %}
+              <span>
+                <i class="far fa-calendar mr-1"></i> {{ post.created_at | date }}
+              </span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      
+      <!-- 分页 -->
+      {% if results.pages > 1 %}
+        <div class="mt-8 flex justify-center">
+          <div class="flex space-x-1">
+            {% set pagination_start = [1, results.page - 2] | max %}
+            {% set pagination_end = [results.pages, results.page + 2] | min %}
+            
+            {% if results.page > 1 %}
+              <a href="{{ url_for('search.search', q=query, page=results.page-1) }}" 
+                 class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600">
+                上一页
+              </a>
+            {% endif %}
+            
+            {% for p in range(pagination_start, pagination_end + 1) %}
+              <a href="{{ url_for('search.search', q=query, page=p) }}" 
+                 class="px-3 py-1 rounded {% if p == results.page %}bg-blue-600 text-white{% else %}bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600{% endif %}">
+                {{ p }}
+              </a>
+            {% endfor %}
+            
+            {% if results.page < results.pages %}
+              <a href="{{ url_for('search.search', q=query, page=results.page+1) }}" 
+                 class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600">
+                下一页
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %} 
