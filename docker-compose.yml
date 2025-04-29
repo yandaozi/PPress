@@ -10,8 +10,11 @@ services:
     environment:
       - FLASK_APP=run.py
       - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
     depends_on:
       - redis
+      - elasticsearch
+    command: gunicorn --worker-class gevent --workers 4 --bind 0.0.0.0:5000 run:app
 
   redis:
     image: redis:6
@@ -21,5 +24,16 @@ services:
     volumes:
       - redis_data:/data
 
+  elasticsearch:
+    image: elasticsearch:7.17.9
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
 volumes:
-  redis_data: 
+  redis_data:
+  es_data: 

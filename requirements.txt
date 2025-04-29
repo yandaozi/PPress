@@ -13,3 +13,8 @@ Werkzeug
 redis
 email-validator
 python-dotenv
+flask-socketio
+elasticsearch
+gevent
+eventlet
+gunicorn

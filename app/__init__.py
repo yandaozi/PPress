@@ -8,7 +8,7 @@ from app.utils.cache_manager import cache_manager
 from .utils.theme_manager import ThemeManager
 from app.plugins import get_plugin_manager
 from flask_caching import Cache
-from config.database import get_db_url, DB_TYPE
+from config.database import get_db_url, DB_TYPE, REDIS_CONFIG
 from sqlalchemy import event
 from app.utils.custom_pages import custom_page_manager
 from app.utils.article_url import ArticleUrlGenerator
@@ -129,6 +129,12 @@ def create_app(db_type=DB_TYPE, init_components=True):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
 
+    # Redis配置
+    app.config['REDIS_HOST'] = REDIS_CONFIG['host']
+    app.config['REDIS_PORT'] = REDIS_CONFIG['port']
+    app.config['REDIS_PASSWORD'] = REDIS_CONFIG['password']
+    app.config['USE_REDIS_QUEUE'] = True if os.environ.get('FLASK_ENV') == 'production' else False
+
     # 添加数据库连接选项
     if db_type == 'mysql':
         app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
@@ -162,18 +168,28 @@ def create_app(db_type=DB_TYPE, init_components=True):
     app.config['CACHE_DEFAULT_TIMEOUT'] = 300
     cache.init_app(app)
 
-    # 注册蓝图
-    from .controller import auth, blog, admin, user
-    
-    app.register_blueprint(auth.bp)
-    app.register_blueprint(blog.bp)
-    app.register_blueprint(admin.bp)
-    app.register_blueprint(user.bp)
-
     # 初始化路由（确保在注册蓝图之后）
     if init_components:
         init_app_components(app)
         init_routes(app)
+        
+        # 初始化 WebSocket
+        from app.websocket import init_socketio
+        socketio = init_socketio(app)
+        
+        # 初始化 Elasticsearch
+        from app.services.search_service import create_indices
+        create_indices()
+
+    # 注册蓝图
+    #from .controller import auth, blog, admin, user, chat, search
+    from .controller import auth, blog, admin, user
+    app.register_blueprint(auth.bp)
+    app.register_blueprint(blog.bp)
+    app.register_blueprint(admin.bp)
+    app.register_blueprint(user.bp)
+    # app.register_blueprint(chat.bp)
+    # app.register_blueprint(search.bp)
 
     # 注册错误处理器
     @app.errorhandler(404)

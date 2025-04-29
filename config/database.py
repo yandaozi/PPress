@@ -23,7 +23,7 @@ SQLITE_CONFIG = {
 
 # Redis 配置
 REDIS_CONFIG = {
-    'host': 'redis',  # 使用 Docker 服务名
+    'host': '192.168.153.130',  # 使用 Docker 服务名
     'port': 6379,
     'password': '123456',
     'db': 0  # 使用默认数据库
