@@ -21,6 +21,22 @@ SQLITE_CONFIG = {
     'database': 'ppress.db'
 }
 
+# Redis 配置
+REDIS_CONFIG = {
+    'host': 'redis',  # 使用 Docker 服务名
+    'port': 6379,
+    'password': '123456',
+    'db': 0  # 使用默认数据库
+}
+
+# SMTP 配置
+SMTP_CONFIG = {
+    'host': 'smtp.qq.com',
+    'port': 587,
+    'username': 'xxx@qq.com',  # QQ邮箱地址
+    'password': 'xxx'   # QQ邮箱授权码
+}
+
 def get_db_url(db_type='mysql'):
     """获取数据库 URL"""
     if db_type == 'mysql':

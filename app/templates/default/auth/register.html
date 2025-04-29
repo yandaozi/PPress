@@ -26,7 +26,21 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         邮箱
                     </label>
-                    <input type="email" name="email" required
+                    <div class="flex items-center gap-3">
+                        <input type="email" name="email" required
+                               class="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
+                        <button type="button" onclick="sendEmailCode(this)"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                            发送验证码
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        邮箱验证码
+                    </label>
+                    <input type="text" name="email_code" required
                            class="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
                 </div>
                 
@@ -76,4 +90,49 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+
+
+    {% block scripts %}
+        <script>
+            function sendEmailCode(btn) {
+                const email = document.querySelector('input[name="email"]').value;
+                if (!email) {
+                    alert('请输入邮箱地址');
+                    return;
+                }
+
+                btn.disabled = true;
+                let countdown = 60;
+                const originalText = btn.textContent;
+
+                const timer = setInterval(() => {
+                    btn.textContent = `${countdown}秒后重试`;
+                    countdown--;
+                    if (countdown < 0) {
+                        clearInterval(timer);
+                        btn.disabled = false;
+                        btn.textContent = originalText;
+                    }
+                }, 1000);
+
+                fetch('/auth/send_email_code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                    },
+                    body: JSON.stringify({ email })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.success) {
+                            alert(data.message);
+                            clearInterval(timer);
+                            btn.disabled = false;
+                            btn.textContent = originalText;
+                        }
+                    });
+            }
+        </script>
+    {% endblock %}
+{% endblock %}

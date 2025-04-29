@@ -2,12 +2,12 @@
 
 <div align="center">
     <img src="app/static/favicon.ico" width="90px" alt="PPress">
-    <h3>强大的 Python 博客内容管理系统</h3>
+    <h3>强大的 Python 内容管理系统</h3>
 </div>
 
 ## 🌟 系统简介
 
-PPress 是一个基于 Flask 框架开发的功能丰富的博客内容管理系统（CMS）。它采用现代化的架构设计，提供流畅的博客写作和管理体验，适用于个人博客和内容驱动的网站。
+PPress 是一个基于 Flask 框架开发的功能丰富的内容管理系统（CMS）。它采用现代化的架构设计，提供流畅的博客写作和管理体验，适用于个人博客和内容驱动的网站。
 
 ### ✨ 核心特性
 
@@ -34,7 +34,7 @@ PPress 是一个基于 Flask 框架开发的功能丰富的博客内容管理系
 
 ## 🚀 快速开始
 
-### Centos7 一键安装脚本
+### Centos7 Shell 一键安装脚本
 
    ```bash
     # 使用 wget 下载
@@ -64,6 +64,24 @@ PPress 是一个基于 Flask 框架开发的功能丰富的博客内容管理系
 
 状态会显示：运行状态 、进程 ID 、当前端口 、访问地址
 
+
+### Docker运行
+
+```bash
+# 1. 构建并启动服务
+docker-compose up -d
+
+# 2. 查看日志
+docker-compose logs -f
+
+# 3. 停止服务
+docker-compose down
+   ```
+   
+- 应用将在 http://localhost:5000 运行，Redis 服务将在 localhost:6379 运行
+- 数据持久化： SQLite 数据库文件存储在 ./instance 目录，Redis 数据使用 Docker volume 持久化
+- 如果您需要修改任何配置，可以直接编辑相应的文件，然后重新构建
+
 ### 视频教程
 - [CentOS 7 安装教程](https://www.bilibili.com/video/BV1jezSY3Eag/)
 - [Windows 安装教程](https://www.bilibili.com/video/BV1sEzSYHEHc/)
@@ -86,8 +104,9 @@ PPress 是一个基于 Flask 框架开发的功能丰富的博客内容管理系
    - 通过浏览器访问安装页面
    - 填写系统配置信息
    - 安装完成后重启应用
+   - 新增加Redis + 发送邮件验证码功能，需在config/database.py自行配置Redis链接和SMTP
 
-4. **访问后台**
+5. **访问后台**
    - 后台地址：`/admin/`
    - 默认管理员账号：
      - 用户名：`admin`
@@ -101,7 +120,7 @@ PPress 是一个基于 Flask 框架开发的功能丰富的博客内容管理系
 
 - **后端框架**: Flask
 - **数据库**: SQLite/MySQL
-- **缓存系统**: Flask-Caching
+- **缓存系统**: Flask-Caching、Redis
 - **用户认证**: Flask-Login
 - **数据库 ORM**: SQLAlchemy
 - **模板引擎**: Jinja2

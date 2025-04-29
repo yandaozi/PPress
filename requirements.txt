@@ -10,3 +10,6 @@ PyMySQL
 python-slugify
 SQLAlchemy
 Werkzeug
+redis
+email-validator
+python-dotenv
